@@ -1,5 +1,5 @@
 import { memo, useCallback, useMemo, useState, useRef, useEffect } from 'react'
-import { ChevronRight, Plus, Settings, ArrowUpDown, SquarePen, Check, X, FlaskConical, Bug, Trash2 } from 'lucide-react'
+import { ChevronRight, Plus, Settings, ArrowUpDown, SquarePen, Check, X, FlaskConical, Bug, Trash2, FolderOpen, Pencil, Archive } from 'lucide-react'
 import { useTaskStore } from '@/stores/taskStore'
 import { useDebugStore } from '@/stores/debugStore'
 import { useShallow } from 'zustand/react/shallow'
@@ -189,7 +189,7 @@ const ThreadItem = memo(function ThreadItem({
   const showDot = task.status !== 'paused' && task.status !== 'completed'
 
   return (
-    <li className="group/thread relative w-full" data-thread-item="true">
+    <li className="group/thread relative min-w-0" data-thread-item="true">
       <div
         role="button"
         tabIndex={0}
@@ -240,6 +240,8 @@ const ProjectItem = memo(function ProjectItem({
   onNewThread,
   onDeleteTask,
   onRemoveProject,
+  onArchiveThreads,
+  onRenameProject,
   isCreating,
 }: {
   name: string
@@ -250,16 +252,50 @@ const ProjectItem = memo(function ProjectItem({
   onNewThread: () => void
   onDeleteTask: (id: string) => void
   onRemoveProject: () => void
+  onArchiveThreads: () => void
+  onRenameProject: (name: string) => void
   isCreating: boolean
 }) {
   const [expanded, setExpanded] = useState(true)
+  const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null)
+  const [editing, setEditing] = useState(false)
+  const [editValue, setEditValue] = useState(name)
+  const ctxRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  // Close context menu on outside click
+  useEffect(() => {
+    if (!ctxMenu) return
+    const handler = (e: MouseEvent) => {
+      if (ctxRef.current && !ctxRef.current.contains(e.target as Node)) setCtxMenu(null)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [ctxMenu])
+
+  // Focus input when editing starts
+  useEffect(() => {
+    if (editing) inputRef.current?.select()
+  }, [editing])
+
+  const handleContextMenu = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    setCtxMenu({ x: e.clientX, y: e.clientY })
+  }, [])
+
+  const commitRename = useCallback(() => {
+    const trimmed = editValue.trim()
+    if (trimmed && trimmed !== name) onRenameProject(trimmed)
+    setEditing(false)
+  }, [editValue, name, onRenameProject])
 
   return (
-    <li className="group/menu-item relative rounded-md">
+    <li className="group/menu-item relative min-w-0 overflow-hidden rounded-md">
       <div className="group/project-header relative">
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}
+          onContextMenu={handleContextMenu}
           className={cn(
             'peer/menu-button flex w-full h-7 cursor-pointer items-center gap-2 overflow-hidden rounded-lg px-2 py-1.5 text-xs text-left',
             'outline-none focus-visible:ring-2 focus-visible:ring-ring',
@@ -278,7 +314,19 @@ const ProjectItem = memo(function ProjectItem({
           <span className="size-3.5 shrink-0 rounded-sm bg-muted-foreground/20 flex items-center justify-center text-[8px] font-bold text-muted-foreground/60 uppercase">
             {name.charAt(0)}
           </span>
-          <span className="flex-1 truncate text-xs font-medium text-foreground/90">{name}</span>
+          {editing ? (
+            <input
+              ref={inputRef}
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              onBlur={commitRename}
+              onKeyDown={(e) => { if (e.key === 'Enter') commitRename(); if (e.key === 'Escape') setEditing(false) }}
+              onClick={(e) => e.stopPropagation()}
+              className="flex-1 min-w-0 truncate bg-transparent text-xs font-medium text-foreground outline-none"
+            />
+          ) : (
+            <span className="flex-1 truncate text-xs font-medium text-foreground/90">{name}</span>
+          )}
           {isCreating && <span className="size-3 animate-spin rounded-full border border-border border-t-primary shrink-0" />}
         </button>
 
@@ -322,9 +370,36 @@ const ProjectItem = memo(function ProjectItem({
         </Tooltip>
       </div>
 
+      {/* Context menu */}
+      {ctxMenu && (
+        <div
+          ref={ctxRef}
+          className="fixed z-[300] min-w-[160px] rounded-lg border border-border bg-popover py-1 shadow-lg"
+          style={{ left: ctxMenu.x, top: ctxMenu.y }}
+        >
+          <button type="button" className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-foreground transition-colors hover:bg-accent"
+            onClick={() => { ipc.openUrl(cwd); setCtxMenu(null) }}>
+            <FolderOpen className="size-3.5" aria-hidden /> Open in Finder
+          </button>
+          <button type="button" className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-foreground transition-colors hover:bg-accent"
+            onClick={() => { setEditValue(name); setEditing(true); setCtxMenu(null) }}>
+            <Pencil className="size-3.5" aria-hidden /> Edit Name
+          </button>
+          <button type="button" className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-foreground transition-colors hover:bg-accent"
+            onClick={() => { onArchiveThreads(); setCtxMenu(null) }}>
+            <Archive className="size-3.5" aria-hidden /> Archive Threads
+          </button>
+          <div className="my-1 border-t border-border/50" />
+          <button type="button" className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-destructive transition-colors hover:bg-destructive/10"
+            onClick={() => { onRemoveProject(); setCtxMenu(null) }}>
+            <Trash2 className="size-3.5" aria-hidden /> Delete
+          </button>
+        </div>
+      )}
+
       {expanded && tasks.length > 0 && (
         <ul
-          className="flex min-w-0 flex-col border-l mx-1 my-0 w-full gap-0.5 overflow-hidden px-1.5 py-0"
+          className="flex min-w-0 flex-col border-l mx-1 my-0 gap-0.5 overflow-hidden px-1.5 py-0"
           style={{ borderColor: 'var(--border)' }}
         >
           {tasks.map((task) => (
@@ -343,11 +418,11 @@ const ProjectItem = memo(function ProjectItem({
 })
 
 export const TaskSidebar = memo(function TaskSidebar() {
-  const { projects, selectedTaskId } = useTaskStore(
-    useShallow((s) => ({ projects: s.projects, selectedTaskId: s.selectedTaskId }))
+  const { projects, selectedTaskId, projectNames } = useTaskStore(
+    useShallow((s) => ({ projects: s.projects, selectedTaskId: s.selectedTaskId, projectNames: s.projectNames }))
   )
-  const { setSelectedTask, setView, setNewProjectOpen, setSettingsOpen, removeTask, removeProject } = useTaskStore(
-    useShallow((s) => ({ setSelectedTask: s.setSelectedTask, setView: s.setView, setNewProjectOpen: s.setNewProjectOpen, setSettingsOpen: s.setSettingsOpen, removeTask: s.removeTask, removeProject: s.removeProject }))
+  const { setSelectedTask, setView, setNewProjectOpen, setSettingsOpen, removeTask, removeProject, archiveThreads, renameProject } = useTaskStore(
+    useShallow((s) => ({ setSelectedTask: s.setSelectedTask, setView: s.setView, setNewProjectOpen: s.setNewProjectOpen, setSettingsOpen: s.setSettingsOpen, removeTask: s.removeTask, removeProject: s.removeProject, archiveThreads: s.archiveThreads, renameProject: s.renameProject }))
   )
 
   // Subscribe to tasks object — stable reference, derive list in useMemo
@@ -370,11 +445,15 @@ export const TaskSidebar = memo(function TaskSidebar() {
     // Add projects that have no tasks yet
     for (const ws of projects) {
       if (!map.has(ws)) {
-        map.set(ws, { name: ws.split('/').pop() ?? ws, cwd: ws, tasks: [] })
+        map.set(ws, { name: projectNames[ws] ?? ws.split('/').pop() ?? ws, cwd: ws, tasks: [] })
       }
     }
+    // Apply custom names to all projects
+    for (const [ws, project] of map) {
+      if (projectNames[ws]) project.name = projectNames[ws]
+    }
     return Array.from(map.values())
-  }, [sorted, projects])
+  }, [sorted, projects, projectNames])
 
   const handleSelectTask = useCallback(
     (id: string) => { setSelectedTask(id); setView('chat') },
@@ -440,6 +519,8 @@ export const TaskSidebar = memo(function TaskSidebar() {
                   onNewThread={() => handleNewThread(project.cwd)}
                   onDeleteTask={handleDeleteTask}
                   onRemoveProject={() => removeProject(project.cwd)}
+                  onArchiveThreads={() => archiveThreads(project.cwd)}
+                  onRenameProject={(n) => renameProject(project.cwd, n)}
                   isCreating={false}
                 />
               ))}

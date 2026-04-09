@@ -29,6 +29,7 @@ interface TaskStore {
   setSettingsOpen: (open: boolean) => void
   addProject: (workspace: string) => void
   removeProject: (workspace: string) => void
+  archiveThreads: (workspace: string) => void
   upsertTask: (task: AgentTask) => void
   removeTask: (id: string) => void
   appendChunk: (taskId: string, chunk: string) => void
@@ -87,6 +88,20 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     const selectedTaskId = taskIds.includes(s.selectedTaskId ?? '') ? null : s.selectedTaskId
     return {
       projects: s.projects.filter((p) => p !== workspace),
+      tasks,
+      selectedTaskId,
+      view: selectedTaskId === null && s.view === 'chat' ? 'dashboard' : s.view,
+    }
+  }),
+
+  archiveThreads: (workspace) => set((s) => {
+    const taskIds = Object.keys(s.tasks).filter((id) => s.tasks[id].workspace === workspace)
+    const tasks = { ...s.tasks }
+    taskIds.forEach((id) => { delete tasks[id] })
+    taskIds.forEach((id) => { void ipc.cancelTask(id).catch(() => {}) })
+    taskIds.forEach((id) => { void ipc.deleteTask(id) })
+    const selectedTaskId = taskIds.includes(s.selectedTaskId ?? '') ? null : s.selectedTaskId
+    return {
       tasks,
       selectedTaskId,
       view: selectedTaskId === null && s.view === 'chat' ? 'dashboard' : s.view,

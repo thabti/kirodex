@@ -617,6 +617,7 @@ pub struct CreateTaskParams {
     pub workspace: String,
     pub prompt: String,
     pub auto_approve: Option<bool>,
+    #[allow(dead_code)]
     pub mode_id: Option<String>,
 }
 
