@@ -3,7 +3,6 @@ import { Pause, Play, XCircle, GitCompareArrows, GitCommitHorizontal, ChevronDow
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { useTaskStore } from '@/stores/taskStore'
 import { useDiffStore } from '@/stores/diffStore'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
@@ -28,15 +27,6 @@ const handleHeaderMouseDown = (e: React.MouseEvent<HTMLElement>) => {
   } else {
     getCurrentWindow().startDragging()
   }
-}
-
-const statusVariant: Record<TaskStatus, 'default' | 'secondary' | 'outline' | 'destructive' | 'success' | 'warning'> = {
-  running: 'success',
-  paused: 'warning',
-  completed: 'default',
-  error: 'destructive',
-  cancelled: 'secondary',
-  pending_permission: 'warning',
 }
 
 // ── Zed SVG icon ──────────────────────────────────────────────────────
@@ -220,7 +210,7 @@ function AppHeaderInner({ sidePanelOpen, onToggleSidePanel, isSidebarCollapsed, 
   const hasStats = diffStats.additions > 0 || diffStats.deletions > 0
 
   return (
-    <header onMouseDown={handleHeaderMouseDown} className="flex h-[44px] shrink-0 items-center gap-3 border-b border-border px-4 pl-[90px] select-none [-webkit-user-select:none]">
+    <header onMouseDown={handleHeaderMouseDown} className="flex h-[44px] shrink-0 items-center gap-3 border-b border-border bg-card px-4 pl-[90px] select-none [-webkit-user-select:none]">
       {/* Breadcrumb left */}
       <nav className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
         {/* Logo / app name */}
@@ -272,11 +262,12 @@ function AppHeaderInner({ sidePanelOpen, onToggleSidePanel, isSidebarCollapsed, 
           </>
         ) : null}
 
-        {/* Status badge */}
-        {task && !(task.status === 'paused' && !task.userPaused) && (
-          <Badge variant={statusVariant[task.status]} className="shrink-0 text-[10px]">
-            {task.status.replace('_', ' ')}
-          </Badge>
+        {/* Status dot in header */}
+        {task && task.status === 'running' && (
+          <span className="size-2 shrink-0 animate-pulse rounded-full bg-emerald-400" />
+        )}
+        {task && task.status === 'pending_permission' && (
+          <span className="size-2 shrink-0 rounded-full bg-amber-400" />
         )}
       </nav>
 
@@ -368,7 +359,7 @@ function AppHeaderInner({ sidePanelOpen, onToggleSidePanel, isSidebarCollapsed, 
 }
 
 const HeaderFallback = () => (
-  <header data-tauri-drag-region className="drag-region flex h-[44px] shrink-0 items-center gap-3 border-b border-border px-4 pl-[90px]">
+  <header data-tauri-drag-region className="drag-region flex h-[44px] shrink-0 items-center gap-3 border-b border-border bg-card px-4 pl-[90px]">
     <span className="text-sm font-medium tracking-tight text-muted-foreground">Kirodex</span>
   </header>
 )

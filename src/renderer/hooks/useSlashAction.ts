@@ -24,15 +24,14 @@ const addSystemMessage = (text: string): void => {
   })
 }
 
-/** Switch mode optimistically, then confirm via IPC */
+/** Switch mode optimistically, then confirm via IPC.
+ *  Works even before ACP connects (availableModes may be empty). */
 const switchMode = (modeId: string, label: string): void => {
-  const mode = useSettingsStore.getState().availableModes.find((m) => m.id === modeId)
-  if (!mode) return
-  useSettingsStore.setState({ currentModeId: mode.id })
+  useSettingsStore.setState({ currentModeId: modeId })
   addSystemMessage(`Switched to ${label} mode`)
   const taskId = useTaskStore.getState().selectedTaskId
   if (taskId) {
-    ipc.setMode(taskId, mode.id).catch(() => {
+    ipc.setMode(taskId, modeId).catch(() => {
       addSystemMessage(`⚠️ Failed to sync ${label} mode with backend`)
     })
   }

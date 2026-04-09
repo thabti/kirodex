@@ -10,6 +10,7 @@ import { useKiroStore } from '@/stores/kiroStore'
 import { ipc } from '@/lib/ipc'
 import ChatMarkdown from './ChatMarkdown'
 import { ToolCallDisplay } from './ToolCallDisplay'
+import { CollapsedAnswers } from './CollapsedAnswers'
 import { ThinkingDisplay } from './ThinkingDisplay'
 import type {
   UserMessageRow as UserMessageRowData,
@@ -153,9 +154,13 @@ export const UserMessageRow = memo(function UserMessageRow({ row }: { row: UserM
       <div className="flex justify-end">
         <div className="group relative max-w-[75%]">
           <div className="rounded-2xl rounded-br-md bg-primary/10 px-3.5 py-2 dark:bg-primary/[0.08]">
-            <p className="whitespace-pre-wrap break-words text-[13px] leading-relaxed text-foreground">
-              {row.content}
-            </p>
+            {row.questionAnswers?.length ? (
+              <CollapsedAnswers questionAnswers={row.questionAnswers} />
+            ) : (
+              <p className="whitespace-pre-wrap break-words text-[13px] leading-relaxed text-foreground">
+                {row.content}
+              </p>
+            )}
           </div>
           <div className="mt-1 flex items-center justify-end gap-1.5 px-1">
             <Tooltip>

@@ -162,25 +162,25 @@ export const BranchSelector = memo(function BranchSelector({ workspace }: Branch
   if (!workspace) return null
 
   return (
-    <div ref={containerRef} className="relative mx-auto w-full max-w-2xl px-6 lg:max-w-3xl xl:max-w-4xl">
+    <div ref={containerRef} className="relative">
       {/* Trigger */}
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          'flex items-center gap-1.5 rounded-lg px-2 py-1 text-[11px] font-medium transition-colors',
+          'flex items-center gap-1 rounded-lg px-1.5 py-1 text-[11px] font-medium transition-colors',
           'text-muted-foreground/60 hover:text-foreground/80',
           open && 'text-foreground/80',
         )}
       >
         <GitBranch className="size-3" />
-        <span className="max-w-[200px] truncate">{currentBranch ?? 'Select branch'}</span>
+        <span className="max-w-[120px] truncate">{currentBranch ?? 'branch'}</span>
         <ChevronDown className={cn('size-3 opacity-50 transition-transform', open && 'rotate-180')} />
       </button>
 
       {/* Popup */}
       {open && (
-        <div className="absolute bottom-full left-5 z-[200] mb-2 w-80 overflow-hidden rounded-xl border border-border bg-popover shadow-xl">
+        <div className="absolute bottom-full left-0 z-[200] mb-2 w-80 overflow-hidden rounded-xl border border-border bg-popover shadow-xl">
           {/* Search input */}
           <div className="border-b border-border p-2">
             <div className="flex items-center gap-2 rounded-lg bg-background/50 px-2.5 py-1.5">

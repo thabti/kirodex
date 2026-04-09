@@ -7,11 +7,12 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { cn } from '@/lib/utils'
 import type { AppSettings, AgentProfile } from '@/types'
 
-type Tab = 'general' | 'agents' | 'appearance'
+type Tab = 'general' | 'agents' | 'appearance' | 'misc'
 const TABS: { id: Tab; label: string }[] = [
   { id: 'general', label: 'General' },
   { id: 'agents', label: 'Agents' },
   { id: 'appearance', label: 'Appearance' },
+  { id: 'misc', label: 'Misc' },
 ]
 const FONT_SIZES = [12, 13, 14, 15, 16]
 
@@ -425,6 +426,37 @@ export function SettingsPanel() {
                     </button>
                   ))}
                 </div>
+              </div>
+            </div>
+          )}
+
+          {tab === 'misc' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[11px] font-medium text-muted-foreground">Co-authored-by Kirodex</p>
+                  <p className="text-[10px] text-muted-foreground/60">
+                    Append a Co-authored-by trailer to every commit
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={draft.coAuthor ?? true}
+                  aria-label="Toggle co-author trailer on commits"
+                  onClick={() => setDraft({ ...draft, coAuthor: !(draft.coAuthor ?? true) })}
+                  className={cn(
+                    'relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors',
+                    (draft.coAuthor ?? true) ? 'bg-primary' : 'bg-input',
+                  )}
+                >
+                  <span
+                    className={cn(
+                      'pointer-events-none block h-3.5 w-3.5 rounded-full bg-background shadow-sm transition-transform',
+                      (draft.coAuthor ?? true) ? 'translate-x-4' : 'translate-x-0.5',
+                    )}
+                  />
+                </button>
               </div>
             </div>
           )}

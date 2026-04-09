@@ -240,9 +240,11 @@ impl acp::Client for KirodexClient {
                 .or_else(|| options.iter().find(|o| o.kind == "allow_always"))
                 .or_else(|| options.first());
             if let Some(opt) = allow_opt {
-                return Ok(serde_json::from_value(serde_json::json!({
-                    "outcome": { "outcome": "selected", "optionId": opt.option_id }
-                })).unwrap());
+                return Ok(acp::RequestPermissionResponse::new(
+                    acp::RequestPermissionOutcome::Selected(
+                        acp::SelectedPermissionOutcome::new(opt.option_id.clone()),
+                    ),
+                ));
             }
         }
 
@@ -254,14 +256,16 @@ impl acp::Client for KirodexClient {
         // Wait for user response
         match reply_rx.await {
             Ok(reply) => {
-                Ok(serde_json::from_value(serde_json::json!({
-                    "outcome": { "outcome": "selected", "optionId": reply.option_id }
-                })).unwrap())
+                Ok(acp::RequestPermissionResponse::new(
+                    acp::RequestPermissionOutcome::Selected(
+                        acp::SelectedPermissionOutcome::new(reply.option_id),
+                    ),
+                ))
             }
             Err(_) => {
-                Ok(serde_json::from_value(serde_json::json!({
-                    "outcome": { "outcome": "cancelled" }
-                })).unwrap())
+                Ok(acp::RequestPermissionResponse::new(
+                    acp::RequestPermissionOutcome::Cancelled,
+                ))
             }
         }
     }
@@ -613,6 +617,7 @@ pub struct CreateTaskParams {
     pub workspace: String,
     pub prompt: String,
     pub auto_approve: Option<bool>,
+    pub mode_id: Option<String>,
 }
 
 #[tauri::command]
@@ -934,7 +939,7 @@ pub fn list_models(
             impl acp::Client for MinimalClient {
                 async fn session_notification(&self, _: acp::SessionNotification) -> acp::Result<()> { Ok(()) }
                 async fn request_permission(&self, _: acp::RequestPermissionRequest) -> acp::Result<acp::RequestPermissionResponse> {
-                    Ok(serde_json::from_value(serde_json::json!({"outcome":{"outcome":"cancelled"}})).unwrap())
+                    Ok(acp::RequestPermissionResponse::new(acp::RequestPermissionOutcome::Cancelled))
                 }
                 async fn ext_notification(&self, _: acp::ExtNotification) -> acp::Result<()> { Ok(()) }
             }
@@ -1019,7 +1024,7 @@ pub fn probe_capabilities(
             impl acp::Client for ProbeClient {
                 async fn session_notification(&self, _: acp::SessionNotification) -> acp::Result<()> { Ok(()) }
                 async fn request_permission(&self, _: acp::RequestPermissionRequest) -> acp::Result<acp::RequestPermissionResponse> {
-                    Ok(serde_json::from_value(serde_json::json!({"outcome":{"outcome":"cancelled"}})).unwrap())
+                    Ok(acp::RequestPermissionResponse::new(acp::RequestPermissionOutcome::Cancelled))
                 }
                 async fn ext_notification(&self, _: acp::ExtNotification) -> acp::Result<()> { Ok(()) }
             }

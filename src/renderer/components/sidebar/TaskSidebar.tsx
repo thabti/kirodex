@@ -165,6 +165,15 @@ function groupByProject(tasks: AgentTask[]): Map<string, { name: string; cwd: st
   return map
 }
 
+const STATUS_DOT: Record<string, { color: string; label: string }> = {
+  running: { color: 'bg-emerald-400', label: 'Running' },
+  paused: { color: 'bg-muted-foreground/40', label: 'Paused' },
+  completed: { color: 'bg-muted-foreground/30', label: 'Completed' },
+  error: { color: 'bg-red-400', label: 'Error' },
+  cancelled: { color: 'bg-red-400/50', label: 'Cancelled' },
+  pending_permission: { color: 'bg-amber-400', label: 'Needs permission' },
+}
+
 const ThreadItem = memo(function ThreadItem({
   task,
   isActive,
@@ -176,6 +185,9 @@ const ThreadItem = memo(function ThreadItem({
   onSelect: () => void
   onDelete: () => void
 }) {
+  const dot = STATUS_DOT[task.status] ?? STATUS_DOT.paused
+  const showDot = task.status !== 'paused' && task.status !== 'completed'
+
   return (
     <li className="group/thread relative w-full" data-thread-item="true">
       <div
@@ -184,7 +196,7 @@ const ThreadItem = memo(function ThreadItem({
         onClick={onSelect}
         onKeyDown={(e) => e.key === 'Enter' && onSelect()}
         className={cn(
-          'flex min-w-0 h-7 w-full cursor-pointer items-center gap-2 overflow-hidden rounded-lg px-2 text-xs select-none',
+          'flex min-w-0 h-7 w-full cursor-pointer items-center gap-2 overflow-hidden rounded-lg px-2 pr-6 text-xs select-none',
           'outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring',
           'transition-colors',
           isActive
@@ -194,21 +206,27 @@ const ThreadItem = memo(function ThreadItem({
         data-active={isActive}
       >
         <span className="min-w-0 flex-1 truncate text-xs">{task.name}</span>
-        <div className="ml-auto flex shrink-0 items-center gap-1">
-          {/* Delete button — visible on hover */}
+        <span className="shrink-0 text-[10px] text-foreground/72 dark:text-foreground/82 group-hover/thread:hidden">
+          {relativeTime(task.createdAt)}
+        </span>
+      </div>
+      {/* Delete button — overlays top-right on hover */}
+      <Tooltip>
+        <TooltipTrigger asChild>
           <button
             type="button"
             aria-label="Delete task"
             onClick={(e) => { e.stopPropagation(); onDelete() }}
-            className="hidden group-hover/thread:flex size-4 items-center justify-center rounded text-muted-foreground/60 hover:bg-destructive/20 hover:text-destructive transition-colors"
+            className={cn(
+              'absolute right-1 top-0.5 hidden group-hover/thread:flex size-5 items-center justify-center rounded-md',
+              'text-muted-foreground/60 hover:bg-destructive/20 hover:text-destructive transition-colors',
+            )}
           >
-            <X className="size-3" aria-hidden />
+            <Trash2 className="size-3" aria-hidden />
           </button>
-          <span className="text-[10px] text-foreground/72 dark:text-foreground/82 group-hover/thread:hidden">
-            {relativeTime(task.createdAt)}
-          </span>
-        </div>
-      </div>
+        </TooltipTrigger>
+        <TooltipContent side="right">Delete thread</TooltipContent>
+      </Tooltip>
     </li>
   )
 })

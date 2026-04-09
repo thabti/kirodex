@@ -9,6 +9,7 @@ export interface UserMessageRow {
   id: string
   content: string
   timestamp: string
+  questionAnswers?: { question: string; answer: string }[]
 }
 
 export interface SystemMessageRow {
@@ -74,6 +75,7 @@ export function deriveTimeline(
         id: `msg-${i}-user`,
         content: msg.content,
         timestamp: msg.timestamp,
+        questionAnswers: msg.questionAnswers,
       })
       continue
     }

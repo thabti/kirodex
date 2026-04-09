@@ -1,0 +1,43 @@
+import { memo, useState } from 'react'
+import { ChevronDown, ChevronRight, MessageCircleQuestion } from 'lucide-react'
+
+interface QuestionAnswer {
+  question: string
+  answer: string
+}
+
+interface CollapsedAnswersProps {
+  questionAnswers: QuestionAnswer[]
+}
+
+export const CollapsedAnswers = memo(function CollapsedAnswers({ questionAnswers }: CollapsedAnswersProps) {
+  const [expanded, setExpanded] = useState(false)
+  if (!questionAnswers.length) return null
+  return (
+    <div className="rounded-lg border border-border/30 bg-card/20">
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        className="flex w-full items-center gap-2 px-3 py-1.5 text-left transition-colors hover:bg-accent/5"
+      >
+        {expanded
+          ? <ChevronDown className="size-3 shrink-0 text-muted-foreground/40" />
+          : <ChevronRight className="size-3 shrink-0 text-muted-foreground/40" />}
+        <MessageCircleQuestion className="size-3 shrink-0 text-primary/50" />
+        <span className="text-[11px] font-medium text-muted-foreground/60">
+          Answered {questionAnswers.length} question{questionAnswers.length > 1 ? 's' : ''}
+        </span>
+      </button>
+      {expanded && (
+        <div className="border-t border-border/20 px-3 py-2 space-y-2">
+          {questionAnswers.map((qa, i) => (
+            <div key={i}>
+              <p className="text-[11px] font-medium text-foreground/70">{qa.question}</p>
+              <p className="text-[11px] text-primary/60">{qa.answer}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+})

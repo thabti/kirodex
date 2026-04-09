@@ -3,6 +3,8 @@ import ReactMarkdown, { type Components } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { CheckIcon, CopyIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { QuestionCards, hasQuestionBlocks, stripQuestionBlocks } from './QuestionCards'
+import { useSettingsStore } from '@/stores/settingsStore'
 
 interface ChatMarkdownProps {
   text: string
@@ -56,10 +58,30 @@ const CopyButton = memo(function CopyButton({ text }: { text: string }) {
 
 const remarkPlugins = [remarkGfm]
 
+/** Close unclosed markdown constructs so ReactMarkdown doesn't produce broken DOM mid-stream */
+function stabilizeStreamingMarkdown(text: string): string {
+  // Close unclosed code fences (```)
+  const fenceCount = (text.match(/^```/gm) || []).length
+  if (fenceCount % 2 !== 0) {
+    text += '\n```'
+  }
+  // Close unclosed inline backticks
+  const backticks = (text.match(/(?<!`)`(?!`)/g) || []).length
+  if (backticks % 2 !== 0) {
+    text += '`'
+  }
+  return text
+}
+
 /** Single source of prose styling — all typography lives here, nothing in tailwind.css */
 const PROSE_CLASSES = 'chat-markdown w-full min-w-0 text-sm leading-relaxed text-foreground/90'
 
 function ChatMarkdown({ text, isStreaming = false }: ChatMarkdownProps) {
+  const isPlanMode = useSettingsStore((s) => s.currentModeId === 'kiro_planner')
+  const displayText = isStreaming ? stabilizeStreamingMarkdown(text) : text
+  const showQuestions = useMemo(() => isPlanMode && hasQuestionBlocks(displayText), [isPlanMode, displayText])
+  const markdownText = useMemo(() => showQuestions ? stripQuestionBlocks(displayText) : displayText, [showQuestions, displayText])
+
   const components = useMemo<Components>(() => ({
     pre({ node, children, ...props }) {
       const block = extractCodeBlock(children)
@@ -103,8 +125,9 @@ function ChatMarkdown({ text, isStreaming = false }: ChatMarkdownProps) {
 
   return (
     <div className={cn(PROSE_CLASSES, isStreaming && 'streaming-cursor')}>
+      {showQuestions && <QuestionCards text={displayText} />}
       <ReactMarkdown remarkPlugins={remarkPlugins} components={components}>
-        {text}
+        {markdownText}
       </ReactMarkdown>
     </div>
   )

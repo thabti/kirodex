@@ -39,6 +39,8 @@ pub struct AppSettings {
     pub auto_approve: bool,
     #[serde(default = "default_true")]
     pub respect_gitignore: bool,
+    #[serde(default = "default_true")]
+    pub co_author: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub project_prefs: Option<std::collections::HashMap<String, ProjectPrefs>>,
 }
@@ -56,6 +58,7 @@ impl Default for AppSettings {
             default_model: None,
             auto_approve: false,
             respect_gitignore: true,
+            co_author: true,
             project_prefs: None,
         }
     }

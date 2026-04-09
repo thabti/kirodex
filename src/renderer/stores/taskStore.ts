@@ -390,21 +390,26 @@ export function initTaskListeners(): () => void {
     if (models && typeof models === 'object') {
       const m = models as { availableModels?: Array<{ modelId: string; name: string; description?: string | null }>; currentModelId?: string }
       if (m.availableModels) {
-        console.log('[session_init] setting models:', m.availableModels.length, 'current:', m.currentModelId)
+        const existingModel = useSettingsStore.getState().currentModelId
+        const validExistingModel = existingModel && m.availableModels.some((mod) => mod.modelId === existingModel)
         useSettingsStore.setState({
           availableModels: m.availableModels,
-          currentModelId: m.currentModelId ?? null,
+          ...(validExistingModel ? {} : { currentModelId: m.currentModelId ?? null }),
         })
       }
     }
     if (modes && typeof modes === 'object') {
       const md = modes as { availableModes?: Array<{ id: string; name: string; description?: string | null }>; currentModeId?: string }
       if (md.availableModes) {
-        console.log('[session_init] setting modes:', md.availableModes.length, 'current:', md.currentModeId)
+        const existingMode = useSettingsStore.getState().currentModeId
+        const validExistingMode = existingMode && md.availableModes.some((m) => m.id === existingMode)
         useSettingsStore.setState({
           availableModes: md.availableModes,
-          currentModeId: md.currentModeId ?? null,
+          ...(validExistingMode ? {} : { currentModeId: md.currentModeId ?? null }),
         })
+        if (validExistingMode && existingMode !== md.currentModeId && taskId !== '__probe__') {
+          ipc.setMode(taskId, existingMode).catch(() => {})
+        }
       }
     }
   })

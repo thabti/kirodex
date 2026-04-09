@@ -18,6 +18,7 @@ import { useDebugStore } from '@/stores/debugStore'
 import { useDiffStore } from '@/stores/diffStore'
 import { useKiroStore, initKiroListeners } from '@/stores/kiroStore'
 import { useShallow } from 'zustand/react/shallow'
+import { Onboarding } from '@/components/Onboarding'
 
 function EmptyState() {
   const projects = useTaskStore((s) => s.projects)
@@ -107,6 +108,8 @@ export function App() {
     useShallow((s) => ({ view: s.view, selectedTaskId: s.selectedTaskId, pendingWorkspace: s.pendingWorkspace }))
   )
   const debugOpen = useDebugStore((s) => s.isOpen)
+  const settingsLoaded = useSettingsStore((s) => s.isLoaded)
+  const hasOnboarded = useSettingsStore((s) => s.settings.hasOnboarded)
   // Sync active workspace → apply per-project model/autoApprove prefs
   useEffect(() => {
     const tasks = useTaskStore.getState().tasks
@@ -149,6 +152,8 @@ export function App() {
   const toggleSidebar = useCallback(() => setIsSidebarCollapsed((v) => !v), [])
 
   const showPlayground = view === 'playground'
+
+  if (settingsLoaded && !hasOnboarded) return <Onboarding />
 
   return (
     <TooltipProvider delayDuration={300}>

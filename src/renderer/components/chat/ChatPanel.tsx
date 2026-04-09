@@ -76,7 +76,7 @@ export const ChatPanel = memo(function ChatPanel() {
     const id = state.selectedTaskId
     const task = id ? state.tasks[id] : null
     if (task?.pendingPermission) {
-      ipc.selectPermissionOption(task.id, task.pendingPermission.requestId, optionId)
+      ipc.selectPermissionOption(task.id, task.pendingPermission.requestId, optionId).catch(() => {})
     }
   }, [])
 

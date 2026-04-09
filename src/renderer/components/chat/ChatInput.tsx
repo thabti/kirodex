@@ -3,7 +3,6 @@ import { ChevronDown, ShieldCheck, ShieldOff } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { useSettingsStore, type ModelOption } from '@/stores/settingsStore'
-import { useDebugStore } from '@/stores/debugStore'
 import { useTaskStore } from '@/stores/taskStore'
 import { ipc } from '@/lib/ipc'
 import { SlashCommandPicker } from './SlashCommandPicker'
@@ -189,36 +188,6 @@ const AutoApproveToggle = memo(function AutoApproveToggle() {
   )
 })
 
-// ── Log button ──────────────────────────────────────────────────────
-const LogButton = memo(function LogButton() {
-  const toggleDebug = useDebugStore((s) => s.toggleOpen)
-  const isOpen = useDebugStore((s) => s.isOpen)
-
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <button
-          type="button"
-          onClick={toggleDebug}
-          className={cn(
-            'flex items-center rounded-lg px-1.5 py-1 transition-colors',
-            isOpen
-              ? 'text-foreground/70 hover:bg-accent'
-              : 'text-muted-foreground/40 hover:bg-accent hover:text-muted-foreground',
-          )}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-            <path d="M8 9l3 3l-3 3" />
-            <line x1="13" y1="15" x2="16" y2="15" />
-            <rect x="3" y="4" width="18" height="16" rx="2" />
-          </svg>
-        </button>
-      </TooltipTrigger>
-      <TooltipContent side="top">Debug log</TooltipContent>
-    </Tooltip>
-  )
-})
-
 // ── Mode toggle (Chat / Plan) ───────────────────────────────────────
 const ModeToggle = memo(function ModeToggle() {
   const modes = useSettingsStore((s) => s.availableModes)
@@ -287,15 +256,20 @@ export const ChatInput = memo(function ChatInput({ disabled, contextUsage, messa
   const backendCommands = useSettingsStore((s) => s.availableCommands)
   const { panel, dismissPanel, execute } = useSlashAction()
 
-  // Merge backend commands with client-only commands (deduplicated)
+  // Merge backend commands with client-handled commands (always available, even before ACP connects)
   const commands = useMemo(() => {
-    const clientOnly: Array<{ name: string; description?: string }> = [
+    const clientCommands: Array<{ name: string; description?: string }> = [
       { name: 'settings', description: 'Open application settings' },
+      { name: 'clear', description: 'Clear the current conversation' },
+      { name: 'model', description: 'Switch the active AI model' },
+      { name: 'agent', description: 'Switch between agents or list available ones' },
+      { name: 'plan', description: 'Start the planning agent to design before building' },
+      { name: 'chat', description: 'Switch to chat mode' },
     ]
     const names = new Set(backendCommands.map((c) => c.name.replace(/^\/+/, '')))
     return [
       ...backendCommands,
-      ...clientOnly.filter((c) => !names.has(c.name)),
+      ...clientCommands.filter((c) => !names.has(c.name)),
     ]
   }, [backendCommands])
 
@@ -512,7 +486,8 @@ export const ChatInput = memo(function ChatInput({ disabled, contextUsage, messa
               <ModeToggle />
               <Sep />
               <AutoApproveToggle />
-              <LogButton />
+              <Sep />
+              <BranchSelector workspace={workspace ?? null} />
               {disabled && (
                 <span className="ml-2 text-[11px] text-muted-foreground/40">Task ended</span>
               )}
@@ -557,7 +532,6 @@ export const ChatInput = memo(function ChatInput({ disabled, contextUsage, messa
           </div>
         </div>
 
-        <BranchSelector workspace={workspace ?? null} />
       </div>
     </div>
   )

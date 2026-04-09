@@ -22,21 +22,50 @@ const priorityDot: Record<string, string> = {
 export const ExecutionPlan = memo(function ExecutionPlan({ steps }: ExecutionPlanProps) {
   const [expanded, setExpanded] = useState(true)
   const completed = steps.filter((s) => s.status === 'completed').length
+  const progress = steps.length > 0 ? (completed / steps.length) * 100 : 0
+  const isAllDone = completed === steps.length && steps.length > 0
 
   return (
-    <div className="my-2 rounded-lg border border-border/60 bg-card/40">
+    <div className={cn(
+      'my-2 overflow-hidden rounded-lg border bg-card/40 transition-colors',
+      isAllDone
+        ? 'border-emerald-500/30'
+        : 'border-primary/25',
+    )}>
       <button
         onClick={() => setExpanded(!expanded)}
+        aria-expanded={expanded}
+        aria-label={`Execution plan, ${completed} of ${steps.length} steps completed`}
         className="flex w-full items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-accent/10"
       >
-        <ListChecks className="size-4 text-muted-foreground" />
+        <ListChecks className={cn(
+          'size-4',
+          isAllDone ? 'text-emerald-400' : 'text-primary/70',
+        )} />
         <span className="flex-1 text-xs font-medium text-muted-foreground">
-          Plan ({completed}/{steps.length})
+          Plan
+          <span className="ml-1.5 tabular-nums">
+            {completed}/{steps.length}
+          </span>
         </span>
-        {expanded ? <ChevronDown className="size-3 text-muted-foreground" /> : <ChevronRight className="size-3 text-muted-foreground" />}
+        {expanded
+          ? <ChevronDown className="size-3 text-muted-foreground" />
+          : <ChevronRight className="size-3 text-muted-foreground" />}
       </button>
+
+      {/* progress bar */}
+      <div className="h-0.5 w-full bg-border/30">
+        <div
+          className={cn(
+            'h-full transition-all duration-500 ease-out',
+            isAllDone ? 'bg-emerald-400' : 'bg-primary/60',
+          )}
+          style={{ width: `${progress}%` }}
+        />
+      </div>
+
       {expanded && (
-        <ol className="border-t border-border/40 px-3 py-2 space-y-1">
+        <ol className="px-3 py-2 space-y-1" role="list">
           {steps.map((step, i) => (
             <li key={i} className="flex items-start gap-2 text-xs">
               {stepIcons[step.status] ?? stepIcons.pending}
@@ -48,7 +77,10 @@ export const ExecutionPlan = memo(function ExecutionPlan({ steps }: ExecutionPla
               )}>
                 {step.content}
               </span>
-              <span className={cn('mt-1.5 size-1.5 shrink-0 rounded-full', priorityDot[step.priority] ?? priorityDot.low)} />
+              <span className={cn(
+                'mt-1.5 size-1.5 shrink-0 rounded-full',
+                priorityDot[step.priority] ?? priorityDot.low,
+              )} />
             </li>
           ))}
         </ol>

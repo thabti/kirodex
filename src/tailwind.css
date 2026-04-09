@@ -280,11 +280,11 @@ input[type="search"] {
   content: '';
   display: inline-block;
   width: 2px;
-  height: 0.85em;
+  height: 1em;
   background: currentColor;
   opacity: 0.5;
   border-radius: 1px;
   margin-left: 2px;
-  vertical-align: text-bottom;
+  vertical-align: text-top;
   animation: cursor-fade 1s ease-in-out infinite;
 }

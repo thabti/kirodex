@@ -29,7 +29,7 @@ export function PendingChat({ workspace }: PendingChatProps) {
       <div className="flex flex-1 items-center justify-center">
         <p className="text-sm text-muted-foreground/40 select-none">New thread</p>
       </div>
-      <ChatInput disabled={false} onSendMessage={handleSend} />
+      <ChatInput disabled={false} onSendMessage={handleSend} workspace={workspace} />
     </div>
   )
 }

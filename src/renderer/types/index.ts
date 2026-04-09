@@ -52,6 +52,7 @@ export interface TaskMessage {
   timestamp: string
   toolCalls?: ToolCall[]
   thinking?: string
+  questionAnswers?: { question: string; answer: string }[]
 }
 
 // ── Task ──────────────────────────────────────────────────────────
@@ -111,7 +112,9 @@ export interface AppSettings {
   defaultModel?: string | null
   autoApprove?: boolean
   respectGitignore?: boolean
+  coAuthor?: boolean
   projectPrefs?: Record<string, ProjectPrefs>
+  hasOnboarded?: boolean
 }
 
 export interface ProjectFile {

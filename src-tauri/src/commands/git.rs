@@ -5,6 +5,7 @@ use std::path::Path;
 
 use super::acp::AcpState;
 use super::error::AppError;
+use super::settings::SettingsState;
 
 #[derive(Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -110,6 +111,7 @@ pub fn git_create_branch(cwd: String, branch: String) -> Result<BranchResult, Ap
 #[tauri::command]
 pub fn git_commit(
     state: tauri::State<'_, AcpState>,
+    settings_state: tauri::State<'_, SettingsState>,
     task_id: String,
     message: String,
 ) -> Result<String, AppError> {
@@ -122,6 +124,12 @@ pub fn git_commit(
     let tree = repo.find_tree(tree_oid)?;
     let sig = repo.signature()?;
     let parent = repo.head()?.peel_to_commit()?;
+    let co_author = settings_state.0.lock().map(|s| s.settings.co_author).unwrap_or(true);
+    let message = if co_author {
+        format!("{message}\n\nCo-authored-by: Kirodex <274876363+kirodex@users.noreply.github.com>")
+    } else {
+        message
+    };
     let oid = repo.commit(Some("HEAD"), &sig, &sig, &message, &tree, &[&parent])?;
     Ok(oid.to_string())
 }

@@ -1,5 +1,96 @@
 # Activity Log
 
+## 2026-04-09 20:50 GST (Dubai, UTC+4)
+
+### Fixed permission approval crash (Allow Always / Yes)
+
+The `request_permission` method in `acp.rs` was constructing `RequestPermissionResponse` via `serde_json::from_value(...).unwrap()` with hand-crafted JSON. If the ACP SDK's expected type shape didn't match (e.g., after a schema version bump), the `unwrap()` would panic and kill the ACP connection thread, crashing the app.
+
+Replaced all three `serde_json::from_value(...).unwrap()` calls with proper SDK constructors:
+- `acp::RequestPermissionResponse::new(acp::RequestPermissionOutcome::Selected(...))`
+- `acp::RequestPermissionResponse::new(acp::RequestPermissionOutcome::Cancelled)`
+
+Also fixed the same pattern in `MinimalClient` and `ProbeClient` implementations, and added `.catch()` to the frontend `selectPermissionOption` IPC call to prevent unhandled promise rejections.
+
+**Build:** `cargo check` ✓ | `tsc --noEmit` ✓
+
+**Modified:** `src-tauri/src/commands/acp.rs`, `src/renderer/components/chat/ChatPanel.tsx`
+
+## 2026-04-09 19:15 GST (Dubai, UTC+4)
+
+### Validated mode toggle inversion fix
+
+Traced the full session_init flow for mode and model preservation. The fix was already in place in `taskStore.ts` lines 389-414. Validated five scenarios: user clicks Plan (preserved), fresh app start (falls back to backend default), user's mode removed from backend (falls back), /plan slash command (preserved), and ACP reconnect (re-syncs via ipc.setMode). Both mode and model use identical protection logic.
+
+**No files modified** — validation only.
+
+## 2026-04-09 18:51 GST (Dubai, UTC+4)
+
+### Replaced raw question answers with collapsed Q&A summary
+
+The raw `2=c, 3=a` user message was replaced with a collapsible "Answered N questions" card (collapsed by default). Clicking expands to show each question with its selected answer.
+
+- Created `CollapsedAnswers.tsx` following the same pattern as `ToolCallDisplay`
+- Added `questionAnswers` field to `TaskMessage` and `UserMessageRow` types
+- `handleContinue` in `QuestionCards.tsx` now builds Q&A metadata (question text + option text) and attaches to the user message
+- `deriveTimeline` passes `questionAnswers` through to timeline rows
+- `UserMessageRow` in `TimelineRows.tsx` renders `CollapsedAnswers` when metadata present; raw text still sent to IPC
+
+**Build:** `tsc --noEmit` ✓ | `vite build` ✓
+
+**Modified:** `CollapsedAnswers.tsx` (new), `QuestionCards.tsx`, `TimelineRows.tsx`, `timeline.ts`, `types/index.ts`
+
+## 2026-04-09 18:49 GST (Dubai, UTC+4)
+
+### Styled question card container and option buttons
+
+- Card container: `bg-card/80` → `bg-muted` for accessible contrast against dark background
+- Option buttons: added subtle `border-border/40`, `cursor-pointer`, lighter text (`text-foreground/60`), hover transitions to `border-primary/30`
+- Selected state: `border-primary/30 bg-primary/8`
+- Extra text input: `text-black dark:text-white` for readable input text
+
+**Build:** `tsc --noEmit` ✓
+
+**Modified:** `QuestionCards.tsx`
+
+## 2026-04-09 18:40 GST (Dubai, UTC+4)
+
+### Fixed QuestionCards Continue button to navigate between questions
+
+Continue button was submitting all answers immediately. Changed to advance to the next unanswered question first, only submitting when all are answered. Button label shows "Next" or "Submit" based on state. Extra text input now combines with the current question's selection (e.g., `1=a, extra context`).
+
+**Build:** `tsc --noEmit` ✓
+
+**Modified:** `QuestionCards.tsx`
+
+## 2026-04-09 18:57 GST (Dubai, UTC+4)
+
+### Planned 3 codebase improvements for Kirodex
+
+Analyzed the full codebase and drafted three improvement proposals:
+
+1. **Harden `acp.rs` and split the monolith** — 1,082 LOC file with 11 `unwrap()` calls, `std::sync::Mutex` everywhere, no graceful shutdown. Plan: split into `acp/types.rs`, `acp/client.rs`, `acp/connection.rs`; replace unwraps; switch to `parking_lot::Mutex`; add `CancellationToken`.
+
+2. **Conversation persistence + error surfacing** — History is memory-only (lost on close), 21 `catch(() => {})` calls swallow errors silently. Plan: persist conversations to disk via Tauri fs plugin; replace swallowed catches with centralized error handler + sonner toasts; split `taskStore.ts` (441 LOC) into focused stores.
+
+3. **Test foundation** — Zero tests in Rust or frontend. Plan: add Rust unit tests for `error.rs`, `kiro_config.rs`, `fs_ops.rs`, `settings.rs`; configure Vitest for frontend; test `deriveTimeline`, `taskStore` reducers, `ipc` listeners.
+
+Asked 5 follow-up questions about priority, persistence scope, architecture coupling, multi-window support, and test framework preference.
+
+**No files modified** — planning session only.
+
+## 2026-04-09 17:52 GST (Dubai, UTC+4)
+
+### Added QuestionCards UI for plan mode questions
+
+When the AI asks numbered questions with lettered options (e.g., `[1]: Which docs? a. README b. CONTRIBUTING`), they now render as styled cards instead of plain markdown. Each question gets a bordered card with a numbered badge, and options are listed with monospace letter labels and hover highlights.
+
+- Created `QuestionCards.tsx` with regex-based parser for `[N]: question\na. option` patterns
+- Integrated into `ChatMarkdown.tsx` — detects question blocks and renders cards above the markdown
+
+**Build:** `tsc --noEmit` ✓ | `vite build` ✓
+
+**Modified:** `src/renderer/components/chat/QuestionCards.tsx` (new), `src/renderer/components/chat/ChatMarkdown.tsx`
 
 ## 2026-04-09 14:41 GST (Dubai, UTC+4)
 
@@ -367,3 +458,18 @@ The frontend is now the sole source of truth for conversation history. Backend e
 
 ## 2026-04-09 16:43 (Dubai)
 - Fixed README description: removed incorrect claim that Codex/T3Code are browser apps, repositioned Kirodex as a desktop app differentiated by Kiro CLI + ACP
+
+## 2026-04-09 19:15 (Dubai)
+- Improved ExecutionPlan component UI: accent-colored border (primary while running, emerald when done), progress bar between header and step list, aria-expanded/aria-label for accessibility, tabular-nums on counter, smoother transitions. Build validated (tsc + vite).
+
+## 2026-04-09 21:24 (Dubai)
+- Added Co-authored-by trailer to all git commits made through Kirodex. Every commit now appends `Co-authored-by: Kirodex <274876363+kirodex@users.noreply.github.com>` to the message. Modified `git_commit` in `git.rs`.
+
+## 2026-04-09 21:27 (Dubai)
+- Added co-author toggle to Settings > Misc tab. When enabled (default), commits include `Co-authored-by: Kirodex` trailer. Users can disable it from the new Misc tab. Changes: `settings.rs` (Rust struct + default), `git.rs` (conditional trailer via SettingsState), `index.ts` (TS type), `SettingsPanel.tsx` (Misc tab + toggle).
+
+## 2026-04-09 21:40 (Dubai)
+- Centered the "Found kiro-cli" state in the onboarding card: icon stacked above text, path centered below, removed left-aligned `pl-6` indent. Modified `Onboarding.tsx`.
+
+## 2026-04-09 21:41 (Dubai)
+- Matched header background to sidebar: added `bg-card` to both the main header and fallback header in `AppHeader.tsx`. Sidebar already uses `bg-card`.
