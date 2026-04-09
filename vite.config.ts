@@ -1,10 +1,26 @@
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "node:path";
 
+// Redirect all shiki / @shikijs imports to lightweight stubs.
+// Eliminates ~300 language grammar chunks (~8MB) from the bundle.
+function shikiStubPlugin(): Plugin {
+  const shikiStub = path.resolve(__dirname, "src/renderer/lib/shiki-stub.ts");
+  const transformersStub = path.resolve(__dirname, "src/renderer/lib/shikijs-transformers-stub.ts");
+  return {
+    name: "shiki-stub",
+    enforce: "pre",
+    resolveId(source) {
+      if (source === "@shikijs/transformers") return transformersStub;
+      if (source === "shiki" || source.startsWith("shiki/")) return shikiStub;
+      if (source.startsWith("@shikijs/")) return shikiStub;
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [tailwindcss(), react()],
+  plugins: [shikiStubPlugin(), tailwindcss(), react()],
   root: ".",
   base: "/",
   clearScreen: false,
@@ -18,11 +34,12 @@ export default defineConfig({
     outDir: "dist",
     emptyOutDir: true,
     chunkSizeWarningLimit: 800,
+    target: "safari16",
+    minify: true,
+    cssMinify: true,
     rollupOptions: {
       output: {
         manualChunks(id) {
-          // Skip shiki grammars/themes — they're already lazy-loaded individually
-          if (id.includes("shiki") || id.includes("@shikijs")) return;
           if (id.includes("@pierre")) return "vendor-diffs";
           if (id.includes("node_modules/react/") || id.includes("node_modules/react-dom/")) return "vendor-react";
           if (id.includes("react-markdown") || id.includes("remark") || id.includes("rehype") || id.includes("unified") || id.includes("mdast") || id.includes("hast") || id.includes("micromark")) return "vendor-markdown";

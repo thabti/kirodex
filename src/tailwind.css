@@ -121,14 +121,17 @@
   --warning-foreground: var(--color-amber-400);
 }
 
+/* Scale UI via font-size instead of zoom — CSS zoom breaks viewport units
+   (100vh stays unzoomed while content grows), clipping the bottom in Tauri
+   production builds where the webview doesn't compensate for zoom. */
 html {
-  zoom: 1;
+  font-size: 100%;
 }
 @media (min-width: 900px) {
-  html { zoom: 1.0625; }
+  html { font-size: 106.25%; }
 }
 @media (min-width: 1100px) {
-  html { zoom: 1.125; }
+  html { font-size: 112.5%; }
 }
 
 body {
@@ -159,9 +162,22 @@ body,
   overscroll-behavior-y: none;
 }
 
-/* Window drag is handled by startDragging() API in AppHeader.tsx.
-   The old CSS -webkit-app-region approach doesn't propagate to children
-   in Tauri v2, so we use the JS API instead. */
+/* Window drag region — data-tauri-drag-region needs CSS app-region backing.
+   The attribute alone is not sufficient; the webview uses this CSS property
+   for native hit-testing. Interactive children (buttons, inputs) are excluded. */
+*[data-tauri-drag-region] {
+  -webkit-app-region: drag;
+}
+
+*[data-tauri-drag-region] button,
+*[data-tauri-drag-region] a,
+*[data-tauri-drag-region] input,
+*[data-tauri-drag-region] textarea,
+*[data-tauri-drag-region] select,
+*[data-tauri-drag-region] [role="button"],
+*[data-tauri-drag-region] [data-no-drag] {
+  -webkit-app-region: no-drag;
+}
 
 /* Scrollbar styling */
 ::-webkit-scrollbar {

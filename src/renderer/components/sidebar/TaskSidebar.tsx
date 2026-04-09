@@ -14,10 +14,10 @@ import type { AgentTask } from '@/types'
 
 const KiroConfigFooter = memo(function KiroConfigFooter() {
   const [collapsed, setCollapsed] = useState(false)
-  const [height, setHeight] = useState(200)
+  const [height, setHeight] = useState(160)
   const dragging = useRef(false)
   const startY = useRef(0)
-  const startH = useRef(200)
+  const startH = useRef(160)
 
   const toggleCollapse = useCallback(() => setCollapsed((v) => !v), [])
 
@@ -474,7 +474,7 @@ export const TaskSidebar = memo(function TaskSidebar() {
   const openSettings = useCallback(() => setSettingsOpen(true), [setSettingsOpen])
 
   return (
-    <div className="flex h-full min-h-0 w-60 shrink-0 flex-col border-r bg-card text-foreground">
+    <div className="flex h-full min-h-0 w-60 shrink-0 flex-col border-r bg-card pl-1 text-foreground">
       <ScrollArea className="min-h-0 flex-1">
         <div className="px-3 py-2">
           {/* Projects section */}
@@ -534,39 +534,31 @@ export const TaskSidebar = memo(function TaskSidebar() {
       {/* Kiro Config (agents, skills, steering, MCP) — collapsible, resizable */}
       <KiroConfigFooter />
 
-      <div className="flex shrink-0 flex-col gap-2 p-2">
-        <ul className="flex w-full min-w-0 flex-col gap-1">
-          <li>
-            <button
-              type="button"
-              onClick={() => setView('playground')}
-              className="flex w-full h-7 cursor-pointer items-center gap-2 overflow-hidden rounded-lg px-2 py-1.5 text-xs text-muted-foreground/70 hover:bg-accent hover:text-foreground transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <FlaskConical className="size-3.5" aria-hidden />
-              <span className="text-xs">Playground</span>
-            </button>
-          </li>
-          <li>
-            <button
-              type="button"
-              onClick={() => useDebugStore.getState().toggleOpen()}
-              className="flex w-full h-7 cursor-pointer items-center gap-2 overflow-hidden rounded-lg px-2 py-1.5 text-xs text-muted-foreground/70 hover:bg-accent hover:text-foreground transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <Bug className="size-3.5" aria-hidden />
-              <span className="text-xs">Debug</span>
-            </button>
-          </li>
-          <li>
-            <button
-              type="button"
-              onClick={openSettings}
-              className="flex w-full h-7 cursor-pointer items-center gap-2 overflow-hidden rounded-lg px-2 py-1.5 text-xs text-muted-foreground/70 hover:bg-accent hover:text-foreground transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <Settings className="size-3.5" aria-hidden />
-              <span className="text-xs">Settings</span>
-            </button>
-          </li>
-        </ul>
+      <div className="flex shrink-0 flex-col gap-1 px-2 pb-4 pt-1.5">
+        <button
+          type="button"
+          onClick={() => setView('playground')}
+          className="flex w-full h-6 cursor-pointer items-center gap-2 overflow-hidden rounded-lg px-2 text-xs text-muted-foreground/70 hover:bg-accent hover:text-foreground transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <FlaskConical className="size-3.5" aria-hidden />
+          <span className="text-xs">Playground</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => useDebugStore.getState().toggleOpen()}
+          className="flex w-full h-6 cursor-pointer items-center gap-2 overflow-hidden rounded-lg px-2 text-xs text-muted-foreground/70 hover:bg-accent hover:text-foreground transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <Bug className="size-3.5" aria-hidden />
+          <span className="text-xs">Debug</span>
+        </button>
+        <button
+          type="button"
+          onClick={openSettings}
+          className="flex w-full h-6 cursor-pointer items-center gap-2 overflow-hidden rounded-lg px-2 text-xs text-muted-foreground/70 hover:bg-accent hover:text-foreground transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <Settings className="size-3.5" aria-hidden />
+          <span className="text-xs">Settings</span>
+        </button>
       </div>
     </div>
   )

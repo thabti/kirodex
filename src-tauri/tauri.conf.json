@@ -7,7 +7,8 @@
     "frontendDist": "../dist",
     "devUrl": "http://localhost:5174",
     "beforeDevCommand": "bun run dev:renderer",
-    "beforeBuildCommand": "bun run build:renderer"
+    "beforeBuildCommand": "bun run build:renderer",
+    "removeUnusedCommands": true
   },
   "app": {
     "macOSPrivateApi": true,

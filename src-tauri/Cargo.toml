@@ -19,7 +19,7 @@ tauri-plugin-fs = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 serde_yaml = "0.9"
-tokio = { version = "1", features = ["full"] }
+tokio = { version = "1", features = ["rt", "rt-multi-thread", "macros", "sync", "io-util", "time", "process"] }
 tokio-util = { version = "0.7", features = ["compat"] }
 async-trait = "0.1"
 agent-client-protocol = { version = "0.10.4", features = ["unstable_session_model", "unstable_session_usage", "unstable_session_fork", "unstable_cancel_request", "unstable_message_id"] }
@@ -41,7 +41,12 @@ confy = "0.6"
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 
+[profile.dev]
+incremental = true
+
 [profile.release]
 strip = true
 lto = true
 codegen-units = 1
+opt-level = "s"
+panic = "abort"
