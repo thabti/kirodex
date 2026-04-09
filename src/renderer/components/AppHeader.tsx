@@ -210,14 +210,14 @@ function AppHeaderInner({ sidePanelOpen, onToggleSidePanel, isSidebarCollapsed, 
   const hasStats = diffStats.additions > 0 || diffStats.deletions > 0
 
   return (
-    <header onMouseDown={handleHeaderMouseDown} className="flex h-[44px] shrink-0 items-center gap-3 border-b border-border bg-card px-4 pl-[90px] select-none [-webkit-user-select:none]">
+    <header data-tauri-drag-region onMouseDown={handleHeaderMouseDown} className="flex h-[44px] shrink-0 items-center gap-3 border-b border-border bg-card px-4 pl-[90px] select-none [-webkit-user-select:none]">
       {/* Breadcrumb left */}
-      <nav className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
+      <nav data-tauri-drag-region className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
         {/* Logo / app name */}
-        <span className="shrink-0 text-sm font-medium tracking-tight text-muted-foreground">
+        <span data-tauri-drag-region className="shrink-0 text-sm font-medium tracking-tight text-muted-foreground">
           Kirodex
         </span>
-        <span className="shrink-0 rounded-full bg-muted/50 px-1.5 py-0.5 text-[8px] font-medium uppercase tracking-[0.18em] text-muted-foreground/50">
+        <span data-tauri-drag-region className="shrink-0 rounded-full bg-muted/50 px-1.5 py-0.5 text-[8px] font-medium uppercase tracking-[0.18em] text-muted-foreground/50">
           Beta
         </span>
 
@@ -241,7 +241,7 @@ function AppHeaderInner({ sidePanelOpen, onToggleSidePanel, isSidebarCollapsed, 
         {projectName && (
           <>
             <Sep />
-            <span className="min-w-0 max-w-[160px] truncate text-[13px] text-muted-foreground" title={workspace ?? undefined}>
+            <span data-tauri-drag-region className="min-w-0 max-w-[160px] truncate text-[13px] text-muted-foreground" title={workspace ?? undefined}>
               {projectName}
             </span>
           </>
@@ -251,7 +251,7 @@ function AppHeaderInner({ sidePanelOpen, onToggleSidePanel, isSidebarCollapsed, 
         {task ? (
           <>
             <Sep />
-            <span className="min-w-0 max-w-[200px] truncate text-[13px] font-medium text-foreground" title={task.name}>
+            <span data-tauri-drag-region className="min-w-0 max-w-[200px] truncate text-[13px] font-medium text-foreground" title={task.name}>
               {task.name}
             </span>
           </>

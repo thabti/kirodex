@@ -476,7 +476,7 @@ export const TaskSidebar = memo(function TaskSidebar() {
   return (
     <div className="flex h-full min-h-0 w-60 shrink-0 flex-col border-r bg-card text-foreground">
       <ScrollArea className="min-h-0 flex-1">
-        <div className="p-2">
+        <div className="px-3 py-2">
           {/* Projects section */}
           <div className="relative flex w-full min-w-0 flex-col">
             {/* Group header */}

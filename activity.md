@@ -531,3 +531,11 @@ Added drag-and-drop, paste, and file picker support for attaching files and imag
 
 ## 2026-04-09 22:16 (Dubai)
 - Added right-click context menu on project names in sidebar with: Open in Finder (uses existing `openUrl` IPC), Edit Name (inline input with rename via `projectNames` store), Archive Threads (removes all threads but keeps project), Delete (with visual separator). Added `archiveThreads` store method. Wired `projectNames` into the sidebar so custom names persist. Modified `TaskSidebar.tsx` and `taskStore.ts`.
+
+## 2026-04-09 22:44 (Dubai)
+- Code-split the app using rolldown-vite:
+  - Switched bundler from Vite/Rollup to rolldown-vite 7.3.1 (4x faster builds: 1.24s vs ~5.3s)
+  - Added `manualChunks` splitting 6 vendor chunks: react (181KB), markdown (135KB), xterm (279KB), diffs (474KB), icons (24KB), tauri (19KB)
+  - Lazy-loaded 6 heavy components via `React.lazy()`: ChatPanel, Playground, CodePanel, DebugPanel, SettingsPanel, Onboarding
+  - Main index chunk: 231KB (down from 1,385KB — 83% reduction)
+  - Modified: `package.json`, `vite.config.ts`, `App.tsx`

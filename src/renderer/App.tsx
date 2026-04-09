@@ -1,24 +1,24 @@
-import { useEffect, useCallback, useState } from 'react'
+import { useEffect, useCallback, useState, lazy, Suspense } from 'react'
 import { Toaster, toast } from 'sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { AppHeader } from '@/components/AppHeader'
 import { TaskSidebar } from '@/components/sidebar/TaskSidebar'
-import { ChatPanel } from '@/components/chat/ChatPanel'
-import { Playground } from '@/components/Playground'
+const ChatPanel = lazy(() => import('@/components/chat/ChatPanel').then(m => ({ default: m.ChatPanel })))
+const Playground = lazy(() => import('@/components/Playground').then(m => ({ default: m.Playground })))
 import { PendingChat } from '@/components/chat/PendingChat'
 import { NewProjectSheet } from '@/components/task/NewProjectSheet'
 import { ipc } from '@/lib/ipc'
-import { SettingsPanel } from '@/components/settings/SettingsPanel'
-import { CodePanel } from '@/components/code/CodePanel'
-import { DebugPanel } from '@/components/debug/DebugPanel'
+const SettingsPanel = lazy(() => import('@/components/settings/SettingsPanel').then(m => ({ default: m.SettingsPanel })))
+const CodePanel = lazy(() => import('@/components/code/CodePanel').then(m => ({ default: m.CodePanel })))
+const DebugPanel = lazy(() => import('@/components/debug/DebugPanel').then(m => ({ default: m.DebugPanel })))
 import { useTaskStore, initTaskListeners } from '@/stores/taskStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useDebugStore } from '@/stores/debugStore'
 import { useDiffStore } from '@/stores/diffStore'
 import { useKiroStore, initKiroListeners } from '@/stores/kiroStore'
 import { useShallow } from 'zustand/react/shallow'
-import { Onboarding } from '@/components/Onboarding'
+const Onboarding = lazy(() => import('@/components/Onboarding').then(m => ({ default: m.Onboarding })))
 
 function EmptyState() {
   const projects = useTaskStore((s) => s.projects)
@@ -153,7 +153,7 @@ export function App() {
 
   const showPlayground = view === 'playground'
 
-  if (settingsLoaded && !hasOnboarded) return <Onboarding />
+  if (settingsLoaded && !hasOnboarded) return <Suspense><Onboarding /></Suspense>
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -176,20 +176,22 @@ export function App() {
           <main className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
             <ErrorBoundary>
               <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-                {showPlayground ? (
-                  <Playground />
-                ) : selectedTaskId ? (
-                  <ChatPanel />
-                ) : pendingWorkspace ? (
-                  <PendingChat workspace={pendingWorkspace} />
-                ) : (
-                  <EmptyState />
-                )}
+                <Suspense>
+                  {showPlayground ? (
+                    <Playground />
+                  ) : selectedTaskId ? (
+                    <ChatPanel />
+                  ) : pendingWorkspace ? (
+                    <PendingChat workspace={pendingWorkspace} />
+                  ) : (
+                    <EmptyState />
+                  )}
+                </Suspense>
               </div>
             </ErrorBoundary>
             {sidePanelOpen && selectedTaskId && !showPlayground && (
               <ErrorBoundary>
-                <CodePanel onClose={closeSidePanel} />
+                <Suspense><CodePanel onClose={closeSidePanel} /></Suspense>
               </ErrorBoundary>
             )}
           </main>
@@ -198,7 +200,7 @@ export function App() {
         {/* Bottom debug panel */}
         {debugOpen && (
           <ErrorBoundary>
-            <DebugPanel />
+            <Suspense><DebugPanel /></Suspense>
           </ErrorBoundary>
         )}
       </div>
@@ -206,7 +208,7 @@ export function App() {
         <NewProjectSheet />
       </ErrorBoundary>
       <ErrorBoundary>
-        <SettingsPanel />
+        <Suspense><SettingsPanel /></Suspense>
       </ErrorBoundary>
       <Toaster position="bottom-right" toastOptions={{ duration: 8000 }} theme="system" />
     </TooltipProvider>
