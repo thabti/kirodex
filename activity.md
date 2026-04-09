@@ -1,6 +1,20 @@
 # Activity Log
 
 
+
+## 2026-04-10 01:45 GST (Dubai, UTC+4)
+
+### Rewrote README.md — stripped fluff, developer-focused
+
+Rewrote the entire README targeting contributing developers. Removed: sponsorship banner, Codex/T3Code comparisons, inspiration section, jokes, "© 2026 All rights reserved", duplicate Project Structure (kept in CONTRIBUTING.md), standalone Configuration section. Added: MIT/Rust/Platform badges, screenshot placeholder comment, CONTRIBUTING.md link from Architecture section. Merged Quick Start + Development into single Getting Started section. Grouped Features into four categories (Chat & Agents, Code & Diffs, Git, Terminal & Settings).
+
+**Modified:** `README.md`
+## 2026-04-10 01:39 GST (Dubai, UTC+4)
+
+### Git commit and push — `a3a2c1c`
+
+Staged all changes, committed with conventional commit message, and pushed to `main`. Commit includes sidebar rebuild, mode-colored input, title bar background, transparency removal, question card changes, and spacing tweaks.
+
 ## 2026-04-10 01:02 GST (Dubai, UTC+4)
 
 ### Mode-based input border and button colors

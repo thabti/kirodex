@@ -1,73 +1,48 @@
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Rust](https://img.shields.io/badge/Rust-%3E%3D1.78-orange.svg)](https://rustup.rs)
+[![Platform](https://img.shields.io/badge/Platform-macOS-lightgrey.svg)]()
+
 <img src="src-tauri/icons/icon.png" alt="Kirodex" height="80" width="80"/>
 
-# Kirodex - Sponsored by <a href="https://lastline.app"><img src="assets/lastline-logo.png" alt="Lastline" height="20"></a> [**Lastline**](https://lastline.app)
+# Kirodex
 
-A native macOS desktop client for AI coding agents, powered by [Kiro CLI](https://kiro.dev)
+A native macOS desktop client for [Kiro CLI](https://kiro.dev) AI coding agents, built with [Tauri v2](https://v2.tauri.app) (Rust) and React 19 (TypeScript).
 
-Kirodex is a desktop app for working with AI coding agents. Think of it as what [OpenAI Codex](https://openai.com/index/codex/) and [T3Code](https://t3.chat/code) do, but powered by [Kiro CLI](https://kiro.dev) and the open [Agent Client Protocol](https://github.com/anthropics/agent-client-protocol).
-
-Instead of running `kiro-cli` in a terminal, you get a dedicated window with a chat UI, task management, syntax-highlighted diffs, an integrated terminal, and git operations.
-
-Built with [Tauri v2](https://v2.tauri.app) (Rust) and React 19 (TypeScript).
+<!-- TODO: add screenshot or GIF of the app here -->
+<!-- Example: ![Kirodex screenshot](assets/screenshot.png) -->
 
 ## Features
 
-- **Chat interface** for AI agents via the [Agent Client Protocol](https://crates.io/crates/agent-client-protocol) SDK
-- **Slash commands** — `/clear`, `/model`, `/agent`, `/plan`, `/chat` with inline model picker and MCP server panels
-- **Task management** — create, pause, resume, cancel, delete. Send button swaps to pause while the agent runs.
-- **Code diffs** — syntax-highlighted inline and side-by-side views. Click a file operation in chat to jump to that file.
-- **Integrated terminal** — PTY emulation with xterm.js
-- **Git operations** — branch, stage, commit, push, revert, all through [git2](https://crates.io/crates/git2) (libgit2)
-- **Collapsible sidebar** with ⌘B shortcut and skeleton empty state
-- **Settings panel** for kiro-cli path, models, and per-project preferences
-- **Native macOS** window with vibrancy effects and overlay title bar
-- **Syntax highlighting** powered by [Shiki](https://shiki.style) with multiple themes
+**Chat and agents**
+- Chat interface via the [Agent Client Protocol](https://github.com/anthropics/agent-client-protocol) SDK
+- Slash commands (`/clear`, `/model`, `/agent`, `/plan`, `/chat`) with inline model picker and MCP server panels
+- Task management: create, pause, resume, cancel, delete
 
-## Quick start
+**Code and diffs**
+- Syntax-highlighted inline and side-by-side diff views ([Shiki](https://shiki.style))
+- Click a file operation in chat to jump to that file
 
-### Prerequisites
+**Git**
+- Branch, stage, commit, push, revert through [git2](https://crates.io/crates/git2) (no shell commands)
 
-- macOS (uses macOS-specific window APIs)
-- [Rust](https://rustup.rs) >= 1.78
-- [Bun](https://bun.sh) >= 1.0 (or Node.js >= 20)
-- [kiro-cli](https://kiro.dev) installed and in your PATH
+**Terminal and settings**
+- Integrated PTY terminal (xterm.js)
+- Settings panel for kiro-cli path, models, and per-project preferences
 
-### Install and run
+## Getting started
+
+Prerequisites: macOS, [Rust](https://rustup.rs) >= 1.78, [Bun](https://bun.sh) >= 1.0 (or Node >= 20), [kiro-cli](https://kiro.dev) in your PATH.
 
 ```bash
-# Clone
 git clone https://github.com/thabti/kirodex.git
 cd kirodex
-
-# Install dependencies
 bun install
-
-# Start dev mode
 bun run dev
 ```
 
-This starts Vite on `localhost:5174`, compiles the Rust backend, and opens the Kirodex window.
+This starts Vite on `localhost:5174`, compiles the Rust backend, and opens the Kirodex window. The first build compiles ~430 crates and takes a few minutes. Subsequent builds are incremental (~2s).
 
-> **First build takes a few minutes.** Cargo compiles ~430 crates including libgit2 and libssh2. Subsequent builds are incremental (~2s).
-
-### Don't have Rust?
-
-```bash
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-source "$HOME/.cargo/env"
-```
-
-### Production build
-
-```bash
-bun run build
-```
-
-Produces `Kirodex.app` and `Kirodex_0.1.0_aarch64.dmg` in `src-tauri/target/release/bundle/`. The release binary is ~8 MB on arm64 thanks to LTO and symbol stripping.
-
-> **Note:** The DMG is not code-signed. Recipients need to run `xattr -cr /path/to/Kirodex.app` before opening, or right-click → Open.
-
-## Development
+The app auto-detects kiro-cli at `~/.local/bin/kiro-cli`, `/usr/local/bin/kiro-cli`, `~/.kiro/bin/kiro-cli`, or `/opt/homebrew/bin/kiro-cli`. Falls back to `which kiro-cli`.
 
 | Command | What it does |
 |---------|-------------|
@@ -78,7 +53,7 @@ Produces `Kirodex.app` and `Kirodex_0.1.0_aarch64.dmg` in `src-tauri/target/rele
 | `bun run test:rust` | Run Rust tests |
 | `bun run clean` | Remove build artifacts |
 
-Frontend changes hot-reload instantly. Rust changes trigger an incremental recompile (~2s).
+> The DMG is not code-signed. Run `xattr -cr /path/to/Kirodex.app` before opening, or right-click → Open.
 
 ## Architecture
 
@@ -100,44 +75,23 @@ Frontend changes hot-reload instantly. Rust changes trigger an incremental recom
 └─────────────────────────────────────────────────┘
 ```
 
-| Module | What it does |
-|--------|-------------|
-| `acp.rs` | Spawns `kiro-cli acp` as a subprocess, implements the ACP `Client` trait. Each connection runs on a dedicated OS thread with a single-threaded tokio runtime (the SDK uses `!Send` futures). Communicates with the Tauri async runtime via `mpsc` channels. |
-| `git.rs` | Git operations via [`git2`](https://crates.io/crates/git2) (libgit2 bindings). Branch, stage, commit, push, revert, diff — no shell commands. |
-| `settings.rs` | Config persistence via [`confy`](https://crates.io/crates/confy). Handles XDG/macOS paths automatically. |
-| `fs_ops.rs` | File operations, kiro-cli detection via [`which`](https://crates.io/crates/which), project file listing via git2 index. |
-| `kiro_config.rs` | `.kiro/` config discovery. Parses agents, skills, steering rules, and MCP servers. Frontmatter parsed with [`serde_yaml`](https://crates.io/crates/serde_yaml). |
-| `pty.rs` | Terminal emulation via [`portable-pty`](https://crates.io/crates/portable-pty). |
-| `error.rs` | Shared `AppError` type via [`thiserror`](https://crates.io/crates/thiserror) with `From` impls for git2, IO, JSON, and confy errors. |
+| Module | Purpose |
+|--------|---------|
+| `acp.rs` | Spawns `kiro-cli acp` as a subprocess, implements the ACP `Client` trait. Runs on a dedicated OS thread with a single-threaded tokio runtime (`!Send` futures). Communicates with Tauri via `mpsc` channels. |
+| `git.rs` | Git operations via `git2` (libgit2). Branch, stage, commit, push, revert, diff. |
+| `settings.rs` | Config persistence via `confy`. Handles XDG/macOS paths. |
+| `fs_ops.rs` | File operations, kiro-cli detection via `which`, project file listing via git2 index. |
+| `kiro_config.rs` | `.kiro/` config discovery. Parses agents, skills, steering rules, MCP servers. Frontmatter via `serde_yaml`. |
+| `pty.rs` | Terminal emulation via `portable-pty`. |
+| `error.rs` | Shared `AppError` type via `thiserror` with `From` impls for git2, IO, JSON, confy errors. |
 
-## Project structure
-
-```
-kirodex/
-├── src/renderer/              # React frontend
-│   ├── components/            # UI components (chat, sidebar, diff, settings, ...)
-│   ├── stores/                # Zustand state (task, settings, diff, debug, kiro)
-│   ├── hooks/                 # Custom hooks (useSlashAction)
-│   ├── lib/                   # IPC bridge, timeline, utilities
-│   ├── types/                 # TypeScript type definitions
-│   ├── App.tsx                # Root layout
-│   └── main.tsx               # Entry point
-├── src-tauri/
-│   ├── src/commands/          # Rust command modules (see Architecture)
-│   ├── src/lib.rs             # Tauri app setup, command registration
-│   ├── Cargo.toml             # Rust dependencies
-│   ├── tauri.conf.json        # Window and build config
-│   └── capabilities/          # Tauri v2 permissions
-├── index.html                 # HTML shell with splash screen
-├── vite.config.ts
-└── package.json
-```
+See [CONTRIBUTING.md](CONTRIBUTING.md) for code style, project layout, and architecture details.
 
 ## Tech stack
 
 | Layer | Technology |
 |-------|-----------|
-| Desktop | [Tauri v2](https://v2.tauri.app) |
+| Desktop | Tauri v2 |
 | Backend | Rust 2021, git2, thiserror, confy, serde_yaml, which |
 | Frontend | React 19, TypeScript 5, Vite 6 |
 | Styling | Tailwind CSS 4 |
@@ -147,17 +101,6 @@ kirodex/
 | Terminal | xterm.js + portable-pty |
 | Diff | @pierre/diffs |
 | Markdown | react-markdown + remark-gfm |
-
-## Configuration
-
-On first launch, set the kiro-cli path in Settings. The app auto-detects:
-
-1. `~/.local/bin/kiro-cli`
-2. `/usr/local/bin/kiro-cli`
-3. `~/.kiro/bin/kiro-cli`
-4. `/opt/homebrew/bin/kiro-cli`
-
-Falls back to `which kiro-cli` if none match.
 
 ## Troubleshooting
 
@@ -171,26 +114,12 @@ Falls back to `which kiro-cli` if none match.
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
-
-## Inspiration
-
-Kirodex draws inspiration from [OpenAI Codex](https://openai.com/index/codex/) and [T3Code](https://t3.chat/code) — both pioneering tools for AI-assisted coding. Kirodex brings that experience to a native macOS app backed by the open [Agent Client Protocol](https://github.com/anthropics/agent-client-protocol).
-
-Thank you to the Codex and T3Code teams for pushing the boundaries of what AI-assisted coding can look like. Your work inspired this project.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines, code style, and project layout.
 
 ## Author
 
-**Sabeur Thabti** — [thabti.sabeur@gmail.com](mailto:thabti.sabeur@gmail.com)
+Sabeur Thabti
 
 ## License
 
 MIT
-
-© 2026 Kirodex. All rights reserved.
-
----
-
-> Why did the Tauri app break up with Electron? It said, "You're taking up too much space in this relationship."
->
-> Why did the AI agent refuse to use `unwrap()`? It didn't want to panic in production.

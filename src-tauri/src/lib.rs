@@ -21,14 +21,17 @@ pub fn run() {
                 let _ = apply_vibrancy(&window, NSVisualEffectMaterial::Sidebar, None, None);
 
                 // Set title bar background to match header (--card dark: ~#0c0c0c)
-                use cocoa::appkit::{NSColor, NSWindow};
-                use cocoa::base::{id, nil};
-                let ns_window = window.ns_window().unwrap() as id;
-                unsafe {
-                    let bg = NSColor::colorWithRed_green_blue_alpha_(
-                        nil, 12.0 / 255.0, 12.0 / 255.0, 12.0 / 255.0, 1.0,
-                    );
-                    ns_window.setBackgroundColor_(bg);
+                #[allow(deprecated)]
+                {
+                    use cocoa::appkit::{NSColor, NSWindow};
+                    use cocoa::base::{id, nil};
+                    let ns_window = window.ns_window().unwrap() as id;
+                    unsafe {
+                        let bg = NSColor::colorWithRed_green_blue_alpha_(
+                            nil, 12.0 / 255.0, 12.0 / 255.0, 12.0 / 255.0, 1.0,
+                        );
+                        ns_window.setBackgroundColor_(bg);
+                    }
                 }
             }
             log::info!("Kirodex started");
