@@ -67,7 +67,7 @@ function AppHeaderInner({ sidePanelOpen, onToggleSidePanel, isSidebarCollapsed, 
   const hasStats = diffStats.additions > 0 || diffStats.deletions > 0
 
   return (
-    <header data-testid="app-header" data-tauri-drag-region onMouseDown={handleHeaderMouseDown} className="flex h-[44px] shrink-0 items-center gap-3 border-b border-border bg-card px-4 pl-[90px] select-none [-webkit-user-select:none]">
+    <header data-testid="app-header" data-tauri-drag-region onMouseDown={handleHeaderMouseDown} className="flex h-[44px] -mt-[14px] pt-[14px] shrink-0 items-center gap-3 border-b border-border bg-card px-4 pl-[90px] select-none [-webkit-user-select:none]">
       {/* Breadcrumb left */}
       <nav data-tauri-drag-region className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
         {/* Logo / app name */}
