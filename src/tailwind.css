@@ -162,7 +162,7 @@ body {
 }
 
 #root {
-  height: calc(100% - 20px);
+  height: calc(100% - 28px);
   width: 100%;
   overflow: hidden;
 }

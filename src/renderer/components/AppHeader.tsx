@@ -216,7 +216,7 @@ function AppHeaderInner({ sidePanelOpen, onToggleSidePanel, isSidebarCollapsed, 
 }
 
 const HeaderFallback = () => (
-  <header data-tauri-drag-region className="drag-region flex h-[44px] shrink-0 items-center gap-3 border-b border-border bg-card px-4 pl-[90px]">
+  <header data-tauri-drag-region className="drag-region flex h-[44px] shrink-0 items-center gap-3 border-b border-border bg-card px-4 pl-[76px]">
     <span className="text-sm font-medium tracking-tight text-muted-foreground">Kirodex</span>
   </header>
 )

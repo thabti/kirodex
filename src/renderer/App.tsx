@@ -75,7 +75,7 @@ function EmptyState() {
 
       {/* Ghost ChatInput */}
       <div
-        className="px-4 pt-1.5 pb-3 mb-[40px] opacity-30 pointer-events-none select-none sm:px-6 sm:pt-2 sm:pb-4"
+        className="px-4 pt-1.5 pb-3 mb-[20px] opacity-30 pointer-events-none select-none sm:px-6 sm:pt-2 sm:pb-4"
         aria-hidden
       >
         <div className="mx-auto w-full max-w-2xl lg:max-w-3xl xl:max-w-4xl">

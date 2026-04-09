@@ -17,7 +17,9 @@ interface QuestionBlock {
 
 const QUESTION_START = /^\s*\[(\d+)\]:?\s*/gm;
 const QUESTION_START_BOLD = /^\s*\*\*(\d+)\.\s+/gm;
-const OPTION_LINE = /^\s*([a-z])\.\s+(.+)$/;
+// Matches options in many formats:
+// "a. text", "- a. text", "  - a. **text**", "a) text", "- a) text", "(a) text"
+const OPTION_LINE = /^\s*(?:[-•*]\s+)?(?:\()?([a-z])(?:\)|\.|:)\s+(.+)$/;
 
 function findQuestionStarts(
   text: string,
@@ -118,7 +120,7 @@ export const QuestionCards = memo(function QuestionCards({
   const blocks = parseQuestions(text);
   const [page, setPage] = useState(0);
   const [selections, setSelections] = useState<Record<string, string>>({});
-  const [extraText, setExtraText] = useState("");
+  const [extraText, setExtraText] = useState<Record<string, string>>({});
   const [dismissed, setDismissed] = useState(false);
 
   const total = blocks.length;
@@ -136,25 +138,25 @@ export const QuestionCards = memo(function QuestionCards({
     );
   }, []);
 
-  const isAllAnswered = blocks.every((b) => selections[b.number]);
+  const isAllAnswered = blocks.every((b) => selections[b.number] || b.options.length === 0);
+  const currentExtra = current ? (extraText[current.number] ?? '') : ''
   const hasAnyInput =
-    Object.keys(selections).length > 0 || extraText.trim().length > 0;
+    Object.keys(selections).length > 0 || Object.values(extraText).some((v) => v.trim().length > 0);
+  const isLastPage = page === total - 1
 
   const handleContinue = useCallback(() => {
-    // If not all answered, navigate to next unanswered question
-    if (!isAllAnswered) {
+    // If not on last page and not all answered, navigate to next unanswered
+    if (!isLastPage && !isAllAnswered) {
       const nextUnanswered = blocks.findIndex(
-        (b, i) => i > page && !selections[b.number],
+        (b, i) => i > page && !selections[b.number] && b.options.length > 0,
       );
       if (nextUnanswered >= 0) {
         setPage(nextUnanswered);
         return;
       }
-      const firstUnanswered = blocks.findIndex((b) => !selections[b.number]);
-      if (firstUnanswered >= 0) {
-        setPage(firstUnanswered);
-        return;
-      }
+      // Jump to last page if all option-questions are answered
+      setPage(total - 1);
+      return;
     }
     // All answered — submit
     const state = useTaskStore.getState();
@@ -162,26 +164,28 @@ export const QuestionCards = memo(function QuestionCards({
     const task = id ? state.tasks[id] : null;
     if (!task || task.status === "running" || task.status === "cancelled")
       return;
-    const extra = extraText.trim();
     const parts: string[] = [];
     for (const block of blocks) {
       const sel = selections[block.number];
-      if (!sel) continue;
-      parts.push(
-        extra && block.number === current?.number
-          ? `${block.number}=${sel}, ${extra}`
-          : `${block.number}=${sel}`,
-      );
+      const extra = (extraText[block.number] ?? '').trim();
+      if (sel && extra) {
+        parts.push(`${block.number}=${sel}, ${extra}`);
+      } else if (sel) {
+        parts.push(`${block.number}=${sel}`);
+      } else if (extra) {
+        parts.push(`${block.number}=${extra}`);
+      }
     }
-    if (extra && !selections[current?.number ?? ""]) parts.push(extra);
     if (parts.length === 0) return;
     const msg = parts.join(", ");
     const questionAnswers = blocks
-      .filter((b) => selections[b.number])
+      .filter((b) => selections[b.number] || (extraText[b.number] ?? '').trim())
       .map((b) => {
         const sel = selections[b.number]
+        const extra = (extraText[b.number] ?? '').trim()
         const opt = b.options.find((o) => o.letter === sel)
-        return { question: b.question, answer: opt?.text ?? sel }
+        const answer = [opt?.text ?? sel, extra].filter(Boolean).join(', ')
+        return { question: b.question, answer }
       })
     const userMsg = {
       role: "user" as const,
@@ -197,7 +201,7 @@ export const QuestionCards = memo(function QuestionCards({
     state.clearTurn(task.id);
     ipc.sendMessage(task.id, msg);
     setDismissed(true);
-  }, [blocks, selections, extraText, isAllAnswered, page]);
+  }, [blocks, selections, extraText, isAllAnswered, isLastPage, total, page]);
 
   const handleDismiss = useCallback(() => {
     setDismissed(true);
@@ -325,8 +329,8 @@ export const QuestionCards = memo(function QuestionCards({
       <div className="px-5 pb-3">
         <input
           type="text"
-          value={extraText}
-          onChange={(e) => setExtraText(e.target.value)}
+          value={currentExtra}
+          onChange={(e) => setExtraText((prev) => ({ ...prev, [current?.number ?? '']: e.target.value }))}
           placeholder="Add extra context (optional)"
           className="w-full rounded-lg border border-border/50 bg-background/50 px-3 py-1.5 text-[12px] text-black dark:text-white outline-none placeholder:text-muted-foreground/30 focus:border-primary/30"
         />
@@ -360,7 +364,7 @@ export const QuestionCards = memo(function QuestionCards({
               : "bg-muted text-muted-foreground/40 cursor-not-allowed",
           )}
         >
-          {isAllAnswered ? "Submit" : "Next"}
+          {isAllAnswered || isLastPage ? "Submit" : "Next"}
           <CornerDownLeft className="size-3" />
         </button>
       </div>

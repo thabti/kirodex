@@ -4,7 +4,6 @@ import remarkGfm from 'remark-gfm'
 import { CheckIcon, CopyIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { QuestionCards, hasQuestionBlocks, stripQuestionBlocks } from './QuestionCards'
-import { useSettingsStore } from '@/stores/settingsStore'
 import { useDiffStore } from '@/stores/diffStore'
 
 interface ChatMarkdownProps {
@@ -81,9 +80,8 @@ const PROSE_CLASSES = 'chat-markdown w-full min-w-0 text-[14px] leading-[1.6] te
 const FILE_PATH_RE = /^(?:\.{0,2}[\\/])?(?:[\w.@-]+[\\/])*[\w.@-]+\.\w{1,10}$/
 
 function ChatMarkdown({ text, isStreaming = false }: ChatMarkdownProps) {
-  const isPlanMode = useSettingsStore((s) => s.currentModeId === 'kiro_planner')
   const displayText = isStreaming ? stabilizeStreamingMarkdown(text) : text
-  const showQuestions = useMemo(() => isPlanMode && hasQuestionBlocks(displayText), [isPlanMode, displayText])
+  const showQuestions = useMemo(() => !isStreaming && hasQuestionBlocks(displayText), [isStreaming, displayText])
   const markdownText = useMemo(() => showQuestions ? stripQuestionBlocks(displayText) : displayText, [showQuestions, displayText])
 
   const components = useMemo<Components>(() => ({
@@ -145,7 +143,7 @@ function ChatMarkdown({ text, isStreaming = false }: ChatMarkdownProps) {
   }), [])
 
   return (
-    <div className={cn(PROSE_CLASSES, isStreaming && 'streaming-cursor')}>
+    <div className={PROSE_CLASSES}>
       {showQuestions && <QuestionCards text={displayText} />}
       <ReactMarkdown remarkPlugins={remarkPlugins} components={components}>
         {markdownText}

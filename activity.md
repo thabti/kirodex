@@ -1,6 +1,18 @@
 # Activity Log
 
 
+## 2026-04-10 01:02 GST (Dubai, UTC+4)
+
+### Mode-based input border and button colors
+
+Input border and send/pause buttons now change color based on the active mode:
+- Plan mode (`kiro_planner`): red border + red buttons
+- Chat mode (`kiro_default`): violet/purple border + violet buttons
+
+Subscribes to `currentModeId` from `settingsStore` inside `ChatInput`. Applied to: container border (idle + focus-within), send button, and pause button. ACP backend already supports mode switching via `AcpCommand::SetMode` → `conn.set_session_mode()`, no backend changes needed.
+
+**Modified:** `src/renderer/components/chat/ChatInput.tsx`
+
 ## 2026-04-10 00:46 GST (Dubai, UTC+4)
 
 ### Clickable file paths in chat markdown
@@ -84,6 +96,32 @@ Replaced all "new project" / "start project" / "add project" copy with import-or
 - `src/renderer/components/settings/SettingsPanel.tsx`
 - `src/renderer/components/sidebar/TaskSidebar.tsx`
 - `src/renderer/components/task/NewProjectSheet.tsx`
+
+## 2026-04-10 01:33 GST (Dubai, UTC+4)
+
+### Rebuilt sidebar: performance + UX + component extraction
+
+**Performance:**
+- `useSidebarTasks` hook with structural sharing: only extracts `id`, `name`, `workspace`, `createdAt`, `status` from the task store. Streaming chunks, tool calls, messages, and thinking are ignored. Sidebar no longer re-renders on every token.
+- Batched `task_update` Tauri events with `requestAnimationFrame`: multiple threads firing rapid status changes coalesce into a single `setState` per frame instead of one per event.
+
+**Component extraction (flat, 1 file each):**
+- `ThreadItem.tsx`: status dot (green pulse for running, amber for permission, red for error), name truncated with ellipsis, double-click to rename, hover shows delete button, relative time display
+- `ProjectItem.tsx`: expand/collapse, right-click context menu (Open in Finder, Edit Name, Archive Threads, Delete), hover shows new thread + delete buttons
+- `SidebarFooter.tsx`: KiroConfig panel (collapsible, resizable) + Playground/Debug/Settings buttons
+- `TaskSidebar.tsx`: ~90 lines, uses `useSidebarTasks` hook, delegates to extracted components
+
+**Thread isolation:** Each thread already has its own OS thread + single-threaded tokio runtime + ACP connection. No Rust changes needed. The sidebar now visually communicates this with per-thread status dots.
+
+**Build:** `tsc --noEmit` ✓ (0 errors) | `vite build` ✓ (1.35s)
+
+**Modified files:**
+- `src/renderer/hooks/useSidebarTasks.ts` (new)
+- `src/renderer/components/sidebar/ThreadItem.tsx` (rewritten)
+- `src/renderer/components/sidebar/ProjectItem.tsx` (rewritten)
+- `src/renderer/components/sidebar/SidebarFooter.tsx` (new)
+- `src/renderer/components/sidebar/TaskSidebar.tsx` (rewritten)
+- `src/renderer/stores/taskStore.ts` (batched task_update events)
 
 ## 2026-04-09 23:58 GST (Dubai, UTC+4)
 

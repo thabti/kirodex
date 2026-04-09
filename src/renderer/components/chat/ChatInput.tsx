@@ -13,6 +13,7 @@ import { ModelPicker } from './ModelPicker'
 import { ModeToggle } from './ModeToggle'
 import { AutoApproveToggle } from './AutoApproveToggle'
 import { useChatInput } from '@/hooks/useChatInput'
+import { useSettingsStore } from '@/stores/settingsStore'
 
 const Sep = () => <span className="mx-1.5 h-3.5 w-px shrink-0 bg-border/60" aria-hidden />
 
@@ -38,12 +39,18 @@ export const ChatInput = memo(function ChatInput({ disabled, contextUsage, messa
     handleChange, handleSend, handleKeyDown, handleSelect,
   } = useChatInput({ disabled, isRunning, onSendMessage, onPause })
 
+  const currentModeId = useSettingsStore((s) => s.currentModeId)
+  const isPlanMode = currentModeId === 'kiro_planner'
+  const borderFocus = isPlanMode ? 'focus-within:border-red-500/60' : 'focus-within:border-violet-500/60'
+  const borderIdle = isPlanMode ? 'border-red-500/25' : 'border-border'
+  const buttonBg = isPlanMode ? 'bg-red-500/90 hover:bg-red-500' : 'bg-violet-500/90 hover:bg-violet-500'
+
   return (
-    <div data-testid="chat-input" className="px-4 pt-1.5 pb-3 mb-[40px] sm:px-6 sm:pt-2 sm:pb-4">
+    <div data-testid="chat-input" className="px-4 pt-1.5 pb-3 mb-[20px] sm:px-6 sm:pt-2 sm:pb-4">
       <div className="mx-auto w-full min-w-0 max-w-2xl lg:max-w-3xl xl:max-w-4xl">
         <div className={cn(
           'relative rounded-[20px] border bg-card transition-colors duration-200',
-          'focus-within:border-ring/45 border-border',
+          borderIdle, borderFocus,
           isDragOver && 'border-primary/50',
         )}>
           {isDragOver && <DragOverlay />}
@@ -161,7 +168,8 @@ export const ChatInput = memo(function ChatInput({ disabled, contextUsage, messa
                     onClick={onPause}
                     aria-label="Pause agent"
                     data-testid="pause-button"
-                    className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/90 text-primary-foreground transition-all duration-150 hover:bg-primary hover:scale-105"
+                    className="flex h-8 w-8 items-center justify-center rounded-full text-white transition-all duration-150 hover:scale-105"
+                    style={{ backgroundColor: isPlanMode ? 'rgba(239,68,68,0.9)' : 'rgba(139,92,246,0.9)' }}
                   >
                     <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" aria-hidden="true">
                       <rect x="1.5" y="1" width="3" height="10" rx="1" />
@@ -178,7 +186,7 @@ export const ChatInput = memo(function ChatInput({ disabled, contextUsage, messa
                   data-testid="send-button"
                   className={cn(
                     'flex h-8 w-8 items-center justify-center rounded-full transition-all duration-150',
-                    'bg-primary/90 text-primary-foreground hover:bg-primary hover:scale-105',
+                    buttonBg, 'text-white hover:scale-105',
                     'disabled:pointer-events-none disabled:opacity-30 disabled:hover:scale-100',
                   )}
                 >

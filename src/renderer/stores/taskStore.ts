@@ -327,11 +327,20 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
 export function initTaskListeners(): () => void {
   useTaskStore.getState().setConnected(true)
 
+  // Batch task_update events with rAF — multiple threads can fire status changes rapidly
+  let taskUpdateBuf: Record<string, AgentTask> = {}
+  let taskUpdateRaf: number | null = null
+  const flushTaskUpdates = () => {
+    const buf = taskUpdateBuf; taskUpdateBuf = {}; taskUpdateRaf = null
+    const store = useTaskStore.getState()
+    for (const task of Object.values(buf)) {
+      store.upsertTask({ ...task, messages: [] })
+    }
+  }
   const unsub1 = ipc.onTaskUpdate((task) => {
-    // Strip messages from backend updates — the frontend is the sole source of truth
-    // for conversation history. The backend only tracks user messages, never assistant
-    // responses, tool calls, or system messages.
-    useTaskStore.getState().upsertTask({ ...task, messages: [] })
+    // Keep only the latest update per task, strip messages
+    taskUpdateBuf[task.id] = task
+    if (!taskUpdateRaf) taskUpdateRaf = requestAnimationFrame(flushTaskUpdates)
   })
 
   // Batch streaming chunks with rAF to reduce state updates
