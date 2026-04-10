@@ -70,16 +70,16 @@ export const ToolCallEntry = memo(function ToolCallEntry({ toolCall }: { toolCal
         ) : null}
         <Icon className={cn(
           'size-3 shrink-0',
-          isRunning ? 'text-primary' : isFailed ? 'text-red-400' : 'text-muted-foreground/40',
+          isRunning ? 'text-primary' : isFailed ? 'text-red-400' : 'text-foreground/40',
         )} />
         <span className={cn(
           'flex-1 truncate',
-          isRunning ? 'text-foreground' : 'text-muted-foreground/50',
+          isRunning ? 'text-foreground' : 'text-foreground/60',
         )}>
           {toolCall.title}
         </span>
         {shortPath && (
-          <span className="hidden sm:inline max-w-[140px] truncate font-mono text-[10px] text-muted-foreground/30">
+          <span className="hidden sm:inline max-w-[140px] truncate font-mono text-[10px] text-foreground/30">
             {shortPath}
           </span>
         )}

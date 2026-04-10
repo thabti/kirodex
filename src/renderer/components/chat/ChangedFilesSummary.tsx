@@ -159,7 +159,7 @@ const Stats = memo(function Stats({ additions, deletions }: { additions: number;
   return (
     <span className="ml-auto shrink-0 font-mono text-[10px] tabular-nums">
       <span className="text-emerald-400">+{additions}</span>
-      <span className="mx-0.5 text-muted-foreground/70">/</span>
+      <span className="mx-0.5 text-foreground/30">/</span>
       <span className="text-red-400/80">-{deletions}</span>
     </span>
   )
@@ -177,11 +177,11 @@ const FileRow = memo(function FileRow({ file, depth, onClick }: { file: FileStat
       <img
         alt=""
         aria-hidden
-        className="shrink-0 size-3.5 text-muted-foreground/70"
+        className="shrink-0 size-3.5 text-foreground/30"
         loading="lazy"
         src={getFileIconUrl(file.ext)}
       />
-      <span className="truncate font-mono text-[11px] text-muted-foreground/80 group-hover:text-foreground/90">
+      <span className="truncate font-mono text-[11px] text-foreground/60 group-hover:text-foreground/90">
         {file.name}
       </span>
       <Stats additions={file.additions} deletions={file.deletions} />
@@ -241,11 +241,11 @@ export const ChangedFilesSummary = memo(function ChangedFilesSummary({ row }: { 
     <div className="mt-2 rounded-lg border border-border/80 bg-card/45 p-2.5" data-timeline-row-kind="changed-files">
       {/* Header */}
       <div className="mb-1.5 flex items-center justify-between gap-2">
-        <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground/65">
+        <p className="text-[10px] uppercase tracking-[0.12em] text-foreground/40">
           <span>Changed files ({totalFiles})</span>
           <span className="mx-1">&middot;</span>
           <span className="text-emerald-400">+{totals.additions}</span>
-          <span className="mx-0.5 text-muted-foreground/70">/</span>
+          <span className="mx-0.5 text-foreground/30">/</span>
           <span className="text-red-400/80">-{totals.deletions}</span>
         </p>
         <div className="flex items-center gap-1.5">
@@ -285,15 +285,15 @@ export const ChangedFilesSummary = memo(function ChangedFilesSummary({ row }: { 
                 >
                   <IconChevronRight
                     className={cn(
-                      'size-3.5 shrink-0 text-muted-foreground/70 transition-transform group-hover:text-foreground/80',
+                      'size-3.5 shrink-0 text-foreground/30 transition-transform group-hover:text-foreground/60',
                       !isDirCollapsed && 'rotate-90',
                     )}
                     aria-hidden
                   />
                   {isDirCollapsed
-                    ? <IconFolder className="size-3.5 shrink-0 text-muted-foreground/75" aria-hidden />
-                    : <IconFolderOpen className="size-3.5 shrink-0 text-muted-foreground/75" aria-hidden />}
-                  <span className="truncate font-mono text-[11px] text-muted-foreground/90 group-hover:text-foreground/90">
+                    ? <IconFolder className="size-3.5 shrink-0 text-foreground/35" aria-hidden />
+                    : <IconFolderOpen className="size-3.5 shrink-0 text-foreground/35" aria-hidden />}
+                  <span className="truncate font-mono text-[11px] text-foreground/50 group-hover:text-foreground/80">
                     {group.dir}
                   </span>
                   <Stats additions={group.additions} deletions={group.deletions} />
@@ -325,7 +325,7 @@ export const ChangedFilesSummary = memo(function ChangedFilesSummary({ row }: { 
           <button
             type="button"
             onClick={() => setShowAll(true)}
-            className="flex w-full justify-center py-1.5 text-[11px] text-muted-foreground/40 transition-colors hover:text-muted-foreground/70"
+            className="flex w-full justify-center py-1.5 text-[11px] text-foreground/30 transition-colors hover:text-foreground/30"
           >
             Show {totalFiles - MAX_VISIBLE_FILES} more files
           </button>

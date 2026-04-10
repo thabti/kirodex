@@ -1,3 +1,9 @@
+## 2026-04-10 12:48 GST (Dubai)
+
+- Committed `feat(ui): redesign changed files summary with file icons and DM Sans font` (5b4b9cb)
+- 10 files changed: ChangedFilesSummary redesign, DM Sans font, isFileMutation helper, sort dropdown fix, version bump to 0.7.0
+- Pushed to origin/main
+
 ## 2026-04-10 12:27 GST (Dubai)
 
 - Staged all files (61 changed: 59 modified, 3 new, 1 untracked)
