@@ -1,3 +1,13 @@
+## 2026-04-10 17:30 GST (Dubai)
+
+### Figma: Design all Kirodex screens
+
+Designed all 6 screens of Kirodex in Figma using the dark theme (`#0f0f0f` background, `#6366f1` primary) with proper layout matching the real app code. Screens cover the full user journey: Onboarding (3 steps), Main Empty State, Chat View (active thread with streaming), Chat + Diff split panel, Settings modal, and Dashboard with task cards and activity feed.
+
+**Modified:** https://www.figma.com/design/S0xSLrUpEOicfWBmNQYXQK/kirodex-UI
+
+---
+
 ## 2026-04-10 15:05 GST (Dubai)
 
 ### Git commands: Use project path directly instead of taskId
