@@ -1,4 +1,4 @@
-import { memo, useCallback, useState } from 'react'
+import { memo, useCallback, useRef, useState } from 'react'
 import { Plus, ArrowUpDown, Check } from 'lucide-react'
 import { useTaskStore } from '@/stores/taskStore'
 import { useShallow } from 'zustand/react/shallow'
@@ -50,9 +50,15 @@ const SortDropdown = memo(function SortDropdown({ sort, onChange }: { sort: Sort
   )
 })
 
-export const TaskSidebar = memo(function TaskSidebar() {
+interface TaskSidebarProps {
+  width: number
+  onResize: (width: number) => void
+}
+
+export const TaskSidebar = memo(function TaskSidebar({ width, onResize }: TaskSidebarProps) {
   const [sort, setSort] = useState<SortKey>('recent')
   const projectList = useSidebarTasks(sort)
+  const isDragging = useRef(false)
 
   const { selectedTaskId, setSelectedTask, setView, setNewProjectOpen, removeTask, removeProject, archiveThreads, renameProject, renameTask } = useTaskStore(
     useShallow((s) => ({
@@ -72,8 +78,39 @@ export const TaskSidebar = memo(function TaskSidebar() {
   const handleDeleteTask = useCallback((id: string) => { void ipc.cancelTask(id).catch(() => {}); removeTask(id); void ipc.deleteTask(id) }, [removeTask])
   const handleNewThread = useCallback((workspace: string) => { useTaskStore.getState().setPendingWorkspace(workspace) }, [])
 
+  const handleDragStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    isDragging.current = true
+    const startX = e.clientX
+    const startWidth = width
+    const handleMouseMove = (ev: MouseEvent) => {
+      const newWidth = Math.max(180, Math.min(startWidth + (ev.clientX - startX), window.innerWidth * 0.2))
+      onResize(newWidth)
+    }
+    const handleMouseUp = () => {
+      isDragging.current = false
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+    }
+    document.body.style.cursor = 'col-resize'
+    document.body.style.userSelect = 'none'
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('mouseup', handleMouseUp)
+  }, [width, onResize])
+
   return (
-    <div className="flex h-full min-h-0 w-60 shrink-0 flex-col border-r bg-card pl-1 text-foreground">
+    <div className="relative flex h-full min-h-0 shrink-0 flex-col border-r bg-card pl-1 text-foreground" style={{ width }}>
+      {/* Drag handle */}
+      <div
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Resize sidebar"
+        tabIndex={0}
+        onMouseDown={handleDragStart}
+        className="absolute right-0 top-0 z-10 h-full w-1 cursor-col-resize hover:bg-primary/20 active:bg-primary/30 transition-colors"
+      />
       <ScrollArea className="min-h-0 flex-1">
         <div className="px-3 py-2">
           <div className="relative flex w-full min-w-0 flex-col">
