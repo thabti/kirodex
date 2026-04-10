@@ -15,7 +15,15 @@ import { AutoApproveToggle } from './AutoApproveToggle'
 import { useChatInput } from '@/hooks/useChatInput'
 import { useSettingsStore } from '@/stores/settingsStore'
 
-const Sep = () => <span className="mx-1.5 h-3.5 w-px shrink-0 bg-border/60" aria-hidden />
+/** Pill-shaped group wrapper for toolbar items */
+const ToolbarGroup = ({ children, className }: { children: React.ReactNode; className?: string }) => (
+  <div className={cn('flex items-center gap-0.5 rounded-lg bg-muted/50 px-0.5 py-0.5', className)}>
+    {children}
+  </div>
+)
+
+/** Thin dot separator within a group */
+const Dot = () => <span className="mx-0.5 size-[3px] shrink-0 rounded-full bg-border" aria-hidden />
 
 interface ChatInputProps {
   disabled?: boolean
@@ -45,6 +53,12 @@ export const ChatInput = memo(function ChatInput({ disabled, contextUsage, messa
   const borderIdle = isPlanMode ? 'border-red-500/25' : 'border-border'
   const buttonBg = isPlanMode ? 'bg-red-500/90 hover:bg-red-500' : 'bg-violet-500/90 hover:bg-violet-500'
 
+  const contextRingNode = (contextUsage && contextUsage.size > 0)
+    ? <ContextRing used={contextUsage.used} size={contextUsage.size} />
+    : messageCount > 0
+      ? <ContextRing used={Math.min(messageCount * 3, 95)} size={100} />
+      : null
+
   return (
     <div data-testid="chat-input" className="px-4 pt-1.5 pb-3 mb-[20px] sm:px-6 sm:pt-2 sm:pb-4">
       <div className="mx-auto w-full min-w-0 max-w-2xl lg:max-w-3xl xl:max-w-4xl">
@@ -54,24 +68,6 @@ export const ChatInput = memo(function ChatInput({ disabled, contextUsage, messa
           isDragOver && 'border-primary/50',
         )}>
           {isDragOver && <DragOverlay />}
-
-          {(contextUsage && contextUsage.size > 0) ? (
-            <div className="absolute right-3 top-2.5 z-10">
-              <ContextRing used={contextUsage.used} size={contextUsage.size} />
-            </div>
-          ) : messageCount > 0 ? (
-            <div className="absolute right-3 top-2.5 z-10">
-              <ContextRing used={Math.min(messageCount * 3, 95)} size={100} />
-            </div>
-          ) : null}
-
-          {mentionedFiles.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 px-3 pt-3 sm:px-4">
-              {mentionedFiles.map((f) => (
-                <FileMentionPill key={f.path} path={f.path} onRemove={() => handleRemoveMention(f.path)} />
-              ))}
-            </div>
-          )}
 
           <AttachmentPreview attachments={attachments} onRemove={handleRemoveAttachment} />
 
@@ -95,6 +91,13 @@ export const ChatInput = memo(function ChatInput({ disabled, contextUsage, messa
               />
             )}
             {panel && <SlashActionPanel panel={panel} onDismiss={dismissPanel} />}
+            {mentionedFiles.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1 mb-1.5">
+                {mentionedFiles.map((f) => (
+                  <FileMentionPill key={f.path} path={f.path} onRemove={() => handleRemoveMention(f.path)} />
+                ))}
+              </div>
+            )}
             <textarea
               ref={textareaRef}
               value={value}
@@ -110,26 +113,32 @@ export const ChatInput = memo(function ChatInput({ disabled, contextUsage, messa
             />
           </div>
 
-          <div className="relative z-10 flex items-center justify-between gap-1.5 px-3 pb-3 sm:px-4">
-            <div className="flex min-w-0 flex-1 items-center gap-0 overflow-visible">
-              <ModelPicker />
-              <Sep />
+          {/* ── Footer toolbar ── */}
+          <div className="relative z-10 flex items-center justify-between gap-2 px-3 pb-3 sm:px-4">
+            {/* Left: AI controls (mode + model) */}
+            <ToolbarGroup>
               <ModeToggle />
-              <Sep />
+              <Dot />
+              <ModelPicker />
+            </ToolbarGroup>
+
+            {/* Center: safety + git */}
+            <div className="flex min-w-0 items-center gap-1.5">
               <AutoApproveToggle />
-              <Sep />
               <BranchSelector workspace={workspace ?? null} />
-              {disabled && <span className="ml-2 text-[11px] text-muted-foreground/40">Task ended</span>}
+              {disabled && <span className="ml-1 text-[11px] text-muted-foreground/40">Task ended</span>}
             </div>
 
-            <div className="flex shrink-0 items-center gap-2">
+            {/* Right: context + attach + send/pause */}
+            <div className="flex shrink-0 items-center gap-1.5">
+              {contextRingNode}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
                     type="button"
                     onClick={handleFilePickerClick}
                     aria-label="Attach files"
-                    className="flex items-center justify-center rounded-lg p-1 text-muted-foreground/40 transition-colors hover:text-muted-foreground/70"
+                    className="flex size-8 items-center justify-center rounded-full text-muted-foreground/40 transition-colors hover:bg-muted/60 hover:text-muted-foreground/70"
                   >
                     <Paperclip className="size-4" />
                   </button>

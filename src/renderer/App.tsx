@@ -85,13 +85,15 @@ function EmptyState() {
                 Ask anything, or press / for commands
               </p>
             </div>
-            <div className="flex items-center justify-between gap-1.5 px-3 pb-3 sm:px-4">
-              <div className="flex items-center gap-1.5">
-                <div className="h-4 w-20 rounded bg-muted-foreground/10" />
-                <div className="h-3.5 w-px bg-border/60" />
+            <div className="flex items-center justify-between gap-2 px-3 pb-3 sm:px-4">
+              <div className="flex items-center gap-0.5 rounded-lg bg-muted/50 px-1.5 py-1">
                 <div className="h-4 w-14 rounded bg-muted-foreground/10" />
-                <div className="h-3.5 w-px bg-border/60" />
+                <div className="mx-0.5 size-[3px] rounded-full bg-border" />
+                <div className="h-4 w-20 rounded bg-muted-foreground/10" />
+              </div>
+              <div className="flex items-center gap-1.5">
                 <div className="h-4 w-12 rounded bg-muted-foreground/10" />
+                <div className="h-4 w-16 rounded bg-muted-foreground/10" />
               </div>
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/90 opacity-30">
                 <svg
@@ -177,6 +179,7 @@ export function App() {
   }, [selectedTaskId]);
   const [sidePanelOpen, setSidePanelOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(240);
 
   // Sync diffStore.isOpen → sidePanelOpen (for openToFile)
   const diffIsOpen = useDiffStore((s) => s.isOpen);
@@ -238,7 +241,7 @@ export function App() {
         {/* Main area: sidebar + content + side panel */}
         <div className="flex min-h-0 flex-1 overflow-hidden">
           <ErrorBoundary>
-            {!isSidebarCollapsed && <TaskSidebar />}
+            {!isSidebarCollapsed && <TaskSidebar width={sidebarWidth} onResize={setSidebarWidth} />}
           </ErrorBoundary>
           <main className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
             <ErrorBoundary>
