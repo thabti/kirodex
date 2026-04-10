@@ -99,6 +99,7 @@ export const ChatInput = memo(function ChatInput({ disabled, contextUsage, messa
             )}
             <textarea
               ref={textareaRef}
+              data-testid="chat-textarea"
               value={value}
               onChange={handleChange}
               onKeyDown={handleKeyDown}
@@ -114,29 +115,15 @@ export const ChatInput = memo(function ChatInput({ disabled, contextUsage, messa
 
           {/* ── Footer toolbar ── */}
           <div className="relative z-10 flex items-center justify-between gap-2 px-3 pb-3 sm:px-4">
-            {/* Left: AI controls (mode + model) */}
-            <ToolbarGroup>
-              <ModeToggle />
-              <Dot />
-              <ModelPicker />
-            </ToolbarGroup>
-
-            {/* Center: safety + git */}
-            <div className="flex min-w-0 items-center gap-1.5">
-              <AutoApproveToggle />
-              <BranchSelector workspace={workspace ?? null} />
-              {disabled && <span className="ml-1 text-[11px] text-muted-foreground/40">Task ended</span>}
-            </div>
-
-            {/* Right: context + attach + send/pause */}
-            <div className="flex shrink-0 items-center gap-1.5">
-              {contextRingNode}
+            {/* Left: attach + AI controls (mode + model) */}
+            <div className="flex items-center gap-1.5">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
                     type="button"
                     onClick={handleFilePickerClick}
                     aria-label="Attach files"
+                    data-testid="attach-files-button"
                     className="flex size-8 items-center justify-center rounded-full text-muted-foreground/40 transition-colors hover:bg-muted/60 hover:text-muted-foreground/70"
                   >
                     <IconPaperclip className="size-4" />
@@ -144,6 +131,22 @@ export const ChatInput = memo(function ChatInput({ disabled, contextUsage, messa
                 </TooltipTrigger>
                 <TooltipContent side="top" className="text-[11px]">Attach files or images</TooltipContent>
               </Tooltip>
+              <ToolbarGroup>
+                <ModeToggle />
+                <Dot />
+                <ModelPicker />
+                <Dot />
+                <AutoApproveToggle />
+              </ToolbarGroup>
+            </div>
+
+            {/* Right: git + context + send/pause */}
+            <div className="flex shrink-0 items-center gap-1.5">
+              <div className="flex min-w-0 items-center gap-1.5">
+                <BranchSelector workspace={workspace ?? null} />
+                {disabled && <span className="ml-1 text-[11px] text-muted-foreground/40">Task ended</span>}
+              </div>
+              {contextRingNode}
               <input
                 ref={fileInputRef}
                 type="file"

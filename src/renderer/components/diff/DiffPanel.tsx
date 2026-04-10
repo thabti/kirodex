@@ -145,7 +145,7 @@ export const DiffPanel = memo(function DiffPanel() {
   }, [height])
 
   return (
-    <aside className="flex shrink-0 flex-col border-t border-border bg-card" style={{ height }}>
+    <aside data-testid="diff-panel" className="flex shrink-0 flex-col border-t border-border bg-card" style={{ height }}>
       {/* Drag handle */}
       <div
         onMouseDown={onDragStart}
@@ -179,6 +179,7 @@ export const DiffPanel = memo(function DiffPanel() {
             <button
               type="button"
               onClick={handleRefresh}
+              data-testid="diff-refresh-button"
               className={cn(
                 'flex size-5 items-center justify-center rounded text-muted-foreground/50 hover:text-foreground transition-colors',
                 loading && 'animate-spin',
@@ -241,6 +242,7 @@ export const DiffPanel = memo(function DiffPanel() {
             <button
               type="button"
               onClick={() => setOpen(false)}
+              data-testid="diff-close-button"
               className="flex size-5 items-center justify-center rounded text-muted-foreground/40 hover:bg-accent hover:text-foreground transition-colors"
             >
               <IconX className="size-3" />
@@ -308,6 +310,7 @@ export const DiffPanel = memo(function DiffPanel() {
                   <button
                     type="button"
                     onClick={handleStageSelected}
+                    data-testid="diff-stage-button"
                     className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium text-emerald-400 hover:bg-emerald-400/10 transition-colors"
                     aria-label="Stage selected files"
                   >
@@ -322,6 +325,7 @@ export const DiffPanel = memo(function DiffPanel() {
                   <button
                     type="button"
                     onClick={handleRevertSelected}
+                    data-testid="diff-revert-button"
                     className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium text-red-400 hover:bg-red-400/10 transition-colors"
                     aria-label="Revert selected files"
                   >

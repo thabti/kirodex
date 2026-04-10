@@ -1,8 +1,7 @@
-import { useEffect, useCallback } from 'react'
+import { useEffect, useCallback, useState } from 'react'
 import { IconPlayerPause, IconPlayerPlay, IconCircleX, IconGitCompare, IconTerminal2, IconLayoutSidebarLeftCollapse, IconLayoutSidebarLeftExpand } from '@tabler/icons-react'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { useTaskStore } from '@/stores/taskStore'
-import { useDiffStore } from '@/stores/diffStore'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
@@ -46,20 +45,23 @@ function AppHeaderInner({ sidePanelOpen, onToggleSidePanel, isSidebarCollapsed, 
   const taskStatus = task?.status
   const terminalOpen = useTaskStore((s) => selectedTaskId ? s.terminalOpenTasks.has(selectedTaskId) : false)
   const toggleTerminal = useTaskStore((s) => s.toggleTerminal)
-  const diffStats = useDiffStore((s) => s.stats)
-  const fetchDiff = useDiffStore((s) => s.fetchDiff)
 
-  // Auto-refresh diff stats when task or status changes
+  // Workspace-level diff stats (reactive to workspace changes)
+  const workspace = task?.workspace ?? pendingWorkspace
+  const [diffStats, setDiffStats] = useState({ additions: 0, deletions: 0, fileCount: 0 })
+
   useEffect(() => {
-    if (selectedTaskId) void fetchDiff(selectedTaskId)
-  }, [selectedTaskId, taskStatus, fetchDiff])
+    if (!workspace) { setDiffStats({ additions: 0, deletions: 0, fileCount: 0 }); return }
+    let stale = false
+    ipc.gitDiffStats(workspace).then((s) => { if (!stale) setDiffStats(s) }).catch(() => {})
+    return () => { stale = true }
+  }, [workspace, taskStatus])
 
   const handlePause = useCallback(() => { if (task) ipc.pauseTask(task.id) }, [task?.id])
   const handleResume = useCallback(() => { if (task) ipc.resumeTask(task.id) }, [task?.id])
   const handleCancel = useCallback(() => { if (task) ipc.cancelTask(task.id) }, [task?.id])
 
   // Show workspace from task or from pendingWorkspace (before first message)
-  const workspace = task?.workspace ?? pendingWorkspace
   const projectName = workspace?.split('/').pop() ?? null
   const canPause = task?.status === 'running'
   const canResume = task?.status === 'paused' && !!task.userPaused
@@ -69,7 +71,7 @@ function AppHeaderInner({ sidePanelOpen, onToggleSidePanel, isSidebarCollapsed, 
   return (
     <header data-testid="app-header" data-tauri-drag-region onMouseDown={handleHeaderMouseDown} className="flex h-[44px] shrink-0 items-center gap-3 border-b border-border bg-card px-4 pl-[90px] select-none [-webkit-user-select:none]">
       {/* Breadcrumb left */}
-      <nav data-tauri-drag-region className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
+      <nav data-testid="app-header-breadcrumb" data-tauri-drag-region className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
         {/* Logo / app name */}
         <span data-tauri-drag-region className="shrink-0 text-sm font-medium tracking-tight text-muted-foreground">
           Kirodex
@@ -83,6 +85,7 @@ function AppHeaderInner({ sidePanelOpen, onToggleSidePanel, isSidebarCollapsed, 
           <TooltipTrigger asChild>
             <button
               type="button"
+              data-testid="toggle-sidebar-button"
               aria-label="Toggle sidebar"
               aria-pressed={!isSidebarCollapsed}
               onClick={onToggleSidebar}
@@ -144,6 +147,7 @@ function AppHeaderInner({ sidePanelOpen, onToggleSidePanel, isSidebarCollapsed, 
             <TooltipTrigger asChild>
               <button
                 type="button"
+                data-testid="toggle-diff-button"
                 aria-label="Toggle diff panel"
                 aria-pressed={sidePanelOpen}
                 onClick={onToggleSidePanel}
@@ -171,6 +175,7 @@ function AppHeaderInner({ sidePanelOpen, onToggleSidePanel, isSidebarCollapsed, 
             <TooltipTrigger asChild>
               <button
                 type="button"
+                data-testid="toggle-terminal-button"
                 aria-label="Toggle terminal"
                 aria-pressed={terminalOpen}
                 onClick={() => selectedTaskId && toggleTerminal(selectedTaskId)}
@@ -188,7 +193,7 @@ function AppHeaderInner({ sidePanelOpen, onToggleSidePanel, isSidebarCollapsed, 
           {canPause && (
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button size="icon-sm" variant="ghost" onClick={handlePause}><IconPlayerPause className="size-3.5" /></Button>
+                <Button size="icon-sm" variant="ghost" onClick={handlePause} data-testid="header-pause-button"><IconPlayerPause className="size-3.5" /></Button>
               </TooltipTrigger>
               <TooltipContent side="bottom">Pause</TooltipContent>
             </Tooltip>
@@ -196,7 +201,7 @@ function AppHeaderInner({ sidePanelOpen, onToggleSidePanel, isSidebarCollapsed, 
           {canResume && (
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button size="icon-sm" variant="ghost" onClick={handleResume}><IconPlayerPlay className="size-3.5" /></Button>
+                <Button size="icon-sm" variant="ghost" onClick={handleResume} data-testid="header-resume-button"><IconPlayerPlay className="size-3.5" /></Button>
               </TooltipTrigger>
               <TooltipContent side="bottom">Resume</TooltipContent>
             </Tooltip>
@@ -204,7 +209,7 @@ function AppHeaderInner({ sidePanelOpen, onToggleSidePanel, isSidebarCollapsed, 
           {canCancel && (
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button size="icon-sm" variant="ghost" onClick={handleCancel}><IconCircleX className="size-3.5" /></Button>
+                <Button size="icon-sm" variant="ghost" onClick={handleCancel} data-testid="header-cancel-button"><IconCircleX className="size-3.5" /></Button>
               </TooltipTrigger>
               <TooltipContent side="bottom">Cancel</TooltipContent>
             </Tooltip>

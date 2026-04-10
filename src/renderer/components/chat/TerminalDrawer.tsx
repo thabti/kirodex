@@ -212,6 +212,7 @@ export const TerminalDrawer = memo(function TerminalDrawer({ cwd }: TerminalDraw
 
   return (
     <aside
+      data-testid="terminal-drawer"
       className="thread-terminal-drawer relative flex min-w-0 shrink-0 flex-col overflow-hidden border-t border-border/50 bg-background"
       style={{ height }}
     >
@@ -225,7 +226,7 @@ export const TerminalDrawer = memo(function TerminalDrawer({ cwd }: TerminalDraw
           <div className="pointer-events-auto inline-flex items-center overflow-hidden rounded-md border border-border/80 bg-background/70">
             <Tooltip>
               <TooltipTrigger asChild>
-                <button type="button" aria-label="Split Terminal" onClick={handleSplit}
+                <button type="button" aria-label="Split Terminal" data-testid="terminal-split-button" onClick={handleSplit}
                   className="p-1 text-foreground/90 transition-colors hover:bg-accent">
                   <IconLayoutColumns className="size-3.25" aria-hidden />
                 </button>
@@ -235,7 +236,7 @@ export const TerminalDrawer = memo(function TerminalDrawer({ cwd }: TerminalDraw
             <div className="h-4 w-px bg-border/80" />
             <Tooltip>
               <TooltipTrigger asChild>
-                <button type="button" aria-label="New Terminal" onClick={handleNew}
+                <button type="button" aria-label="New Terminal" data-testid="terminal-new-button" onClick={handleNew}
                   className="p-1 text-foreground/90 transition-colors hover:bg-accent">
                   <IconPlus className="size-3.25" aria-hidden />
                 </button>
@@ -245,7 +246,7 @@ export const TerminalDrawer = memo(function TerminalDrawer({ cwd }: TerminalDraw
             <div className="h-4 w-px bg-border/80" />
             <Tooltip>
               <TooltipTrigger asChild>
-                <button type="button" aria-label="Close Terminal"
+                <button type="button" aria-label="Close Terminal" data-testid="terminal-close-button"
                   onClick={() => activeId && handleClose(activeId)}
                   className="p-1 text-foreground/90 transition-colors hover:bg-accent">
                   <IconTrash className="size-3.25" aria-hidden />

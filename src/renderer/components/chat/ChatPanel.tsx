@@ -67,7 +67,7 @@ async function sendMessageDirect(msg: string): Promise<void> {
 /** Zigzag divider shown at top of archived conversations */
 const ArchivedBanner = memo(function ArchivedBanner() {
   return (
-    <div className="relative flex items-center justify-center py-4 px-6 select-none">
+    <div className="relative flex items-center justify-center py-4 px-6 select-none" data-testid="chat-archived-banner">
       {/* Zigzag line left */}
       <svg className="flex-1 h-3 text-violet-400/30" preserveAspectRatio="none" viewBox="0 0 120 12">
         <path d="M0,6 L5,0 L10,6 L15,0 L20,6 L25,0 L30,6 L35,0 L40,6 L45,0 L50,6 L55,0 L60,6 L65,0 L70,6 L75,0 L80,6 L85,0 L90,6 L95,0 L100,6 L105,0 L110,6 L115,0 L120,6" fill="none" stroke="currentColor" strokeWidth="1" />

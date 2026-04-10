@@ -112,6 +112,7 @@ export const MessageItem = memo(function MessageItem({
     return (
       <div
         className="pb-3 px-1"
+        data-testid="message-item-system"
         data-timeline-row-kind="message"
         data-message-role="system"
       >
@@ -152,6 +153,7 @@ export const MessageItem = memo(function MessageItem({
     return (
       <div
         className="pb-3"
+        data-testid="message-item-user"
         data-timeline-row-kind="message"
         data-message-role="user"
       >
@@ -202,6 +204,7 @@ export const MessageItem = memo(function MessageItem({
   return (
     <div
       className="pb-4"
+      data-testid="message-item-assistant"
       data-timeline-row-kind="message"
       data-message-role="assistant"
     >

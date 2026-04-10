@@ -67,6 +67,7 @@ pub fn run() {
             fs_ops::pick_folder,
             fs_ops::open_in_editor,
             fs_ops::open_url,
+            fs_ops::detect_editors,
             fs_ops::list_project_files,
             // Git
             git::git_detect,
@@ -79,6 +80,7 @@ pub fn run() {
             git::git_revert,
             git::task_diff,
             git::git_diff_file,
+            git::git_diff_stats,
             // ACP
             acp::task_create,
             acp::task_list,

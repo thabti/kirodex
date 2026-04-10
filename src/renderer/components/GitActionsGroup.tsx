@@ -39,10 +39,11 @@ export function GitActionsGroup({ taskId, workspace }: { taskId: string; workspa
   }
 
   return (
-    <div ref={ref} className="relative flex w-fit">
+    <div ref={ref} data-testid="git-actions-group" className="relative flex w-fit">
       <Tooltip>
         <TooltipTrigger asChild>
           <button type="button" onClick={() => setShowCommitInput((v) => !v)} disabled={busy}
+            data-testid="git-commit-button"
             className="inline-flex h-6 items-center gap-1 rounded-l-md border border-input bg-popover px-1.5 text-xs text-foreground shadow-xs/5 transition-colors hover:bg-accent/50 dark:bg-input/32 disabled:opacity-50">
             <IconGitCommit className="size-3.5" aria-hidden />
           </button>

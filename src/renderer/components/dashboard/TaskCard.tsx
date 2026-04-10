@@ -44,6 +44,7 @@ export const TaskCard = memo(function TaskCard({ task }: { task: AgentTask }) {
     <Card
       role="button"
       tabIndex={0}
+      data-testid="task-card"
       onClick={handleClick}
       onKeyDown={(e) => e.key === 'Enter' && handleClick()}
       className="cursor-pointer transition-all hover:-translate-y-px hover:shadow-md"

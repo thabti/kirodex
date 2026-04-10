@@ -144,13 +144,13 @@ export function SettingsPanel() {
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex animate-in fade-in-0 duration-150">
+    <div data-testid="settings-panel" className="fixed inset-0 z-50 flex animate-in fade-in-0 duration-150">
       {/* Full-page backdrop */}
       <div className="absolute inset-0 bg-background/95 backdrop-blur-xl" />
 
       <div className="relative z-10 flex w-full">
         {/* ── Sidebar navigation ── */}
-        <nav className="flex w-56 shrink-0 flex-col border-r border-border/40 px-3 pt-16 pb-4">
+        <nav data-testid="settings-nav" className="flex w-56 shrink-0 flex-col border-r border-border/40 px-3 pt-16 pb-4">
           <div className="mb-6 px-3">
             <h2 className="text-lg font-semibold text-foreground">Settings</h2>
             <p className="mt-0.5 text-[11px] text-muted-foreground/50">Configure Kirodex</p>
@@ -203,6 +203,7 @@ export function SettingsPanel() {
               </button>
               <button
                 onClick={handleSave}
+                data-testid="settings-save-button"
                 className="rounded-lg bg-primary px-4 py-1.5 text-[12px] font-medium text-primary-foreground transition-colors hover:bg-primary/90"
               >
                 Save changes
@@ -211,6 +212,7 @@ export function SettingsPanel() {
                 <TooltipTrigger asChild>
                   <button
                     onClick={() => setOpen(false)}
+                    data-testid="settings-close-button"
                     className="ml-1 flex size-7 items-center justify-center rounded-md text-muted-foreground/50 transition-colors hover:bg-accent hover:text-foreground"
                   >
                     <IconX className="size-4" />
@@ -236,6 +238,7 @@ export function SettingsPanel() {
                     <div className="flex gap-2">
                       <input
                         value={draft.kiroBin}
+                        data-testid="settings-cli-path-input"
                         onChange={(e) => setDraft({ ...draft, kiroBin: e.target.value })}
                         placeholder="kiro-cli"
                         className="flex h-9 w-full flex-1 rounded-lg border border-input bg-background/50 px-3 py-1 font-mono text-sm placeholder:text-muted-foreground/30 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"

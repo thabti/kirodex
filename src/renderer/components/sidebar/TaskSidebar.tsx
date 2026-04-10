@@ -115,7 +115,7 @@ export const TaskSidebar = memo(function TaskSidebar({ width, onResize }: TaskSi
   })
 
   return (
-    <div className="relative flex h-full min-h-0 shrink-0 flex-col border-r bg-card pl-1 text-foreground" style={{ width }}>
+    <div data-testid="task-sidebar" className="relative flex h-full min-h-0 shrink-0 flex-col border-r bg-card pl-1 text-foreground" style={{ width }}>
       <div
         role="separator"
         aria-orientation="vertical"
@@ -124,24 +124,24 @@ export const TaskSidebar = memo(function TaskSidebar({ width, onResize }: TaskSi
         onMouseDown={handleResizeStart}
         className="absolute right-0 top-0 z-10 h-full w-1 cursor-col-resize hover:bg-primary/20 active:bg-primary/30 transition-colors"
       />
+      <div className="flex items-center justify-between px-4 py-2 pr-3">
+        <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">Projects</span>
+        <div className="flex shrink-0 items-center gap-1">
+          <SortDropdown sort={sort} onChange={setSort} />
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button type="button" aria-label="Add project" data-testid="add-project-button" onClick={() => setNewProjectOpen(true)}
+                className="inline-flex size-5 cursor-pointer items-center justify-center rounded-md text-muted-foreground/60 transition-colors hover:bg-accent hover:text-foreground">
+                <IconPlus className="size-3.5" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right">Import project folder</TooltipContent>
+          </Tooltip>
+        </div>
+      </div>
       <ScrollArea className="min-h-0 flex-1">
-        <div className="px-3 py-2">
+        <div className="px-3 pb-2">
           <div className="relative flex w-full min-w-0 flex-col">
-            <div className="mb-1 flex items-center justify-between pl-2 pr-1.5">
-              <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">Projects</span>
-              <div className="flex items-center gap-1">
-                <SortDropdown sort={sort} onChange={setSort} />
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button type="button" aria-label="Add project" onClick={() => setNewProjectOpen(true)}
-                      className="inline-flex size-5 cursor-pointer items-center justify-center rounded-md text-muted-foreground/60 transition-colors hover:bg-accent hover:text-foreground">
-                      <IconPlus className="size-3.5" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="right">Import project folder</TooltipContent>
-                </Tooltip>
-              </div>
-            </div>
             <ul className="flex w-full min-w-0 flex-col gap-1">
               {projectList.length === 0 && (
                 <p className="px-3 py-6 text-center text-[11px] text-muted-foreground">No projects yet — click + to import a folder</p>

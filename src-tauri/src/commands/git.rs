@@ -227,6 +227,37 @@ pub fn task_diff(state: tauri::State<'_, AcpState>, task_id: String) -> Result<S
     Ok(output)
 }
 
+/// Lightweight diff stats by workspace path (no task required).
+#[derive(Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct GitDiffStats {
+    pub additions: u32,
+    pub deletions: u32,
+    pub file_count: u32,
+}
+
+#[tauri::command]
+pub fn git_diff_stats(cwd: String) -> Result<GitDiffStats, AppError> {
+    let repo = Repository::open(&cwd)?;
+    let head_tree = repo.head().ok().and_then(|h| h.peel_to_tree().ok());
+    let mut stats = GitDiffStats { additions: 0, deletions: 0, file_count: 0 };
+    let count = |diff: git2::Diff, s: &mut GitDiffStats| {
+        let ds = diff.stats().ok();
+        if let Some(ds) = ds {
+            s.additions += ds.insertions() as u32;
+            s.deletions += ds.deletions() as u32;
+            s.file_count += ds.files_changed() as u32;
+        }
+    };
+    if let Ok(staged) = repo.diff_tree_to_index(head_tree.as_ref(), None, None) {
+        count(staged, &mut stats);
+    }
+    if let Ok(unstaged) = repo.diff_index_to_workdir(None, None) {
+        count(unstaged, &mut stats);
+    }
+    Ok(stats)
+}
+
 /// Get unified diff for a single file (relative path) within a task's workspace.
 /// Returns empty string if the file has no changes.
 #[tauri::command]

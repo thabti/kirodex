@@ -72,7 +72,7 @@ export function useSidebarTasks(sort: SortKey): readonly SidebarProject[] {
       grouped.set(cwd, sortTasks(tasks, sort))
     }
 
-    // Build project list in the order of the projects array (user-controlled)
+    // Build project list from all known workspaces
     const result: SidebarProject[] = []
     const seen = new Set<string>()
 
@@ -94,6 +94,19 @@ export function useSidebarTasks(sort: SortKey): readonly SidebarProject[] {
         cwd,
         tasks,
       })
+    }
+
+    // Sort projects by the same key (using the most recent / oldest thread as proxy)
+    if (sort === 'recent' || sort === 'oldest') {
+      result.sort((a, b) => {
+        const aTime = a.tasks.length > 0 ? new Date(a.tasks[0].createdAt).getTime() : 0
+        const bTime = b.tasks.length > 0 ? new Date(b.tasks[0].createdAt).getTime() : 0
+        return sort === 'recent' ? bTime - aTime : aTime - bTime
+      })
+    } else if (sort === 'name-asc') {
+      result.sort((a, b) => a.name.localeCompare(b.name))
+    } else if (sort === 'name-desc') {
+      result.sort((a, b) => b.name.localeCompare(a.name))
     }
 
     return result as readonly SidebarProject[]

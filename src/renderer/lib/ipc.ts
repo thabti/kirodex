@@ -77,8 +77,12 @@ export const ipc = {
     invoke('task_diff', { taskId }),
   gitDiffFile: (taskId: string, filePath: string): Promise<string> =>
     invoke('git_diff_file', { taskId, filePath }),
+  gitDiffStats: (cwd: string): Promise<{ additions: number; deletions: number; fileCount: number }> =>
+    invoke('git_diff_stats', { cwd }),
   openInEditor: (path: string, editor: string): Promise<void> =>
     invoke('open_in_editor', { path, editor }),
+  detectEditors: (): Promise<string[]> =>
+    invoke('detect_editors'),
   gitCommit: (taskId: string, message: string): Promise<void> =>
     invoke('git_commit', { taskId, message }),
   gitPush: (taskId: string): Promise<void> =>

@@ -1,0 +1,125 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  test:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install system deps
+        run: |
+          brew install gtk4 || true
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Install Node deps
+        run: bun install --frozen-lockfile
+
+      # ── TypeScript ──────────────────────────────────────────
+      - name: TypeScript check
+        run: npx tsc --noEmit
+
+      # ── UI tests ────────────────────────────────────────────
+      - name: UI tests (Vitest)
+        id: vitest
+        run: |
+          npx vitest run --reporter=verbose 2>&1 | tee vitest-output.txt
+          echo "exit_code=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+
+      # ── Rust tests ──────────────────────────────────────────
+      - name: Rust tests
+        id: cargo_test
+        working-directory: src-tauri
+        run: |
+          cargo test 2>&1 | tee cargo-test-output.txt
+          echo "exit_code=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+
+      # ── Vite build ──────────────────────────────────────────
+      - name: Vite build
+        run: npx vite build
+
+      # ── PR comment ──────────────────────────────────────────
+      - name: Post test results to PR
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const vitest = fs.readFileSync('vitest-output.txt', 'utf8');
+            const cargo = fs.readFileSync('src-tauri/cargo-test-output.txt', 'utf8');
+
+            // Extract summary lines
+            const vitestLines = vitest.split('\n');
+            const vitestSummary = vitestLines.filter(l =>
+              l.includes('Tests') || l.includes('Test Files') || l.includes('passed') || l.includes('failed')
+            ).map(l => l.replace(/\x1b\[[0-9;]*m/g, '').trim()).filter(Boolean).join('\n');
+
+            const cargoLines = cargo.split('\n');
+            const cargoSummary = cargoLines.filter(l =>
+              l.includes('test result') || l.includes('running')
+            ).map(l => l.trim()).filter(Boolean).join('\n');
+
+            const vitestPassed = !vitest.includes('FAIL');
+            const cargoPassed = !cargo.includes('FAILED');
+            const allPassed = vitestPassed && cargoPassed;
+
+            const body = [
+              `## ${allPassed ? '✅' : '❌'} Test Results`,
+              '',
+              '### UI Tests (Vitest)',
+              `${vitestPassed ? '✅ Passed' : '❌ Failed'}`,
+              '```',
+              vitestSummary || 'No output captured',
+              '```',
+              '',
+              '### Rust Tests (cargo test)',
+              `${cargoPassed ? '✅ Passed' : '❌ Failed'}`,
+              '```',
+              cargoSummary || 'No output captured',
+              '```',
+            ].join('\n');
+
+            // Find existing comment to update
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find(c =>
+              c.user.type === 'Bot' && c.body.includes('## ') && c.body.includes('Test Results')
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }

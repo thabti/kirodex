@@ -68,15 +68,15 @@ export const Dashboard = memo(function Dashboard() {
   }, [addProject, createDraftThread])
 
   return (
-    <div className="flex min-h-0 flex-1 overflow-hidden">
+    <div data-testid="dashboard-section" className="flex min-h-0 flex-1 overflow-hidden">
       <ScrollArea className="min-h-0 flex-1">
         <div className="p-6">
           <div className="mb-5 flex items-center gap-3">
-            <h1 className="text-lg font-semibold">Dashboard</h1>
+            <h1 data-testid="dashboard-heading" className="text-lg font-semibold">Dashboard</h1>
             <Badge variant="secondary" className="text-[10px]">
               {taskCount} task{taskCount !== 1 ? 's' : ''}
             </Badge>
-            <Button size="sm" className="ml-auto gap-1.5" onClick={handleNewThread}>
+            <Button size="sm" className="ml-auto gap-1.5" onClick={handleNewThread} data-testid="dashboard-new-thread-button">
               <IconPlus className="h-3.5 w-3.5" />
               New Thread
             </Button>
@@ -100,6 +100,7 @@ export const Dashboard = memo(function Dashboard() {
             </Empty>
           ) : (
             <div
+              data-testid="dashboard-task-grid"
               className="grid gap-4"
               style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}
             >

@@ -1,3 +1,29 @@
+## 2026-04-10 13:26 GST (Dubai)
+
+### ChatInput: Move AutoApproveToggle into the mode/model pill
+
+Moved "Full access" toggle inside the `ToolbarGroup` pill alongside ModeToggle and ModelPicker, separated by dots. Left pill is now: attach → [mode · model · full access]. Right side: branch + context + send/pause.
+
+**Modified:** `src/renderer/components/chat/ChatInput.tsx`
+
+## 2026-04-10 13:24 GST (Dubai)
+
+### ChatInput footer: rearrange toolbar layout
+
+Moved toolbar items per user request:
+- Attach button (paperclip) moved to the left, before the ModeToggle/ModelPicker pill
+- AutoApproveToggle + BranchSelector moved to the right, next to ContextRing
+- Footer is now two groups: left (attach + mode + model), right (safety + git + context + send/pause)
+- Eliminated the center section
+
+**Modified:** `src/renderer/components/chat/ChatInput.tsx`
+
+## 2026-04-10 12:51 GST (Dubai)
+
+- Committed `style(ui): normalize muted-foreground to foreground opacity tokens` (b3c0e27)
+- 3 files changed: ChangedFilesSummary.tsx, ToolCallEntry.tsx color refinements, activity.md update
+- Pushed to origin/main
+
 ## 2026-04-10 12:48 GST (Dubai)
 
 - Committed `feat(ui): redesign changed files summary with file icons and DM Sans font` (5b4b9cb)
@@ -1084,3 +1110,55 @@ Build: TS ✓, Vite ✓
 ## 2026-04-10 12:45 (Dubai)
 - Bumped package.json version from 0.6.0 to 0.7.0
 - Added `"author": "Sabeur Thabti"` to package.json
+
+## 2026-04-10 12:52 (Dubai)
+
+**Feat: Add unit tests and GitHub Actions CI**
+
+UI tests (Vitest, 26 tests across 3 files):
+- `src/renderer/lib/timeline.test.ts` — 11 tests for `deriveTimeline` (message mapping, streaming, working indicator, changed-files)
+- `src/renderer/components/chat/tool-call-utils.test.ts` — 11 tests for `isFileMutation` and `getToolIcon`
+- `src/renderer/lib/history-store.test.ts` — 4 tests for `toArchivedTasks`
+
+Rust tests (cargo test, 23 tests across 4 modules):
+- `commands/error.rs` — 6 tests (From impls, Display, Serialize)
+- `commands/fs_ops.rs` — 7 tests (git_status_label, is_ignored_dir)
+- `commands/kiro_config.rs` — 6 tests (parse_steering_frontmatter)
+- `commands/settings.rs` — 4 tests (defaults, serde roundtrip, camelCase)
+
+GitHub Actions (`.github/workflows/ci.yml`):
+- Triggers on push to main and PRs
+- Runs on macos-latest with Rust cache
+- Steps: tsc check, vitest, cargo test, vite build
+- Posts/updates a PR comment with test results summary
+
+New files: vitest.config.ts, 3 test files, ci.yml
+Modified: package.json (added vitest dep + test scripts), 4 Rust files (added #[cfg(test)] modules)
+
+Build: TS ✓, Vitest 26/26 ✓, Cargo 23/23 ✓, Vite ✓
+
+## 2026-04-10 13:19 (Dubai)
+
+**Feat: Workspace-reactive git diff stats in header**
+
+- Added `git_diff_stats(cwd)` Rust command in `git.rs` — uses git2's `diff.stats()` API to return `{additions, deletions, fileCount}` without generating full patch text
+- Registered in `lib.rs`, added IPC wrapper `ipc.gitDiffStats(cwd)` in `ipc.ts`
+- Updated `AppHeader.tsx` to fetch diff stats by workspace path (not taskId), reactive to workspace and task status changes. Works for pending workspaces with no task yet.
+- Removed dependency on `useDiffStore` for header stats
+
+Build: TS ✓, Vite ✓, Cargo ✓
+
+## 2026-04-10 13:29 (Dubai)
+
+**Feat: Auto-detect installed editors for "Open in Editor" button**
+
+- Added `detect_editors()` Rust command in `fs_ops.rs` — uses `which::which()` to check for `cursor`, `code`, `zed`, `windsurf` in order
+- Registered in `lib.rs`, added IPC wrapper `ipc.detectEditors()` in `ipc.ts`
+- Rewrote `OpenInEditorGroup.tsx`:
+  - Auto-detects installed editors on mount (cached after first call)
+  - Primary button shows the first detected editor
+  - Dropdown shows remaining editors
+  - Hides entirely if no editors found
+  - Custom icons for Zed and Cursor; IconCode fallback for others
+
+Build: TS ✓, Vite ✓, Cargo ✓

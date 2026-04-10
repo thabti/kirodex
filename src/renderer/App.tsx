@@ -45,7 +45,7 @@ function EmptyState() {
   }, [projects]);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div data-testid="empty-state" className="flex min-h-0 flex-1 flex-col">
       {/* Skeleton messages at low opacity */}
       <div
         className="flex flex-1 flex-col gap-4 px-6 pt-8 opacity-[0.07] select-none"
@@ -231,7 +231,7 @@ export function App() {
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="flex h-full flex-col bg-background text-foreground">
+      <div data-testid="app-container" className="flex h-full flex-col bg-background text-foreground">
         {/* Top-level breadcrumb header */}
         <ErrorBoundary>
           <AppHeader
@@ -247,7 +247,7 @@ export function App() {
           <ErrorBoundary>
             {!isSidebarCollapsed && <TaskSidebar width={sidebarWidth} onResize={setSidebarWidth} />}
           </ErrorBoundary>
-          <main className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
+          <main data-testid="main-content" className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
             <ErrorBoundary>
               <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden" style={{ fontSize: 'var(--app-font-size, 14px)' }}>
                 <Suspense>

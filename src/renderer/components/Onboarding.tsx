@@ -39,14 +39,14 @@ export function Onboarding() {
   }, [])
 
   return (
-    <div className="fixed inset-0 z-[999] flex items-center justify-center overflow-y-auto bg-background">
+    <div data-testid="onboarding-section" className="fixed inset-0 z-[999] flex items-center justify-center overflow-y-auto bg-background">
       <div className="fixed inset-x-0 top-0 h-10" data-tauri-drag-region />
       <div className="flex flex-col items-center gap-8 py-12 text-center">
         <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-primary/10">
           <IconStack2 size={40} stroke={1.5} className="text-primary" />
         </div>
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight text-foreground">Welcome to Kirodex</h1>
+          <h1 data-testid="onboarding-heading" className="text-3xl font-semibold tracking-tight text-foreground">Welcome to Kirodex</h1>
           <p className="mt-3 max-w-md text-[15px] leading-relaxed text-muted-foreground">
             A native desktop client for Kiro — the AI-powered coding assistant.
             Chat with your codebase, plan features, and let the agent work for you.
@@ -61,7 +61,7 @@ export function Onboarding() {
 
         {/* Terminal-style CLI detection */}
         {/* Terminal */}
-        <div className="w-full max-w-sm overflow-hidden rounded-xl bg-[#1a1a2e] shadow-lg shadow-black/20">
+        <div data-testid="onboarding-terminal" className="w-full max-w-sm overflow-hidden rounded-xl bg-[#1a1a2e] shadow-lg shadow-black/20">
           {/* Title bar */}
           <div className="flex items-center gap-2 border-b border-white/5 px-4 py-2.5">
             <div className="flex gap-1.5">
@@ -118,6 +118,7 @@ export function Onboarding() {
             <div className="flex gap-1.5">
               <input
                 type="text"
+                data-testid="onboarding-path-input"
                 value={manualPath}
                 onChange={(e) => setManualPath(e.target.value)}
                 placeholder="/path/to/kiro-cli"
@@ -131,7 +132,7 @@ export function Onboarding() {
                 <IconFolderOpen size={16} />
               </button>
             </div>
-            <button type="button" onClick={detect}
+            <button type="button" onClick={detect} data-testid="onboarding-retry-button"
               className="text-[12px] text-primary/60 transition-colors hover:text-primary"
             >
               Retry detection
@@ -141,6 +142,7 @@ export function Onboarding() {
 
         <button type="button"
           onClick={finish}
+          data-testid="onboarding-submit-button"
           className="cursor-pointer rounded-xl bg-primary px-10 py-3 text-[15px] font-medium text-primary-foreground transition-colors hover:bg-primary/90"
         >
           {detectState === 'not-found' && manualPath ? 'Use This Path' : 'Get Started'}

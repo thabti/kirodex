@@ -46,11 +46,11 @@ export class ErrorBoundary extends Component<Props, State> {
       const isLooping = this.state.retryCount >= MAX_RETRIES
 
       return (
-        <div className="flex h-full w-full flex-col items-center justify-center gap-3 p-6 text-center">
+        <div data-testid="error-boundary-section" className="flex h-full w-full flex-col items-center justify-center gap-3 p-6 text-center">
           <IconAlertCircle className="h-8 w-8 text-destructive/70" />
           <div>
             <p className="text-sm font-medium text-foreground">Something went wrong</p>
-            <p className="mt-1 max-w-sm text-xs text-muted-foreground">
+            <p data-testid="error-boundary-message" className="mt-1 max-w-sm text-xs text-muted-foreground">
               {this.state.error.message || 'An unexpected error occurred.'}
             </p>
           </div>
@@ -61,6 +61,7 @@ export class ErrorBoundary extends Component<Props, State> {
           ) : (
             <button
               onClick={this.handleReset}
+              data-testid="error-boundary-retry-button"
               className="mt-1 inline-flex items-center gap-1.5 rounded-md border border-input px-3 py-1.5 text-xs font-medium transition-colors hover:bg-accent"
             >
               <IconRotate className="h-3 w-3" />

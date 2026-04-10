@@ -1,7 +1,13 @@
 import { useState, useRef, useEffect } from 'react'
-import { IconChevronDown } from '@tabler/icons-react'
+import { IconChevronDown, IconCode } from '@tabler/icons-react'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { ipc } from '@/lib/ipc'
+
+interface EditorInfo {
+  bin: string
+  label: string
+  icon: React.ReactNode
+}
 
 const ZedIcon = () => (
   <svg aria-hidden className="size-3.5" fill="none" viewBox="0 0 96 96">
@@ -12,9 +18,35 @@ const ZedIcon = () => (
   </svg>
 )
 
+const CursorIcon = () => (
+  <svg aria-hidden className="size-3.5" viewBox="0 0 24 24" fill="none">
+    <path d="M5.5 3.21V20.8c0 .45.54.67.85.35l4.86-4.86a.5.5 0 0 1 .35-.15h6.87a.5.5 0 0 0 .35-.85L6.35 2.86a.5.5 0 0 0-.85.35Z" fill="currentColor" />
+  </svg>
+)
+
+const EDITOR_MAP: Record<string, Omit<EditorInfo, 'bin'>> = {
+  cursor: { label: 'Cursor', icon: <CursorIcon /> },
+  code: { label: 'VS Code', icon: <IconCode className="size-3.5" /> },
+  zed: { label: 'Zed', icon: <ZedIcon /> },
+  windsurf: { label: 'Windsurf', icon: <IconCode className="size-3.5" /> },
+}
+
+let cachedEditors: EditorInfo[] | null = null
+
 export function OpenInEditorGroup({ workspace }: { workspace: string }) {
+  const [editors, setEditors] = useState<EditorInfo[]>(cachedEditors ?? [])
   const [menuOpen, setMenuOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (cachedEditors) return
+    ipc.detectEditors().then((bins) => {
+      const detected = bins
+        .map((bin) => ({ bin, ...(EDITOR_MAP[bin] ?? { label: bin, icon: <IconCode className="size-3.5" /> }) }))
+      cachedEditors = detected
+      setEditors(detected)
+    }).catch(() => {})
+  }, [])
 
   useEffect(() => {
     if (!menuOpen) return
@@ -23,31 +55,40 @@ export function OpenInEditorGroup({ workspace }: { workspace: string }) {
     return () => document.removeEventListener('mousedown', h)
   }, [menuOpen])
 
-  const open = (editor: string) => { void ipc.openInEditor(workspace, editor); setMenuOpen(false) }
+  const open = (bin: string) => { void ipc.openInEditor(workspace, bin); setMenuOpen(false) }
+
+  if (editors.length === 0) return null
+
+  const primary = editors[0]
+  const rest = editors.slice(1)
 
   return (
     <div ref={ref} className="relative flex w-fit">
       <Tooltip>
         <TooltipTrigger asChild>
-          <button type="button" onClick={() => open('zed')}
+          <button type="button" onClick={() => open(primary.bin)}
             className="inline-flex h-6 items-center gap-1 rounded-l-md border border-input bg-popover px-1.5 text-xs text-foreground shadow-xs/5 transition-colors hover:bg-accent/50 dark:bg-input/32">
-            <ZedIcon />
+            {primary.icon}
           </button>
         </TooltipTrigger>
-        <TooltipContent side="bottom">Open in Zed</TooltipContent>
+        <TooltipContent side="bottom">Open in {primary.label}</TooltipContent>
       </Tooltip>
-      <div className="pointer-events-none relative z-[2] w-px bg-input dark:bg-input/32" />
-      <button type="button" aria-label="Open options" onClick={() => setMenuOpen((v) => !v)}
-        className="inline-flex h-6 w-6 items-center justify-center rounded-r-md border border-input bg-popover text-foreground shadow-xs/5 transition-colors hover:bg-accent/50 dark:bg-input/32">
-        <IconChevronDown className="size-3.5" aria-hidden />
-      </button>
-      {menuOpen && (
+      {rest.length > 0 && (
+        <>
+          <div className="pointer-events-none relative z-[2] w-px bg-input dark:bg-input/32" />
+          <button type="button" aria-label="More editors" onClick={() => setMenuOpen((v) => !v)}
+            className="inline-flex h-6 w-6 items-center justify-center rounded-r-md border border-input bg-popover text-foreground shadow-xs/5 transition-colors hover:bg-accent/50 dark:bg-input/32">
+            <IconChevronDown className="size-3.5" aria-hidden />
+          </button>
+        </>
+      )}
+      {menuOpen && rest.length > 0 && (
         <div className="absolute right-0 top-7 z-[200] min-w-[130px] rounded-lg border border-border bg-popover py-1 shadow-lg">
-          {(['zed', 'vscode', 'cursor'] as const).map((e) => (
-            <button key={e} type="button" onClick={() => open(e)}
-              className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-foreground hover:bg-accent transition-colors capitalize">
-              {e === 'zed' ? <ZedIcon /> : e === 'vscode' ? <span className="size-3.5 text-[10px]">VS</span> : <span className="size-3.5 text-[10px]">Cur</span>}
-              {e === 'vscode' ? 'VS Code' : e.charAt(0).toUpperCase() + e.slice(1)}
+          {rest.map((e) => (
+            <button key={e.bin} type="button" onClick={() => open(e.bin)}
+              className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-foreground hover:bg-accent transition-colors">
+              {e.icon}
+              {e.label}
             </button>
           ))}
         </div>

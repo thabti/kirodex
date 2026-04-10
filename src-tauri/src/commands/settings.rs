@@ -104,3 +104,72 @@ pub fn save_settings(
     store.settings = settings;
     persist_store(&store)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn default_settings_values() {
+        let s = AppSettings::default();
+        assert_eq!(s.kiro_bin, "kiro-cli");
+        assert_eq!(s.font_size, 13);
+        assert!(!s.auto_approve);
+        assert!(s.respect_gitignore);
+        assert!(s.co_author);
+        assert!(!s.has_onboarded);
+        assert!(s.agent_profiles.is_empty());
+        assert!(s.project_prefs.is_none());
+    }
+
+    #[test]
+    fn serde_roundtrip_preserves_all_fields() {
+        let mut prefs = std::collections::HashMap::new();
+        prefs.insert("proj".to_string(), ProjectPrefs {
+            model_id: Some("claude-4".to_string()),
+            auto_approve: Some(true),
+        });
+        let settings = AppSettings {
+            kiro_bin: "/usr/local/bin/kiro-cli".to_string(),
+            font_size: 16,
+            auto_approve: true,
+            has_onboarded: true,
+            respect_gitignore: false,
+            co_author: false,
+            project_prefs: Some(prefs),
+            ..Default::default()
+        };
+        let json = serde_json::to_string(&settings).unwrap();
+        let restored: AppSettings = serde_json::from_str(&json).unwrap();
+        assert_eq!(restored.kiro_bin, "/usr/local/bin/kiro-cli");
+        assert_eq!(restored.font_size, 16);
+        assert!(restored.auto_approve);
+        assert!(restored.has_onboarded);
+        assert!(!restored.respect_gitignore);
+        assert!(!restored.co_author);
+        let pp = restored.project_prefs.unwrap();
+        assert_eq!(pp["proj"].model_id.as_deref(), Some("claude-4"));
+    }
+
+    #[test]
+    fn deserialize_with_missing_fields_uses_defaults() {
+        let json = r#"{"kiroBin": "/bin/kiro"}"#;
+        let settings: AppSettings = serde_json::from_str(json).unwrap();
+        assert_eq!(settings.kiro_bin, "/bin/kiro");
+        assert_eq!(settings.font_size, 13);
+        assert!(settings.respect_gitignore);
+        assert!(settings.co_author);
+        assert!(!settings.has_onboarded);
+    }
+
+    #[test]
+    fn camel_case_serialization() {
+        let settings = AppSettings::default();
+        let json = serde_json::to_string(&settings).unwrap();
+        assert!(json.contains("kiroBin"));
+        assert!(json.contains("fontSize"));
+        assert!(json.contains("autoApprove"));
+        assert!(json.contains("hasOnboarded"));
+        assert!(!json.contains("kiro_bin"));
+    }
+}

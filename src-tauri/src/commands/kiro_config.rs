@@ -245,3 +245,55 @@ pub fn get_kiro_config(project_path: Option<String>) -> KiroConfig {
 
     config
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_frontmatter_with_always_apply_true() {
+        let input = "---\nalwaysApply: true\n---\n# Title\nSome body text";
+        let (always_apply, excerpt) = parse_steering_frontmatter(input);
+        assert!(always_apply);
+        assert_eq!(excerpt, "Some body text");
+    }
+
+    #[test]
+    fn parse_frontmatter_with_always_apply_false() {
+        let input = "---\nalwaysApply: false\n---\nBody here";
+        let (always_apply, excerpt) = parse_steering_frontmatter(input);
+        assert!(!always_apply);
+        assert_eq!(excerpt, "Body here");
+    }
+
+    #[test]
+    fn parse_frontmatter_missing_returns_false() {
+        let input = "# No frontmatter\nJust content";
+        let (always_apply, excerpt) = parse_steering_frontmatter(input);
+        assert!(!always_apply);
+        assert_eq!(excerpt, "Just content");
+    }
+
+    #[test]
+    fn parse_frontmatter_skips_headings_in_excerpt() {
+        let input = "---\nalwaysApply: true\n---\n# Heading\n## Subheading\nActual content";
+        let (_, excerpt) = parse_steering_frontmatter(input);
+        assert_eq!(excerpt, "Actual content");
+    }
+
+    #[test]
+    fn parse_frontmatter_truncates_long_excerpt() {
+        let long_line = "a".repeat(200);
+        let input = format!("---\nalwaysApply: false\n---\n{}", long_line);
+        let (_, excerpt) = parse_steering_frontmatter(&input);
+        assert_eq!(excerpt.len(), 120);
+    }
+
+    #[test]
+    fn parse_frontmatter_empty_body() {
+        let input = "---\nalwaysApply: true\n---\n";
+        let (always_apply, excerpt) = parse_steering_frontmatter(input);
+        assert!(always_apply);
+        assert_eq!(excerpt, "");
+    }
+}

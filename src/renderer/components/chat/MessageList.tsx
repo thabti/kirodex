@@ -116,6 +116,7 @@ export const MessageList = memo(function MessageList({
         <button
           type="button"
           onClick={scrollToBottom}
+          data-testid="scroll-to-bottom-button"
           className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs text-muted-foreground shadow-lg transition-colors hover:bg-secondary"
         >
           <IconArrowDown className="size-3" />

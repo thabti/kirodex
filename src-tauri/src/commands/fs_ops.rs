@@ -54,6 +54,17 @@ pub fn open_in_editor(path: String, editor: String) -> Result<(), AppError> {
     Ok(())
 }
 
+/// Detect which code editors are installed on the system.
+#[tauri::command]
+pub fn detect_editors() -> Vec<String> {
+    // (binary, display-order priority)
+    let candidates = ["cursor", "code", "zed", "windsurf"];
+    candidates.iter()
+        .filter(|bin| which::which(bin).is_ok())
+        .map(|s| s.to_string())
+        .collect()
+}
+
 #[tauri::command]
 pub fn open_url(url: String) -> Result<(), AppError> {
     open::that(&url).map_err(|e| AppError::Io(e))
@@ -324,4 +335,53 @@ pub fn list_project_files(root: String, respect_gitignore: bool) -> Result<Vec<P
 
     files.sort_by(|a, b| b.is_dir.cmp(&a.is_dir).then_with(|| a.path.cmp(&b.path)));
     Ok(files)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn git_status_label_new_file() {
+        assert_eq!(git_status_label(git2::Status::INDEX_NEW), "A");
+        assert_eq!(git_status_label(git2::Status::WT_NEW), "A");
+    }
+
+    #[test]
+    fn git_status_label_modified() {
+        assert_eq!(git_status_label(git2::Status::INDEX_MODIFIED), "M");
+        assert_eq!(git_status_label(git2::Status::WT_MODIFIED), "M");
+    }
+
+    #[test]
+    fn git_status_label_deleted() {
+        assert_eq!(git_status_label(git2::Status::INDEX_DELETED), "D");
+        assert_eq!(git_status_label(git2::Status::WT_DELETED), "D");
+    }
+
+    #[test]
+    fn git_status_label_renamed() {
+        assert_eq!(git_status_label(git2::Status::INDEX_RENAMED), "R");
+    }
+
+    #[test]
+    fn git_status_label_current_is_empty() {
+        assert_eq!(git_status_label(git2::Status::CURRENT), "");
+    }
+
+    #[test]
+    fn is_ignored_dir_matches_known_dirs() {
+        assert!(is_ignored_dir("node_modules"));
+        assert!(is_ignored_dir(".git"));
+        assert!(is_ignored_dir("target"));
+        assert!(is_ignored_dir("dist"));
+        assert!(is_ignored_dir("__pycache__"));
+    }
+
+    #[test]
+    fn is_ignored_dir_rejects_normal_dirs() {
+        assert!(!is_ignored_dir("src"));
+        assert!(!is_ignored_dir("lib"));
+        assert!(!is_ignored_dir("components"));
+    }
 }
