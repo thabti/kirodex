@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { IconGitCommit, IconChevronDown, IconArrowUp, IconArrowDown, IconRefresh, IconLoader2 } from '@tabler/icons-react'
+import { toast } from 'sonner'
 import { ipc } from '@/lib/ipc'
 import { cn } from '@/lib/utils'
 
@@ -33,16 +34,23 @@ export function GitActionsGroup({ workspace }: { workspace: string }) {
   const handleCommit = async () => {
     if (!commitMsg.trim()) return
     setActiveAction('commit')
-    try { await ipc.gitCommit(workspace, commitMsg.trim()); setCommitMsg(''); setShowCommitInput(false) }
-    catch (e) { alert(e instanceof Error ? e.message : 'Commit failed') }
-    finally { setActiveAction(null) }
+    try {
+      await ipc.gitCommit(workspace, commitMsg.trim())
+      setCommitMsg(''); setShowCommitInput(false)
+      toast.success('Committed')
+    } catch (e) {
+      toast.error('Commit failed', { description: e instanceof Error ? e.message : String(e) })
+    } finally { setActiveAction(null) }
   }
 
   const runGitAction = useCallback(async (key: GitAction, action: () => Promise<unknown>, label: string) => {
     setActiveAction(key)
-    try { await action() }
-    catch (e) { alert(e instanceof Error ? e.message : `${label} failed`) }
-    finally { setActiveAction(null) }
+    try {
+      await action()
+      toast.success(label, { description: 'Done' })
+    } catch (e) {
+      toast.error(`${label} failed`, { description: e instanceof Error ? e.message : String(e) })
+    } finally { setActiveAction(null); setMenuOpen(false) }
   }, [])
 
   const handleOpenGitHub = useCallback(async () => {

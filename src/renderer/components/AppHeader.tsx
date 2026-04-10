@@ -60,8 +60,11 @@ const AppHeaderInner = memo(function AppHeaderInner({ sidePanelOpen, onToggleSid
   useEffect(() => {
     if (!workspace) { setDiffStats({ additions: 0, deletions: 0, fileCount: 0 }); return }
     let stale = false
-    ipc.gitDiffStats(workspace).then((s) => { if (!stale) setDiffStats(s) }).catch(() => {})
-    return () => { stale = true }
+    const fetch = () => { ipc.gitDiffStats(workspace).then((s) => { if (!stale) setDiffStats(s) }).catch(() => {}) }
+    fetch()
+    // Poll every 10s so stats stay fresh even without task activity
+    const interval = setInterval(fetch, 10_000)
+    return () => { stale = true; clearInterval(interval) }
   }, [workspace, taskStatus])
 
   const handlePause = useCallback(() => { if (selectedTaskId) ipc.pauseTask(selectedTaskId) }, [selectedTaskId])
@@ -151,7 +154,7 @@ const AppHeaderInner = memo(function AppHeaderInner({ sidePanelOpen, onToggleSid
                   onClick={onToggleSidePanel}
                   className={cn(
                     'inline-flex h-6 items-center gap-1.5 px-1.5 text-xs shadow-xs/5 transition-colors border border-input',
-                    selectedTaskId ? 'rounded-l-md' : 'rounded-md',
+                    workspace ? 'rounded-l-md' : 'rounded-md',
                     sidePanelOpen ? 'bg-input/64 dark:bg-input text-foreground' : 'bg-popover hover:bg-accent/50 dark:bg-input/32 text-muted-foreground',
                   )}
                 >
@@ -169,9 +172,9 @@ const AppHeaderInner = memo(function AppHeaderInner({ sidePanelOpen, onToggleSid
               </TooltipTrigger>
               <TooltipContent side="bottom">Files changed</TooltipContent>
             </Tooltip>
-            {selectedTaskId && taskWorkspace && (
+            {workspace && (
               <ErrorBoundary fallback={null}>
-                <GitActionsGroup workspace={taskWorkspace} />
+                <GitActionsGroup workspace={workspace} />
               </ErrorBoundary>
             )}
           </div>

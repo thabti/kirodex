@@ -3,6 +3,7 @@ import {
   IconX, IconCheck, IconAlertCircle, IconChevronDown, IconLoader2, IconSearch,
   IconHistory, IconKeyboard, IconSettings2, IconPaint, IconTool, IconTerminal,
   IconGitBranch, IconShield, IconEye, IconTypography, IconPalette, IconCommand, IconArrowLeft, IconTrash,
+  IconBrandGithub,
 } from '@tabler/icons-react'
 import { useTaskStore } from '@/stores/taskStore'
 import { useSettingsStore } from '@/stores/settingsStore'
@@ -186,7 +187,19 @@ export function SettingsPanel() {
               <IconArrowLeft className="size-4" />
               Back
             </button>
-            <p className="px-3 text-[10px] text-muted-foreground/30">Kirodex v0.6.0</p>
+            <div className="flex items-center justify-between px-3">
+              <p className="text-[10px] text-muted-foreground/30">Kirodex v0.6.0</p>
+              <a
+                href="https://github.com/thabti/kirodex"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Kirodex on GitHub"
+                tabIndex={0}
+                className="text-muted-foreground/30 transition-colors hover:text-foreground"
+              >
+                <IconBrandGithub className="size-4" />
+              </a>
+            </div>
           </div>
         </nav>
 

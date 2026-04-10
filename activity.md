@@ -1,3 +1,59 @@
+## 2026-04-11 02:21 GST (Dubai)
+
+### Docs: README improvements and architecture extraction
+
+- Added "Inspired by Codex CLI and T3 Code" with links to the README introduction
+- Moved architecture diagram, backend modules table, and tech stack table from README into `docs/architecture.md`
+- Replaced inline architecture section with a one-liner referencing `docs/architecture.md`
+- Improved Getting Started with structured subsections: Prerequisites, Clone and run, kiro-cli detection, Available commands
+
+**Modified:** README.md, docs/architecture.md (new)
+
+## 2026-04-11 02:17 GST (Dubai)
+
+### Fix: Delete thread confirmation button styling
+
+The "Delete" button in the thread context menu confirmation had `text-destructive-foreground` which resolves to `red-700` — red text on a red background, making it unreadable. Changed to `text-white` for proper contrast.
+
+- File: `src/renderer/components/sidebar/ThreadItem.tsx`
+
+## 2026-04-11 02:20 GST (Dubai)
+
+### Fix: Git push/pull/fetch auth + re-enable SSH support
+
+Re-enabled `ssh` feature on `git2` crate (was stripped to `https`-only). All network git operations (push, pull, fetch) now use a credential callback that handles: SSH agent (macOS Keychain, 1Password agent), SSH key files on disk (`~/.ssh/id_ed25519`, `id_ecdsa`, `id_rsa`), HTTPS credential helpers (osxkeychain, credential-manager), and anonymous git:// protocol. Replaced all `alert()` calls in `GitActionsGroup` with `toast.error()`/`toast.success()` from sonner so git failures appear as non-blocking toasts instead of crashing the app with a native OS dialog.
+
+**Modified:** src-tauri/Cargo.toml, src-tauri/src/commands/git.rs, src/renderer/components/GitActionsGroup.tsx
+
+## 2026-04-11 02:00 GST (Dubai)
+
+### CI: Production build, app icon, and release signing guide
+
+- Replaced 32x32 placeholder icon (solid blue square, 99 bytes) with a proper 1024x1024 app icon
+  - Created SVG source (`icon.svg`) with gradient K letterform, code brackets, terminal cursor, and dot pattern on dark background
+  - Generated `icon.png` (1024x1024, 125KB) via `rsvg-convert`
+  - Generated `icon.icns` (457KB) via `iconutil` with all required macOS sizes (16-512@2x)
+  - Updated `tauri.conf.json` to reference both `icon.png` and `icon.icns`
+- Updated GitHub Actions CI workflow (`.github/workflows/ci.yml`)
+  - Replaced multi-platform build job (vite build + cargo build --release separately) with single macOS production build using `bun run build` (`cargo tauri build`)
+  - Produces actual `.app` and `.dmg` bundles
+  - Added artifact upload steps for both `.dmg` and `.app`
+  - Tests still run on all three platforms (ubuntu, macos, windows)
+- Added release and code signing guide to `README.md`
+  - Step 1: Build production bundle (`bun run build`)
+  - Step 2: Codesign with Apple Developer certificate
+  - Step 3: Notarize with Apple (`xcrun notarytool`)
+  - Step 4: Re-create signed DMG
+  - Instructions for running unsigned builds
+
+**Files modified:**
+- `.github/workflows/ci.yml`
+- `README.md`
+- `src-tauri/icons/icon.svg` (new)
+- `src-tauri/icons/icon.png` (replaced)
+- `src-tauri/icons/icon.icns` (new)
+- `src-tauri/tauri.conf.json`
+
 ## 2026-04-11 01:48 GST (Dubai)
 
 ### Chore: Rename asset screenshots to descriptive names
@@ -157,3 +213,27 @@ Fixed a race condition where `agent_message_chunk` events buffered in a `request
 Audited all 9 backend files (acp.rs, git.rs, pty.rs, settings.rs, fs_ops.rs, kiro_config.rs, error.rs, lib.rs, Cargo.toml) for memory safety, panics, resource leaks, and concurrency issues. Found 14 concrete defects: 3 HIGH (PTY child process leak, PTY reader thread leak, unwrap in ACP client trait), 5 MEDIUM (expect in spawned threads, poisoned mutex unwrap in close handler, unsafe without SAFETY comment, blocking Tauri thread), 6 LOW (swallowed errors, unbounded channels, unjoined threads). git.rs, settings.rs, kiro_config.rs, and error.rs are clean.
 
 **Modified:** activity.md (created)
+
+## 2026-04-11 02:00 (Dubai)
+
+- Fixed `TS2304` errors in `ErrorBoundary.test.tsx`: added missing `beforeEach` and `afterEach` to the vitest import
+- `npx tsc --noEmit` now passes cleanly
+- Committed: `fix(test): add missing vitest imports for beforeEach and afterEach` (80fd1c6)
+
+## 2026-04-11 02:01 (Dubai)
+
+**Fix: CI failing on Windows with `npm error code EOVERRIDE`**
+
+- Root cause: `npx` on Windows uses npm's resolver, which rejects the `overrides` field when `vite` is both a direct devDependency and an override target (`npm:rolldown-vite@latest`). Bun handles this fine, but npm is strict.
+- Fix: Replaced all `npx` calls with `bunx` in `.github/workflows/ci.yml` since the CI already uses `bun install`. Three replacements: `tsc`, `vitest run`, `vite build`.
+- File modified: `.github/workflows/ci.yml`
+
+## 2026-04-11 02:16 (Dubai)
+
+- Added GitHub icon link to the Settings panel sidebar footer
+- Icon uses `IconBrandGithub` from `@tabler/icons-react` (already used in the project)
+- Links to `https://github.com/thabti/kirodex`, opens in new tab
+- Placed next to the version text (`Kirodex v0.6.0`) in the sidebar bottom area
+- Includes `aria-label`, `tabIndex`, `rel="noopener noreferrer"` for accessibility and security
+- File modified: `src/renderer/components/settings/SettingsPanel.tsx`
+- TypeScript type check: ✅ passed

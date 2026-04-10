@@ -144,7 +144,7 @@ export const ThreadItem = memo(function ThreadItem({ task, isActive, onSelect, o
               <div className="flex gap-1 px-2 pb-1.5">
                 <button
                   type="button"
-                  className="flex-1 rounded-md bg-destructive/90 px-2 py-1 text-xs font-medium text-destructive-foreground hover:bg-destructive transition-colors"
+                  className="flex-1 rounded-md bg-destructive/90 px-2 py-1 text-xs font-medium text-white hover:bg-destructive transition-colors"
                   onClick={handleConfirmDelete}
                 >
                   Delete
