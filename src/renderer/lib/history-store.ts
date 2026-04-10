@@ -27,6 +27,7 @@ interface SavedThread {
 interface SavedProject {
   workspace: string
   displayName?: string
+  threadIds: string[]
 }
 
 // ── Store singleton ──────────────────────────────────────────────
@@ -57,10 +58,19 @@ export async function saveThreads(tasks: Record<string, AgentTask>, projectNames
       messages: t.messages.map(toSavedMessage),
     }))
 
-  const workspaces = [...new Set(Object.values(tasks).map((t) => t.workspace))]
+  // Group thread IDs by workspace
+  const threadsByWorkspace = new Map<string, string[]>()
+  for (const t of Object.values(tasks)) {
+    const ids = threadsByWorkspace.get(t.workspace) ?? []
+    ids.push(t.id)
+    threadsByWorkspace.set(t.workspace, ids)
+  }
+
+  const workspaces = [...threadsByWorkspace.keys()]
   const projects: SavedProject[] = workspaces.map((ws) => ({
     workspace: ws,
     ...(projectNames[ws] ? { displayName: projectNames[ws] } : {}),
+    threadIds: threadsByWorkspace.get(ws) ?? [],
   }))
 
   await store.set('threads', threads)
