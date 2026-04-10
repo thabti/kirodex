@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { GitCommitHorizontal, ChevronDown } from 'lucide-react'
+import { IconGitCommit, IconChevronDown } from '@tabler/icons-react'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { ipc } from '@/lib/ipc'
 
@@ -44,7 +44,7 @@ export function GitActionsGroup({ taskId, workspace }: { taskId: string; workspa
         <TooltipTrigger asChild>
           <button type="button" onClick={() => setShowCommitInput((v) => !v)} disabled={busy}
             className="inline-flex h-6 items-center gap-1 rounded-l-md border border-input bg-popover px-1.5 text-xs text-foreground shadow-xs/5 transition-colors hover:bg-accent/50 dark:bg-input/32 disabled:opacity-50">
-            <GitCommitHorizontal className="size-3.5" aria-hidden />
+            <IconGitCommit className="size-3.5" aria-hidden />
           </button>
         </TooltipTrigger>
         <TooltipContent side="bottom">Git commit</TooltipContent>
@@ -52,7 +52,7 @@ export function GitActionsGroup({ taskId, workspace }: { taskId: string; workspa
       <div className="pointer-events-none relative z-[2] w-px bg-input dark:bg-input/32" />
       <button type="button" aria-label="Git options" onClick={() => setMenuOpen((v) => !v)}
         className="inline-flex h-6 w-6 items-center justify-center rounded-r-md border border-input bg-popover text-foreground shadow-xs/5 transition-colors hover:bg-accent/50 dark:bg-input/32">
-        <ChevronDown className="size-3.5" aria-hidden />
+        <IconChevronDown className="size-3.5" aria-hidden />
       </button>
 
       {showCommitInput && (
@@ -77,7 +77,7 @@ export function GitActionsGroup({ taskId, workspace }: { taskId: string; workspa
         <div className="absolute right-0 top-7 z-[200] min-w-[140px] rounded-lg border border-border bg-popover py-1 shadow-lg">
           <button type="button" onClick={() => void handlePush()} disabled={busy}
             className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-foreground hover:bg-accent transition-colors disabled:opacity-50">
-            <GitCommitHorizontal className="size-3.5" /> Push
+            <IconGitCommit className="size-3.5" /> Push
           </button>
           <button type="button" onClick={() => setMenuOpen(false)}
             className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-foreground hover:bg-accent transition-colors">

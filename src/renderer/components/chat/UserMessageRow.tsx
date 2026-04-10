@@ -1,5 +1,5 @@
 import { memo, useState, useRef, useCallback, useMemo, type ReactNode } from 'react'
-import { Copy, Check, Image, FileText, File } from 'lucide-react'
+import { IconCopy, IconCheck, IconPhoto, IconFileText, IconFile } from '@tabler/icons-react'
 import {
   Tooltip,
   TooltipContent,
@@ -27,7 +27,7 @@ function renderWithFileMentions(text: string): ReactNode {
         onClick={() => useDiffStore.getState().openToFile(filePath)}
         className="mx-0.5 inline-flex items-center gap-1 rounded-md bg-accent/50 px-1.5 py-0.5 align-baseline font-mono text-[12px] text-primary transition-colors hover:bg-accent hover:text-foreground cursor-pointer"
       >
-        <FileText className="size-3 shrink-0" />
+        <IconFileText className="size-3 shrink-0" />
         {filePath}
       </button>
     )
@@ -66,7 +66,7 @@ function parseAttachments(content: string): { text: string; attachments: Array<{
 
 const AttachmentPill = memo(function AttachmentPill({ name, type, src }: { name: string; type: 'image' | 'file'; src?: string }) {
   const [showPreview, setShowPreview] = useState(false)
-  const Icon = type === 'image' ? Image : name.match(/\.(ts|js|tsx|jsx|py|rs|go|rb|java|c|cpp|h|css|html|json|yaml|yml|toml|xml|md|sql|sh)$/i) ? FileText : File
+  const Icon = type === 'image' ? IconPhoto : name.match(/\.(ts|js|tsx|jsx|py|rs|go|rb|java|c|cpp|h|css|html|json|yaml|yml|toml|xml|md|sql|sh)$/i) ? IconFileText : IconFile
 
   return (
     <div className="inline-flex flex-col gap-1">
@@ -113,7 +113,7 @@ export const UserMessageRow = memo(function UserMessageRow({ row }: { row: UserM
             ) : (
               <div className="space-y-2">
                 {cleanText && (
-                  <p className="whitespace-pre-wrap break-words text-[14px] leading-[1.6] text-foreground">
+                  <p className="whitespace-pre-wrap break-words leading-[1.6] text-foreground">
                     {renderWithFileMentions(cleanText)}
                   </p>
                 )}
@@ -136,9 +136,9 @@ export const UserMessageRow = memo(function UserMessageRow({ row }: { row: UserM
                   className="rounded-md p-0.5 text-muted-foreground/0 transition-all group-hover:text-muted-foreground/50 hover:!text-foreground"
                 >
                   {copied ? (
-                    <Check className="size-3" aria-hidden />
+                    <IconCheck className="size-3" aria-hidden />
                   ) : (
-                    <Copy className="size-3" aria-hidden />
+                    <IconCopy className="size-3" aria-hidden />
                   )}
                 </button>
               </TooltipTrigger>

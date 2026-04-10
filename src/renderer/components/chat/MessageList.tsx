@@ -1,6 +1,6 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { ArrowDown } from 'lucide-react'
+import { IconArrowDown } from '@tabler/icons-react'
 import type { TaskMessage, ToolCall } from '@/types'
 import { deriveTimeline, type TimelineRow } from '@/lib/timeline'
 import {
@@ -9,6 +9,7 @@ import {
   AssistantTextRow,
   WorkGroupRow,
   WorkingRow,
+  ChangedFilesSummary,
 } from './TimelineRows'
 
 const AUTO_SCROLL_THRESHOLD = 150
@@ -19,6 +20,7 @@ const ROW_ESTIMATES: Record<TimelineRow['kind'], number> = {
   'assistant-text': 80,
   'work': 40,
   'working': 40,
+  'changed-files': 48,
 }
 
 interface MessageListProps {
@@ -116,7 +118,7 @@ export const MessageList = memo(function MessageList({
           onClick={scrollToBottom}
           className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs text-muted-foreground shadow-lg transition-colors hover:bg-secondary"
         >
-          <ArrowDown className="size-3" />
+          <IconArrowDown className="size-3" />
           Scroll to bottom
         </button>
       )}
@@ -138,5 +140,7 @@ const TimelineRowRenderer = memo(function TimelineRowRenderer({ row }: { row: Ti
       return <WorkGroupRow row={row} />
     case 'working':
       return <WorkingRow />
+    case 'changed-files':
+      return <ChangedFilesSummary row={row} />
   }
 })

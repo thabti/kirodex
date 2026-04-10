@@ -93,8 +93,8 @@ pub fn pty_create(
 pub fn pty_write(state: tauri::State<'_, PtyState>, id: String, data: String) -> Result<(), AppError> {
     let mut ptys = state.0.lock().map_err(|_| AppError::LockPoisoned)?;
     let instance = ptys.get_mut(&id).ok_or_else(|| AppError::Other("PTY not found".to_string()))?;
-    instance.writer.write_all(data.as_bytes())?;
-    instance.writer.flush()?;
+    let _ = instance.writer.write_all(data.as_bytes());
+    let _ = instance.writer.flush();
     Ok(())
 }
 
@@ -107,15 +107,13 @@ pub fn pty_resize(
 ) -> Result<(), AppError> {
     let ptys = state.0.lock().map_err(|_| AppError::LockPoisoned)?;
     let instance = ptys.get(&id).ok_or_else(|| AppError::Other("PTY not found".to_string()))?;
-    instance
-        .master
-        .resize(PtySize {
-            rows,
-            cols,
-            pixel_width: 0,
-            pixel_height: 0,
-        })
-        .map_err(|e| AppError::Other(e.to_string()))
+    let _ = instance.master.resize(PtySize {
+        rows,
+        cols,
+        pixel_width: 0,
+        pixel_height: 0,
+    });
+    Ok(())
 }
 
 #[tauri::command]

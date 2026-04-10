@@ -1,5 +1,5 @@
 import { memo } from 'react'
-import { Paperclip } from 'lucide-react'
+import { IconPaperclip } from '@tabler/icons-react'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { SlashCommandPicker } from './SlashCommandPicker'
@@ -107,7 +107,7 @@ export const ChatInput = memo(function ChatInput({ disabled, contextUsage, messa
               placeholder="Ask anything, @ to mention files, / for commands"
               disabled={disabled}
               rows={1}
-              className="block max-h-[200px] min-h-[70px] w-full resize-none bg-transparent text-[14px] leading-[1.6] text-foreground outline-none placeholder:text-muted-foreground/35"
+              className="block max-h-[200px] min-h-[70px] w-full resize-none bg-transparent leading-[1.6] text-foreground outline-none placeholder:text-muted-foreground/35"
               style={{ overflow: 'auto', fontFamily: 'inherit', caretColor: 'var(--foreground)' }}
             />
           </div>
@@ -139,7 +139,7 @@ export const ChatInput = memo(function ChatInput({ disabled, contextUsage, messa
                     aria-label="Attach files"
                     className="flex size-8 items-center justify-center rounded-full text-muted-foreground/40 transition-colors hover:bg-muted/60 hover:text-muted-foreground/70"
                   >
-                    <Paperclip className="size-4" />
+                    <IconPaperclip className="size-4" />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="top" className="text-[11px]">Attach files or images</TooltipContent>

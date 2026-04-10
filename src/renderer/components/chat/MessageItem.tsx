@@ -1,5 +1,5 @@
 import { memo, useState, useCallback, useRef, useEffect } from "react";
-import { Copy, Check } from "lucide-react";
+import { IconCopy, IconCheck } from "@tabler/icons-react";
 import type { TaskMessage, ToolCall } from "@/types";
 import { cn } from "@/lib/utils";
 import {
@@ -171,9 +171,9 @@ export const MessageItem = memo(function MessageItem({
                     className="rounded-md p-0.5 text-muted-foreground/0 transition-all group-hover:text-muted-foreground/50 hover:!text-foreground"
                   >
                     {copied ? (
-                      <Check className="size-3" aria-hidden />
+                      <IconCheck className="size-3" aria-hidden />
                     ) : (
-                      <Copy className="size-3" aria-hidden />
+                      <IconCopy className="size-3" aria-hidden />
                     )}
                   </button>
                 </TooltipTrigger>

@@ -39,7 +39,8 @@ export function Onboarding() {
   }, [])
 
   return (
-    <div className="fixed inset-0 z-[999] flex items-center justify-center overflow-y-auto bg-background" data-tauri-drag-region>
+    <div className="fixed inset-0 z-[999] flex items-center justify-center overflow-y-auto bg-background">
+      <div className="fixed inset-x-0 top-0 h-10" data-tauri-drag-region />
       <div className="flex flex-col items-center gap-8 py-12 text-center">
         <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-primary/10">
           <IconStack2 size={40} stroke={1.5} className="text-primary" />

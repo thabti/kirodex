@@ -1,7 +1,7 @@
 import { memo, useState } from 'react'
 import {
-  ChevronDown, ChevronRight, Check, Loader2, X, Zap,
-} from 'lucide-react'
+  IconChevronDown, IconChevronRight, IconCheck, IconLoader2, IconX, IconBolt,
+} from '@tabler/icons-react'
 import type { ToolCall } from '@/types'
 import { ToolCallEntry } from './ToolCallEntry'
 
@@ -32,11 +32,11 @@ export const ToolCallDisplay = memo(function ToolCallDisplay({ toolCalls }: Tool
         className="flex w-full items-center gap-2 px-3 py-1.5 text-left transition-colors hover:bg-accent/5"
       >
         {expanded ? (
-          <ChevronDown className="size-3 shrink-0 text-muted-foreground/40" />
+          <IconChevronDown className="size-3 shrink-0 text-muted-foreground/40" />
         ) : (
-          <ChevronRight className="size-3 shrink-0 text-muted-foreground/40" />
+          <IconChevronRight className="size-3 shrink-0 text-muted-foreground/40" />
         )}
-        <Zap className="size-3 shrink-0 text-amber-400/60" />
+        <IconBolt className="size-3 shrink-0 text-amber-400/60" />
         <span className="text-[11px] font-medium text-muted-foreground/60">
           Tool calls
         </span>
@@ -47,18 +47,18 @@ export const ToolCallDisplay = memo(function ToolCallDisplay({ toolCalls }: Tool
         <div className="flex-1" />
         {runningCount > 0 && (
           <span className="flex items-center gap-1 text-[10px] text-primary">
-            <Loader2 className="size-2.5 animate-spin" />
+            <IconLoader2 className="size-2.5 animate-spin" />
             {runningCount}
           </span>
         )}
         {failedCount > 0 && (
           <span className="flex items-center gap-1 text-[10px] text-red-400">
-            <X className="size-2.5" />
+            <IconX className="size-2.5" />
             {failedCount}
           </span>
         )}
         {completedCount > 0 && runningCount === 0 && failedCount === 0 && (
-          <Check className="size-3 text-emerald-400/50" />
+          <IconCheck className="size-3 text-emerald-400/50" />
         )}
       </button>
 

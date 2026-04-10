@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { Trash2 } from 'lucide-react'
+import { IconTrash } from '@tabler/icons-react'
 import { Button } from '@/components/ui/button'
 
 interface TerminalOutputProps {
@@ -23,7 +23,7 @@ export function TerminalOutput({ lines, onClear }: TerminalOutputProps) {
     <div className="flex flex-1 flex-col min-h-0">
       <div className="flex items-center justify-end border-b px-2 py-1">
         <Button size="icon" variant="ghost" className="h-6 w-6" onClick={onClear}>
-          <Trash2 className="h-3 w-3" />
+          <IconTrash className="h-3 w-3" />
         </Button>
       </div>
       <div className="min-h-0 flex-1 overflow-auto p-2">

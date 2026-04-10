@@ -1,5 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
-import { AlertCircle, RotateCcw } from 'lucide-react'
+import { IconAlertCircle, IconRotate } from '@tabler/icons-react'
 
 interface Props {
   children: ReactNode
@@ -9,16 +9,29 @@ interface Props {
 
 interface State {
   error: Error | null
+  retryCount: number
 }
 
-export class ErrorBoundary extends Component<Props, State> {
-  state: State = { error: null }
+const MAX_RETRIES = 3
+const RETRY_WINDOW_MS = 5000
 
-  static getDerivedStateFromError(error: Error): State {
+export class ErrorBoundary extends Component<Props, State> {
+  state: State = { error: null, retryCount: 0 }
+  private lastErrorTime = 0
+
+  static getDerivedStateFromError(error: Error): Partial<State> {
     return { error }
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
+    const now = Date.now()
+    // Reset retry count if enough time has passed
+    if (now - this.lastErrorTime > RETRY_WINDOW_MS) {
+      this.setState({ retryCount: 1 })
+    } else {
+      this.setState((s) => ({ retryCount: s.retryCount + 1 }))
+    }
+    this.lastErrorTime = now
     console.error('[ErrorBoundary]', error, info.componentStack)
   }
 
@@ -28,24 +41,32 @@ export class ErrorBoundary extends Component<Props, State> {
 
   render() {
     if (this.state.error) {
-      if (this.props.fallback) return this.props.fallback
+      if (this.props.fallback !== undefined) return this.props.fallback
+
+      const isLooping = this.state.retryCount >= MAX_RETRIES
 
       return (
         <div className="flex h-full w-full flex-col items-center justify-center gap-3 p-6 text-center">
-          <AlertCircle className="h-8 w-8 text-destructive/70" />
+          <IconAlertCircle className="h-8 w-8 text-destructive/70" />
           <div>
             <p className="text-sm font-medium text-foreground">Something went wrong</p>
             <p className="mt-1 max-w-sm text-xs text-muted-foreground">
               {this.state.error.message || 'An unexpected error occurred.'}
             </p>
           </div>
-          <button
-            onClick={this.handleReset}
-            className="mt-1 inline-flex items-center gap-1.5 rounded-md border border-input px-3 py-1.5 text-xs font-medium transition-colors hover:bg-accent"
-          >
-            <RotateCcw className="h-3 w-3" />
-            Try again
-          </button>
+          {isLooping ? (
+            <p className="mt-1 max-w-xs text-xs text-muted-foreground/60">
+              This component keeps crashing. Reload the window to recover.
+            </p>
+          ) : (
+            <button
+              onClick={this.handleReset}
+              className="mt-1 inline-flex items-center gap-1.5 rounded-md border border-input px-3 py-1.5 text-xs font-medium transition-colors hover:bg-accent"
+            >
+              <IconRotate className="h-3 w-3" />
+              Try again
+            </button>
+          )}
         </div>
       )
     }

@@ -28,6 +28,7 @@ import { useSettingsStore } from "@/stores/settingsStore";
 import { useDebugStore } from "@/stores/debugStore";
 import { useDiffStore } from "@/stores/diffStore";
 import { useKiroStore, initKiroListeners } from "@/stores/kiroStore";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useShallow } from "zustand/react/shallow";
 const Onboarding = lazy(() =>
   import("@/components/Onboarding").then((m) => ({ default: m.Onboarding })),
@@ -166,6 +167,14 @@ export function App() {
   const debugOpen = useDebugStore((s) => s.isOpen);
   const settingsLoaded = useSettingsStore((s) => s.isLoaded);
   const hasOnboarded = useSettingsStore((s) => s.settings.hasOnboarded);
+  const fontSize = useSettingsStore((s) => s.settings.fontSize);
+  useKeyboardShortcuts();
+
+  // Apply font size from settings to the document root
+  useEffect(() => {
+    document.documentElement.style.setProperty('--app-font-size', `${fontSize ?? 13}px`);
+  }, [fontSize]);
+
   // Sync active workspace → apply per-project model/autoApprove prefs
   useEffect(() => {
     const tasks = useTaskStore.getState().tasks;
@@ -200,7 +209,7 @@ export function App() {
   // ⌘B keyboard shortcut to toggle sidebar
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.metaKey && e.key === "b") {
+      if ((e.metaKey || e.ctrlKey) && e.key === "b") {
         e.preventDefault();
         setIsSidebarCollapsed((v) => !v);
       }
@@ -240,7 +249,7 @@ export function App() {
           </ErrorBoundary>
           <main className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
             <ErrorBoundary>
-              <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+              <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden" style={{ fontSize: 'var(--app-font-size, 14px)' }}>
                 <Suspense>
                   {selectedTaskId ? (
                     <ChatPanel />

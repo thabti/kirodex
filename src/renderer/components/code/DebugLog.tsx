@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Trash2 } from 'lucide-react'
+import { IconTrash } from '@tabler/icons-react'
 import { Button } from '@/components/ui/button'
 
 export interface DebugEntry {
@@ -38,7 +38,7 @@ export function DebugLog({ entries, onClear }: DebugLogProps) {
         </select>
         <span className="text-[10px] text-muted-foreground ml-auto">{filtered.length} entries</span>
         <Button size="icon" variant="ghost" className="h-6 w-6" onClick={onClear}>
-          <Trash2 className="h-3 w-3" />
+          <IconTrash className="h-3 w-3" />
         </Button>
       </div>
       <div className="min-h-0 flex-1 overflow-auto p-2 space-y-1">

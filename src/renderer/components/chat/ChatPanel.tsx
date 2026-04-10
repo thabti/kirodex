@@ -1,5 +1,5 @@
 import { memo, useCallback } from 'react'
-import { History } from 'lucide-react'
+import { IconHistory } from '@tabler/icons-react'
 import { useTaskStore } from '@/stores/taskStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { Empty, EmptyHeader, EmptyTitle, EmptyDescription } from '@/components/ui/empty'
@@ -74,7 +74,7 @@ const ArchivedBanner = memo(function ArchivedBanner() {
       </svg>
       {/* Label */}
       <div className="flex shrink-0 items-center gap-1.5 mx-3 rounded-full border border-violet-400/20 bg-card px-3 py-1">
-        <History className="size-3 text-violet-400/50" />
+        <IconHistory className="size-3 text-violet-400/50" />
         <span className="text-[11px] font-medium text-violet-300/50">Previous conversation — view only</span>
       </div>
       {/* Zigzag line right */}
@@ -94,7 +94,7 @@ export const ChatPanel = memo(function ChatPanel() {
   const contextUsage = useTaskStore((s) => selectedTaskId ? s.tasks[selectedTaskId]?.contextUsage : null)
   const taskWorkspace = useTaskStore((s) => selectedTaskId ? s.tasks[selectedTaskId]?.workspace : null)
   const messageCount = useTaskStore((s) => selectedTaskId ? s.tasks[selectedTaskId]?.messages?.length ?? 0 : 0)
-  const terminalOpen = useTaskStore((s) => s.terminalOpen)
+  const terminalOpen = useTaskStore((s) => selectedTaskId ? s.terminalOpenTasks.has(selectedTaskId) : false)
   const queuedMessages = useTaskStore((s) => selectedTaskId ? s.queuedMessages[selectedTaskId] ?? EMPTY_QUEUE : EMPTY_QUEUE)
 
   const handleSendMessage = useCallback(async (msg: string) => {
@@ -210,8 +210,8 @@ export const ChatPanel = memo(function ChatPanel() {
           />
         )}
       </div>
-      {terminalOpen && taskWorkspace && (
-        <TerminalDrawer cwd={taskWorkspace} />
+      {terminalOpen && taskWorkspace && selectedTaskId && (
+        <TerminalDrawer key={selectedTaskId} cwd={taskWorkspace} />
       )}
     </div>
   )

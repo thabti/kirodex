@@ -1,19 +1,19 @@
 import { memo, useCallback } from 'react'
-import { X, FileText, FileCode, File, Image } from 'lucide-react'
+import { IconX, IconFileText, IconFileCode, IconFile, IconPhoto } from '@tabler/icons-react'
 import { cn } from '@/lib/utils'
 import type { Attachment } from '@/types'
 
-const FILE_ICON_MAP: Record<string, typeof File> = {
-  image: Image,
-  text: FileText,
-  binary: File,
+const FILE_ICON_MAP: Record<string, typeof IconFile> = {
+  image: IconPhoto,
+  text: IconFileText,
+  binary: IconFile,
 }
 
-const EXT_ICON_MAP: Record<string, typeof File> = {
-  ts: FileCode, tsx: FileCode, js: FileCode, jsx: FileCode,
-  py: FileCode, rs: FileCode, go: FileCode, rb: FileCode,
-  json: FileCode, yaml: FileCode, yml: FileCode, toml: FileCode,
-  md: FileText, txt: FileText, csv: FileText, log: FileText,
+const EXT_ICON_MAP: Record<string, typeof IconFile> = {
+  ts: IconFileCode, tsx: IconFileCode, js: IconFileCode, jsx: IconFileCode,
+  py: IconFileCode, rs: IconFileCode, go: IconFileCode, rb: IconFileCode,
+  json: IconFileCode, yaml: IconFileCode, yml: IconFileCode, toml: IconFileCode,
+  md: IconFileText, txt: IconFileText, csv: IconFileText, log: IconFileText,
 }
 
 const formatSize = (bytes: number): string => {
@@ -97,7 +97,7 @@ const AttachmentItem = memo(function AttachmentItem({
   }
 
   const ext = attachment.name.split('.').pop()?.toLowerCase() ?? ''
-  const IconComponent = EXT_ICON_MAP[ext] ?? FILE_ICON_MAP[attachment.type] ?? File
+  const IconComponent = EXT_ICON_MAP[ext] ?? FILE_ICON_MAP[attachment.type] ?? IconFile
 
   return (
     <div
@@ -147,7 +147,7 @@ const RemoveButton = memo(function RemoveButton({
         'group-hover:opacity-100 focus:opacity-100',
       )}
     >
-      <X className="size-2.5" aria-hidden />
+      <IconX className="size-2.5" aria-hidden />
     </button>
   )
 })

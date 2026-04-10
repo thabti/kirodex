@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { ChevronDown } from 'lucide-react'
+import { IconChevronDown } from '@tabler/icons-react'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { ipc } from '@/lib/ipc'
 
@@ -39,7 +39,7 @@ export function OpenInEditorGroup({ workspace }: { workspace: string }) {
       <div className="pointer-events-none relative z-[2] w-px bg-input dark:bg-input/32" />
       <button type="button" aria-label="Open options" onClick={() => setMenuOpen((v) => !v)}
         className="inline-flex h-6 w-6 items-center justify-center rounded-r-md border border-input bg-popover text-foreground shadow-xs/5 transition-colors hover:bg-accent/50 dark:bg-input/32">
-        <ChevronDown className="size-3.5" aria-hidden />
+        <IconChevronDown className="size-3.5" aria-hidden />
       </button>
       {menuOpen && (
         <div className="absolute right-0 top-7 z-[200] min-w-[130px] rounded-lg border border-border bg-popover py-1 shadow-lg">

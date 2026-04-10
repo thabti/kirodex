@@ -26,7 +26,7 @@ interface TaskStore {
   queuedMessages: Record<string, string[]>
   activityFeed: ActivityEntry[]
   connected: boolean
-  terminalOpen: boolean
+  terminalOpenTasks: Set<string>
   setSelectedTask: (id: string | null) => void
   setView: (view: 'chat' | 'dashboard') => void
   setNewProjectOpen: (open: boolean) => void
@@ -52,7 +52,7 @@ interface TaskStore {
   projectNames: Record<string, string>
   renameProject: (workspace: string, name: string) => void
   reorderProject: (from: number, to: number) => void
-  toggleTerminal: () => void
+  toggleTerminal: (taskId: string) => void
   loadTasks: () => Promise<void>
   setConnected: (v: boolean) => void
   persistHistory: () => void
@@ -75,7 +75,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   queuedMessages: {},
   activityFeed: [],
   connected: false,
-  terminalOpen: false,
+  terminalOpenTasks: new Set<string>(),
 
   setSelectedTask: (id) => {
     if (get().selectedTaskId === id) return
@@ -347,7 +347,11 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
       return { projects: arr }
     }),
 
-  toggleTerminal: () => set((s) => ({ terminalOpen: !s.terminalOpen })),
+  toggleTerminal: (taskId) => set((s) => {
+    const next = new Set(s.terminalOpenTasks)
+    if (next.has(taskId)) next.delete(taskId); else next.add(taskId)
+    return { terminalOpenTasks: next }
+  }),
 
   loadTasks: async () => {
     try {

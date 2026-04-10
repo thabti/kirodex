@@ -1,3 +1,11 @@
+## 2026-04-10 11:58 GST (Dubai)
+
+- Created `todo.md` with full project research: current state, completed tasks, in-progress work, and open questions
+- Reviewed project structure: Tauri v2 + React 19, 7 Rust command modules, 35+ chat components, 5 Zustand stores, 7 hooks
+- Identified 13 modified files + 1 new file uncommitted
+
+---
+
 # Activity Log
 
 
@@ -960,3 +968,93 @@ Removed the Playground feature entirely.
 
 **Modified:** `src/renderer/App.tsx`, `src/renderer/stores/taskStore.ts`, `src/renderer/components/sidebar/SidebarFooter.tsx`
 **Deleted:** `src/renderer/components/Playground.tsx`
+
+---
+
+## 2026-04-10 11:35 (Dubai)
+
+### TerminalDrawer: port t3code-acp terminal improvements
+
+Ported key improvements from `t3code-acp/apps/web/src/components/ThreadTerminalDrawer.tsx`.
+
+**What changed:**
+- `terminalTheme()` — reads live CSS vars from `getComputedStyle(document.body)` instead of hardcoding colors at creation time
+- `MutationObserver` on `document.documentElement` — updates all terminal themes instantly when dark/light class changes
+- **Split** (`SquareSplitHorizontal`) — adds a terminal to the active group, displayed side-by-side via CSS grid
+- **New** (`Plus`) — creates a new standalone tab with its own group
+- **Sidebar** — appears automatically when multiple tabs exist; shows "Terminal N" or "Split N" labels; toolbar moves into sidebar header
+- `groupId` concept — terminals in the same group are shown side-by-side; different groups are separate tabs
+
+**Build:** `tsc --noEmit` ✓ · `vite build` ✓
+
+**Modified:** `src/renderer/components/chat/TerminalDrawer.tsx`
+
+## 2026-04-10 11:47 (Dubai)
+
+**Fix: "Get Started" button not clickable on onboarding after removing a crashed app**
+
+Root cause: Two issues.
+1. `data-tauri-drag-region` on the outer Onboarding `div` intercepted all mouse events, making the "Get Started" button unclickable.
+2. `hasOnboarded` was only in the frontend TypeScript type but missing from the Rust `AppSettings` struct, so it was never persisted to disk via confy. After a crash + restart, onboarding would show again.
+
+Changes:
+- `src-tauri/src/commands/settings.rs`: Added `has_onboarded: bool` with `#[serde(default)]` to `AppSettings` struct and its `Default` impl.
+- `src/renderer/components/Onboarding.tsx`: Removed `data-tauri-drag-region` from the outer container div. Added a small fixed drag region div at the top (`h-10`) for window dragging that doesn't cover interactive content.
+
+Build: TS ✓, Vite ✓, Cargo ✓
+
+## 2026-04-10 12:01 (Dubai)
+
+**UI: Replace project letter badge + chevron with folder icon in sidebar**
+
+- `src/renderer/components/sidebar/ProjectItem.tsx`: Removed the `<span>` letter badge and replaced `<ChevronRight>` with `<FolderOpen>` icon. Cleaned up unused `ChevronRight` import.
+
+Build: TS ✓, Vite ✓
+
+## 2026-04-10 12:05 (Dubai)
+
+Replaced all `lucide-react` imports with `@tabler/icons-react` in four chat component files:
+
+1. `TerminalDrawer.tsx` — SquareSplitHorizontal→IconLayoutColumns, Plus→IconPlus, Trash2→IconTrash, TerminalSquare→IconTerminal2
+2. `tool-call-utils.ts` — FileText→IconFileText, FileEdit→IconFilePencil, Trash2→IconTrash, FolderSearch→IconFolderSearch, Terminal→IconTerminal2, Brain→IconBrain, Globe→IconGlobe, ArrowRightLeft→IconArrowsRightLeft, Wrench→IconTool, LucideIcon type→TablerIcon (typeof IconTool)
+3. `ToolCallDisplay.tsx` — ChevronDown→IconChevronDown, ChevronRight→IconChevronRight, Check→IconCheck, Loader2→IconLoader2, X→IconX, Zap→IconBolt
+4. `ToolCallEntry.tsx` — ChevronDown→IconChevronDown, ChevronRight→IconChevronRight, Check→IconCheck, Loader2→IconLoader2, X→IconX, FileEdit→IconFilePencil, Terminal→IconTerminal2
+
+TypeScript check passes with zero errors in modified files.
+
+## 2026-04-10 12:05 GST — Batch 6: Replace lucide-react with @tabler/icons-react (remaining files)
+
+Migrated 9 files from lucide-react to @tabler/icons-react:
+
+1. `OpenInEditorGroup.tsx` — ChevronDown → IconChevronDown
+2. `GitActionsGroup.tsx` — GitCommitHorizontal → IconGitCommit, ChevronDown → IconChevronDown
+3. `AppHeader.tsx` — Pause → IconPlayerPause, Play → IconPlayerPlay, XCircle → IconCircleX, GitCompareArrows → IconGitCompare, TerminalSquare → IconTerminal2, PanelLeftClose → IconLayoutSidebarLeftCollapse, PanelLeftOpen → IconLayoutSidebarLeftExpand
+4. `ErrorBoundary.tsx` — AlertCircle → IconAlertCircle, RotateCcw → IconRotate
+5. `dashboard/TaskCard.tsx` — ShieldAlert → IconShieldExclamation
+6. `dashboard/Dashboard.tsx` — Bot → IconRobot, Plus → IconPlus, FolderOpen → IconFolderOpen
+7. `settings/SettingsPanel.tsx` — 21 icons: X → IconX, Check → IconCheck, AlertCircle → IconAlertCircle, Plus → IconPlus, Trash2 → IconTrash, ChevronDown → IconChevronDown, Loader2 → IconLoader2, Search → IconSearch, History → IconHistory, Keyboard → IconKeyboard, Settings2 → IconSettings2, Users → IconUsers, Paintbrush → IconPaintbrush, Wrench → IconTool, Terminal → IconTerminal, GitBranch → IconGitBranch, Shield → IconShield, Eye → IconEye, Type → IconTypography, Palette → IconPalette, Command → IconCommand, ArrowLeft → IconArrowLeft
+8. `sidebar/KiroConfigPanel.tsx` — 26 icons: Bot → IconRobot, Zap → IconBolt, Compass → IconCompass, ChevronRight → IconChevronRight, FolderDot → IconFolderCode, CircleDot → IconCircleDot, CircleDashed → IconCircleDashed, Search → IconSearch, X → IconX, Layers → IconStack2, Database → IconDatabase, Globe → IconWorld, Terminal → IconTerminal, Cpu → IconCpu, Wrench → IconTool, FlaskConical → IconFlask, BookOpen → IconBook, Rocket → IconRocket, Shield → IconShield, Palette → IconPalette, BarChart2 → IconChartBar, Cloud → IconCloud, GitBranch → IconGitBranch, Boxes → IconBoxMultiple, Plug → IconPlug, Circle → IconCircle
+9. `sidebar/KiroFileViewer.tsx` — X → IconX, ExternalLink → IconExternalLink
+
+Remaining lucide-react imports (not in scope): `chat/QuestionCards.tsx`, `chat/MessageItem.tsx`
+
+## 2026-04-10 12:03 (Dubai)
+
+**Chore: Remove lucide-react, replace all icons with @tabler/icons-react**
+
+- Migrated 40 files from `lucide-react` to `@tabler/icons-react`
+- Removed `lucide-react` from `package.json` (1 package removed)
+- Key icon mappings: Plus→IconPlus, Check→IconCheck, X→IconX, ChevronDown→IconChevronDown, Trash2→IconTrash, Copy→IconCopy, Loader2→IconLoader2, Image→IconPhoto, Rows2→IconLayoutRows, PanelLeftClose→IconLayoutSidebarLeftCollapse, etc.
+- Fixed incorrect tabler names: IconRows→IconLayoutRows, IconPaintbrush→IconPaint
+
+Build: TS ✓, Vite ✓
+
+## 2026-04-10 12:24 (Dubai)
+
+**Docs: Add icon steering rule and update CLAUDE.md**
+
+- Updated `CLAUDE.md`: removed Lucide from tech stack, added icon convention (tabler only, never lucide-react)
+- Created `.kiro/steering/icons.md` with `alwaysApply: true` rule enforcing `@tabler/icons-react` exclusively
+
+## 2026-04-10 12:26 (Dubai)
+- Removed "Author" section (Sabeur Thabti) from README.md

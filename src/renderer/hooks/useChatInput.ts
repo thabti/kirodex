@@ -1,5 +1,6 @@
 import { useState, useRef, useMemo, useCallback, type KeyboardEvent, type ChangeEvent } from 'react'
 import { useSettingsStore } from '@/stores/settingsStore'
+import { useTaskStore } from '@/stores/taskStore'
 import { useSlashAction } from '@/hooks/useSlashAction'
 import { useAttachments } from '@/hooks/useAttachments'
 import { useFileMention } from '@/hooks/useFileMention'
@@ -21,6 +22,11 @@ export function useChatInput({ disabled, isRunning, onSendMessage, onPause }: Us
 
   const attachmentsBag = useAttachments()
   const mentionBag = useFileMention({ textareaRef, value, setValue })
+
+  // ── Message history cycling (ArrowUp/Down) ─────────────────────
+  // -1 = composing new message, 0 = most recent, 1 = second most recent, etc.
+  const historyIndexRef = useRef(-1)
+  const draftRef = useRef('')  // save the user's in-progress text when entering history
 
   const commands = useMemo(() => {
     const clientCommands: Array<{ name: string; description?: string }> = [
@@ -53,6 +59,7 @@ export function useChatInput({ disabled, isRunning, onSendMessage, onPause }: Us
   const handleChange = useCallback((e: ChangeEvent<HTMLTextAreaElement>) => {
     const newValue = e.target.value
     setValue(newValue)
+    historyIndexRef.current = -1
     resize()
     mentionBag.detectMentionTrigger(newValue, e.target.selectionStart ?? newValue.length)
   }, [resize, mentionBag.detectMentionTrigger])
@@ -117,12 +124,47 @@ export function useChatInput({ disabled, isRunning, onSendMessage, onPause }: Us
       }
       if (e.key === 'Escape') { e.preventDefault(); setValue(''); return }
     }
+
+    // ── Message history cycling ──────────────────────────────────
+    // ArrowUp at cursor position 0 (or empty) → cycle back through sent messages
+    // ArrowDown while browsing history → cycle forward, back to draft
+    if (!showPicker && !showFilePicker && !panel) {
+      const s = useTaskStore.getState()
+      const task = s.selectedTaskId ? s.tasks[s.selectedTaskId] : null
+      const msgs = task ? task.messages.filter((m) => m.role === 'user').map((m) => m.content) : []
+      if (msgs.length > 0) {
+        const el = textareaRef.current
+        const cursorAtStart = el ? el.selectionStart === 0 && el.selectionEnd === 0 : true
+        const reversed = msgs.reverse() // most recent first
+
+        if (e.key === 'ArrowUp' && (cursorAtStart || historyIndexRef.current >= 0)) {
+          const nextIdx = historyIndexRef.current + 1
+          if (nextIdx < reversed.length) {
+            e.preventDefault()
+            if (historyIndexRef.current === -1) draftRef.current = value
+            historyIndexRef.current = nextIdx
+            setValue(reversed[nextIdx])
+            resize()
+          }
+          return
+        }
+        if (e.key === 'ArrowDown' && historyIndexRef.current >= 0) {
+          e.preventDefault()
+          const nextIdx = historyIndexRef.current - 1
+          historyIndexRef.current = nextIdx
+          setValue(nextIdx < 0 ? draftRef.current : reversed[nextIdx])
+          resize()
+          return
+        }
+      }
+    }
+
     if (e.key === 'Escape' && isRunning && onPause) { e.preventDefault(); onPause(); return }
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       handleSend()
     }
-  }, [panel, dismissPanel, showFilePicker, mentionBag, showPicker, filteredCmds, slashIndex, handleSend, handleSelectCommand, isRunning, onPause])
+  }, [panel, dismissPanel, showFilePicker, mentionBag, showPicker, filteredCmds, slashIndex, handleSend, handleSelectCommand, isRunning, onPause, value, resize])
 
   const handleSelect = useCallback(() => {
     if (showPicker || showFilePicker) return

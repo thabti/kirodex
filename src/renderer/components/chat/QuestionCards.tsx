@@ -1,5 +1,5 @@
 import { memo, useState, useCallback, useEffect } from "react";
-import { ChevronLeft, ChevronRight, CornerDownLeft } from "lucide-react";
+import { IconChevronLeft, IconChevronRight, IconCornerDownLeft } from "@tabler/icons-react";
 import { useTaskStore } from "@/stores/taskStore";
 import { ipc } from "@/lib/ipc";
 import { cn } from "@/lib/utils";
@@ -271,7 +271,7 @@ export const QuestionCards = memo(function QuestionCards({
               className="rounded p-0.5 transition-colors hover:text-foreground disabled:opacity-20"
               aria-label="Previous question"
             >
-              <ChevronLeft className="size-3.5" />
+              <IconChevronLeft className="size-3.5" />
             </button>
             <span className="tabular-nums">
               {page + 1} of {total}
@@ -283,7 +283,7 @@ export const QuestionCards = memo(function QuestionCards({
               className="rounded p-0.5 transition-colors hover:text-foreground disabled:opacity-20"
               aria-label="Next question"
             >
-              <ChevronRight className="size-3.5" />
+              <IconChevronRight className="size-3.5" />
             </button>
           </div>
         )}
@@ -365,7 +365,7 @@ export const QuestionCards = memo(function QuestionCards({
           )}
         >
           {isAllAnswered || isLastPage ? "Submit" : "Next"}
-          <CornerDownLeft className="size-3" />
+          <IconCornerDownLeft className="size-3" />
         </button>
       </div>
     </div>

@@ -1,5 +1,5 @@
 import { memo, useState, useRef, useEffect, useCallback } from 'react'
-import { Pencil, Trash2 } from 'lucide-react'
+import { IconPencil, IconTrash } from '@tabler/icons-react'
 import { cn } from '@/lib/utils'
 import type { SidebarTask } from '@/hooks/useSidebarTasks'
 
@@ -157,7 +157,7 @@ export const ThreadItem = memo(function ThreadItem({ task, isActive, onSelect, o
                 className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-foreground transition-colors hover:bg-accent"
                 onClick={handleRenameClick}
               >
-                <Pencil className="size-3.5" /> Rename
+                <IconPencil className="size-3.5" /> Rename
               </button>
               <div className="my-1 border-t border-border/50" />
               <button
@@ -165,7 +165,7 @@ export const ThreadItem = memo(function ThreadItem({ task, isActive, onSelect, o
                 className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-destructive transition-colors hover:bg-destructive/10"
                 onClick={handleDeleteClick}
               >
-                <Trash2 className="size-3.5" /> Delete
+                <IconTrash className="size-3.5" /> Delete
               </button>
             </>
           )}

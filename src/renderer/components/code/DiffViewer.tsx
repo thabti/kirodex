@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { parsePatchFiles, type FileDiffMetadata } from '@pierre/diffs'
 import { FileDiff, Virtualizer } from '@pierre/diffs/react'
-import { Columns2, Rows2, WrapText, FileCode, ChevronDown, ChevronRight, Plus, Undo2, ExternalLink, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
+import { IconColumns, IconLayoutRows, IconTextWrap, IconFileCode, IconChevronDown, IconChevronRight, IconPlus, IconArrowBackUp, IconExternalLink, IconLayoutSidebarLeftCollapse, IconLayoutSidebarLeftExpand } from '@tabler/icons-react'
 import { cn } from '@/lib/utils'
 import { ipc } from '@/lib/ipc'
 import { useDiffStore } from '@/stores/diffStore'
@@ -96,7 +96,7 @@ function FileActionBar({
           onClick={onToggleCollapse}
           className="flex size-4 items-center justify-center rounded text-muted-foreground/60 hover:text-foreground transition-colors"
         >
-          {collapsed ? <ChevronRight className="size-3" /> : <ChevronDown className="size-3" />}
+          {collapsed ? <IconChevronRight className="size-3" /> : <IconChevronDown className="size-3" />}
         </button>
 
         {/* File name + stats */}
@@ -114,7 +114,7 @@ function FileActionBar({
             title="Revert changes"
             className="flex size-5 items-center justify-center rounded text-muted-foreground/50 transition-colors hover:bg-destructive/10 hover:text-destructive"
           >
-            <Undo2 className="size-3" />
+            <IconArrowBackUp className="size-3" />
           </button>
           <button
             type="button"
@@ -122,7 +122,7 @@ function FileActionBar({
             title="Stage file"
             className="flex size-5 items-center justify-center rounded text-muted-foreground/50 transition-colors hover:bg-emerald-500/10 hover:text-emerald-500"
           >
-            <Plus className="size-3" />
+            <IconPlus className="size-3" />
           </button>
           <button
             type="button"
@@ -130,7 +130,7 @@ function FileActionBar({
             title="Open in editor"
             className="flex size-5 items-center justify-center rounded text-muted-foreground/50 transition-colors hover:bg-accent hover:text-foreground"
           >
-            <ExternalLink className="size-3" />
+            <IconExternalLink className="size-3" />
           </button>
         </div>
       </div>
@@ -284,7 +284,7 @@ export function DiffViewer({ diff, taskId, workspace, onRefreshDiff }: DiffViewe
             isSidebarCollapsed ? 'text-muted-foreground/50 hover:text-foreground' : 'bg-accent text-foreground',
           )}
         >
-          {isSidebarCollapsed ? <PanelLeftOpen className="size-3" /> : <PanelLeftClose className="size-3" />}
+          {isSidebarCollapsed ? <IconLayoutSidebarLeftExpand className="size-3" /> : <IconLayoutSidebarLeftCollapse className="size-3" />}
         </button>
         <button
           type="button"
@@ -295,7 +295,7 @@ export function DiffViewer({ diff, taskId, workspace, onRefreshDiff }: DiffViewe
             diffStyle === 'unified' ? 'bg-accent text-foreground' : 'text-muted-foreground/50 hover:text-foreground',
           )}
         >
-          <Rows2 className="size-3" />
+          <IconLayoutRows className="size-3" />
         </button>
         <button
           type="button"
@@ -306,7 +306,7 @@ export function DiffViewer({ diff, taskId, workspace, onRefreshDiff }: DiffViewe
             diffStyle === 'split' ? 'bg-accent text-foreground' : 'text-muted-foreground/50 hover:text-foreground',
           )}
         >
-          <Columns2 className="size-3" />
+          <IconColumns className="size-3" />
         </button>
         <button
           type="button"
@@ -317,7 +317,7 @@ export function DiffViewer({ diff, taskId, workspace, onRefreshDiff }: DiffViewe
             wordWrap ? 'bg-accent text-foreground' : 'text-muted-foreground/50 hover:text-foreground',
           )}
         >
-          <WrapText className="size-3" />
+          <IconTextWrap className="size-3" />
         </button>
       </div>
 
@@ -346,7 +346,7 @@ export function DiffViewer({ diff, taskId, workspace, onRefreshDiff }: DiffViewe
                     selectedFileIdx === i && 'bg-accent/30 text-foreground',
                   )}
                 >
-                  <FileCode className="size-3 shrink-0 text-muted-foreground/50" />
+                  <IconFileCode className="size-3 shrink-0 text-muted-foreground/50" />
                   <span className="min-w-0 flex-1 truncate">{file.name.split('/').pop()}</span>
                   <span className="shrink-0 flex gap-1">
                     {file.additions > 0 && <span className="text-emerald-400">+{file.additions}</span>}

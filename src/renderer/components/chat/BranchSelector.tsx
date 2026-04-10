@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { GitBranch, ChevronDown, Search, Plus, Check, Loader2 } from 'lucide-react'
+import { IconGitBranch, IconChevronDown, IconSearch, IconPlus, IconCheck, IconLoader2 } from '@tabler/icons-react'
 import { cn } from '@/lib/utils'
 import { ipc } from '@/lib/ipc'
 
@@ -173,9 +173,9 @@ export const BranchSelector = memo(function BranchSelector({ workspace }: Branch
           open && 'text-foreground/80',
         )}
       >
-        <GitBranch className="size-3" />
+        <IconGitBranch className="size-3" />
         <span className="max-w-[120px] truncate">{currentBranch ?? 'branch'}</span>
-        <ChevronDown className={cn('size-3 opacity-50 transition-transform', open && 'rotate-180')} />
+        <IconChevronDown className={cn('size-3 opacity-50 transition-transform', open && 'rotate-180')} />
       </button>
 
       {/* Popup */}
@@ -184,7 +184,7 @@ export const BranchSelector = memo(function BranchSelector({ workspace }: Branch
           {/* Search input */}
           <div className="border-b border-border p-2">
             <div className="flex items-center gap-2 rounded-lg bg-background/50 px-2.5 py-1.5">
-              <Search className="size-3.5 shrink-0 text-muted-foreground/50" />
+              <IconSearch className="size-3.5 shrink-0 text-muted-foreground/50" />
               <input
                 ref={inputRef}
                 type="text"
@@ -206,7 +206,7 @@ export const BranchSelector = memo(function BranchSelector({ workspace }: Branch
           <div className="max-h-64 overflow-y-auto scroll-smooth">
             {loading && !data ? (
               <div className="flex items-center justify-center gap-2 py-6 text-xs text-muted-foreground/60">
-                <Loader2 className="size-3.5 animate-spin" />
+                <IconLoader2 className="size-3.5 animate-spin" />
                 Loading branches...
               </div>
             ) : !hasResults && !canCreate ? (
@@ -265,7 +265,7 @@ export const BranchSelector = memo(function BranchSelector({ workspace }: Branch
                 disabled={checkingOut}
                 className="flex w-full items-center gap-2 px-3 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-50"
               >
-                <Plus className="size-3.5" />
+                <IconPlus className="size-3.5" />
                 <span>
                   Create and checkout <span className="font-medium text-foreground">{search.trim()}</span>
                 </span>
@@ -303,9 +303,9 @@ function BranchItem({
         isCurrent ? 'text-foreground' : 'text-muted-foreground',
       )}
     >
-      <GitBranch className="size-3.5 shrink-0 text-muted-foreground/40" />
+      <IconGitBranch className="size-3.5 shrink-0 text-muted-foreground/40" />
       <span className="min-w-0 flex-1 truncate">{name}</span>
-      {isCurrent && <Check className="size-3.5 shrink-0 text-foreground" />}
+      {isCurrent && <IconCheck className="size-3.5 shrink-0 text-foreground" />}
       {badge && !isCurrent && (
         <span className="shrink-0 text-[10px] text-muted-foreground/40">{badge}</span>
       )}

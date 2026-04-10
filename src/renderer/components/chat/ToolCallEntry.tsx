@@ -1,8 +1,8 @@
 import { memo, useState } from 'react'
 import {
-  ChevronDown, ChevronRight, Check, Loader2, X,
-  FileEdit, Terminal,
-} from 'lucide-react'
+  IconChevronDown, IconChevronRight, IconCheck, IconLoader2, IconX,
+  IconFilePencil, IconTerminal2,
+} from '@tabler/icons-react'
 import type { ToolCall } from '@/types'
 import { cn } from '@/lib/utils'
 import { useDiffStore } from '@/stores/diffStore'
@@ -65,8 +65,8 @@ export const ToolCallEntry = memo(function ToolCallEntry({ toolCall }: { toolCal
       >
         {isClickable ? (
           expanded
-            ? <ChevronDown className="size-3 shrink-0 text-muted-foreground/30" />
-            : <ChevronRight className="size-3 shrink-0 text-muted-foreground/30" />
+            ? <IconChevronDown className="size-3 shrink-0 text-muted-foreground/30" />
+            : <IconChevronRight className="size-3 shrink-0 text-muted-foreground/30" />
         ) : null}
         <Icon className={cn(
           'size-3 shrink-0',
@@ -83,13 +83,13 @@ export const ToolCallEntry = memo(function ToolCallEntry({ toolCall }: { toolCal
             {shortPath}
           </span>
         )}
-        {diffLoading && <Loader2 className="size-2.5 shrink-0 animate-spin text-muted-foreground/30" />}
+        {diffLoading && <IconLoader2 className="size-2.5 shrink-0 animate-spin text-muted-foreground/30" />}
         {isRunning ? (
-          <Loader2 className="size-2.5 shrink-0 animate-spin text-primary" />
+          <IconLoader2 className="size-2.5 shrink-0 animate-spin text-primary" />
         ) : isFailed ? (
-          <X className="size-2.5 shrink-0 text-red-400" />
+          <IconX className="size-2.5 shrink-0 text-red-400" />
         ) : isCompleted ? (
-          <Check className="size-2.5 shrink-0 text-emerald-400/60" />
+          <IconCheck className="size-2.5 shrink-0 text-emerald-400/60" />
         ) : null}
       </button>
 
@@ -102,7 +102,7 @@ export const ToolCallEntry = memo(function ToolCallEntry({ toolCall }: { toolCal
               {item.type === 'diff' && item.path && (
                 <div>
                   <p className="mb-1 flex items-center gap-1 text-muted-foreground">
-                    <FileEdit className="size-3" />
+                    <IconFilePencil className="size-3" />
                     <span className="font-mono">{item.path}</span>
                   </p>
                   {item.newText && (
@@ -114,7 +114,7 @@ export const ToolCallEntry = memo(function ToolCallEntry({ toolCall }: { toolCal
               )}
               {item.type === 'terminal' && (
                 <div className="flex items-center gap-1 text-muted-foreground">
-                  <Terminal className="size-3" />
+                  <IconTerminal2 className="size-3" />
                   <span className="font-mono">Terminal: {item.terminalId}</span>
                 </div>
               )}

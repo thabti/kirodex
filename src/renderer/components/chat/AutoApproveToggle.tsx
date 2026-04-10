@@ -1,5 +1,5 @@
 import { memo, useCallback } from 'react'
-import { ShieldCheck, ShieldOff } from 'lucide-react'
+import { IconShieldCheck, IconShieldOff } from '@tabler/icons-react'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { useSettingsStore } from '@/stores/settingsStore'
@@ -39,7 +39,7 @@ export const AutoApproveToggle = memo(function AutoApproveToggle() {
               : 'text-muted-foreground/50 hover:text-muted-foreground/70',
           )}
         >
-          {active ? <ShieldCheck className="size-3.5" /> : <ShieldOff className="size-3.5" />}
+          {active ? <IconShieldCheck className="size-3.5" /> : <IconShieldOff className="size-3.5" />}
           <span>{active ? 'Full access' : 'Ask'}</span>
         </button>
       </TooltipTrigger>

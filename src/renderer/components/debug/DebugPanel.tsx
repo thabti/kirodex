@@ -1,6 +1,6 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { Trash2, X, ChevronRight, ChevronDown, GripHorizontal, Copy, Check } from 'lucide-react'
+import { IconTrash, IconX, IconChevronRight, IconChevronDown, IconGripHorizontal, IconCopy, IconCheck } from '@tabler/icons-react'
 import { useDebugStore } from '@/stores/debugStore'
 import { Badge } from '@/components/ui/badge'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -75,8 +75,8 @@ const DebugRow = memo(function DebugRow({
           className="flex min-w-0 flex-1 items-center gap-2 text-left"
         >
           {expanded
-            ? <ChevronDown className="size-3 shrink-0 text-muted-foreground/40" />
-            : <ChevronRight className="size-3 shrink-0 text-muted-foreground/40" />}
+            ? <IconChevronDown className="size-3 shrink-0 text-muted-foreground/40" />
+            : <IconChevronRight className="size-3 shrink-0 text-muted-foreground/40" />}
 
           <span className="shrink-0 font-mono text-[10px] text-muted-foreground/50 w-[78px]">
             {formatTime(entry.timestamp)}
@@ -118,7 +118,7 @@ const DebugRow = memo(function DebugRow({
           title="Copy entry"
           className="flex size-4 shrink-0 items-center justify-center rounded text-muted-foreground/0 transition-colors group-hover/row:text-muted-foreground/40 hover:!text-foreground"
         >
-          {copied ? <Check className="size-2.5" /> : <Copy className="size-2.5" />}
+          {copied ? <IconCheck className="size-2.5" /> : <IconCopy className="size-2.5" />}
         </button>
       </div>
 
@@ -160,7 +160,7 @@ function CopyAllButton({ entries }: { entries: DebugLogEntry[] }) {
           onClick={handleCopyAll}
           className="flex size-5 items-center justify-center rounded text-muted-foreground/40 hover:bg-accent hover:text-foreground transition-colors"
         >
-          {copied ? <Check className="size-3 text-emerald-400" /> : <Copy className="size-3" />}
+          {copied ? <IconCheck className="size-3 text-emerald-400" /> : <IconCopy className="size-3" />}
         </button>
       </TooltipTrigger>
       <TooltipContent side="bottom">{copied ? 'Copied!' : 'Copy all entries'}</TooltipContent>
@@ -273,7 +273,7 @@ export const DebugPanel = memo(function DebugPanel() {
         onMouseDown={onDragStart}
         className="flex h-2 cursor-row-resize items-center justify-center hover:bg-primary/20 active:bg-primary/30 transition-colors"
       >
-        <GripHorizontal className="size-3 text-muted-foreground/30" />
+        <IconGripHorizontal className="size-3 text-muted-foreground/30" />
       </div>
 
       {/* Filter bar */}
@@ -319,7 +319,7 @@ export const DebugPanel = memo(function DebugPanel() {
               onClick={clear}
               className="flex size-5 items-center justify-center rounded text-muted-foreground/40 hover:bg-accent hover:text-foreground transition-colors"
             >
-              <Trash2 className="size-3" />
+              <IconTrash className="size-3" />
             </button>
           </TooltipTrigger>
           <TooltipContent side="bottom">Clear log</TooltipContent>
@@ -332,7 +332,7 @@ export const DebugPanel = memo(function DebugPanel() {
               onClick={() => setOpen(false)}
               className="flex size-5 items-center justify-center rounded text-muted-foreground/40 hover:bg-accent hover:text-foreground transition-colors"
             >
-              <X className="size-3" />
+              <IconX className="size-3" />
             </button>
           </TooltipTrigger>
           <TooltipContent side="bottom">Close</TooltipContent>

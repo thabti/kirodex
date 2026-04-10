@@ -2,7 +2,7 @@ import type { TaskMessage, ToolCall } from '@/types'
 
 // ── Timeline row types ───────────────────────────────────────────
 
-export type TimelineRowKind = 'user-message' | 'system-message' | 'assistant-text' | 'work' | 'working'
+export type TimelineRowKind = 'user-message' | 'system-message' | 'assistant-text' | 'work' | 'working' | 'changed-files'
 
 export interface UserMessageRow {
   kind: 'user-message'
@@ -39,7 +39,13 @@ export interface WorkingRow {
   id: string
 }
 
-export type TimelineRow = UserMessageRow | SystemMessageRow | AssistantTextRow | WorkRow | WorkingRow
+export interface ChangedFilesRow {
+  kind: 'changed-files'
+  id: string
+  toolCalls: ToolCall[]
+}
+
+export type TimelineRow = UserMessageRow | SystemMessageRow | AssistantTextRow | WorkRow | WorkingRow | ChangedFilesRow
 
 // ── Derivation ───────────────────────────────────────────────────
 
@@ -107,6 +113,17 @@ export function deriveTimeline(
         id: `msg-${i}-work`,
         toolCalls: msg.toolCalls,
       })
+      // Inject changed-files summary after work rows with file mutations
+      const hasFileChanges = msg.toolCalls.some(
+        (tc) => tc.status === 'completed' && (tc.kind === 'edit' || tc.kind === 'delete' || tc.kind === 'move'),
+      )
+      if (hasFileChanges) {
+        rows.push({
+          kind: 'changed-files',
+          id: `msg-${i}-changed-files`,
+          toolCalls: msg.toolCalls,
+        })
+      }
     }
   }
 

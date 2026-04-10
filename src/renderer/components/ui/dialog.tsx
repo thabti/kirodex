@@ -1,6 +1,6 @@
 import { forwardRef, type ElementRef, type ComponentPropsWithoutRef, type HTMLAttributes } from 'react'
 import * as DialogPrimitive from '@radix-ui/react-dialog'
-import { XIcon } from 'lucide-react'
+import { IconX } from '@tabler/icons-react'
 import { cn } from '@/lib/utils'
 
 const Dialog = DialogPrimitive.Root
@@ -45,7 +45,7 @@ const DialogContent = forwardRef<
           className="absolute right-2 top-2 inline-flex size-8 items-center justify-center rounded-lg border border-transparent text-foreground opacity-70 ring-offset-background transition-opacity hover:bg-accent hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 disabled:pointer-events-none"
           aria-label="Close"
         >
-          <XIcon className="size-4" />
+          <IconX className="size-4" />
         </DialogPrimitive.Close>
       )}
     </DialogPrimitive.Content>

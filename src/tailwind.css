@@ -136,13 +136,9 @@ html {
 
 body {
   font-family:
-    "DM Sans Variable",
-    "DM Sans",
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    system-ui,
-    sans-serif;
+    "JetBrains Mono",
+    ui-monospace,
+    monospace;
   margin: 0;
   padding: 0;
   overflow: hidden;
@@ -308,4 +304,13 @@ input[type="search"] {
   margin-left: 2px;
   vertical-align: text-top;
   animation: cursor-fade 1s ease-in-out infinite;
+}
+
+/* xterm font rendering */
+.xterm canvas {
+  -webkit-font-smoothing: subpixel-antialiased;
+  image-rendering: -webkit-optimize-contrast;
+}
+.xterm .xterm-viewport {
+  overflow-y: auto !important;
 }

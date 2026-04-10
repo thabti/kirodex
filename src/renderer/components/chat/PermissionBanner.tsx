@@ -1,5 +1,5 @@
 import { memo } from 'react'
-import { ShieldAlert, Check, X } from 'lucide-react'
+import { IconShieldExclamation, IconCheck, IconX } from '@tabler/icons-react'
 import { cn } from '@/lib/utils'
 
 interface PermissionOption {
@@ -31,11 +31,11 @@ const KIND_STYLES: Record<string, string> = {
   reject_always: 'text-muted-foreground/60 hover:bg-destructive/10 hover:text-destructive/80',
 }
 
-const KIND_ICONS: Record<string, typeof Check | null> = {
-  allow_once: Check,
-  allow_always: Check,
-  reject_once: X,
-  reject_always: X,
+const KIND_ICONS: Record<string, typeof IconCheck | null> = {
+  allow_once: IconCheck,
+  allow_always: IconCheck,
+  reject_once: IconX,
+  reject_always: IconX,
 }
 
 export const PermissionBanner = memo(function PermissionBanner({
@@ -49,7 +49,7 @@ export const PermissionBanner = memo(function PermissionBanner({
   return (
     <div data-testid="permission-banner" className="mx-auto w-full max-w-2xl shrink-0 px-4 pb-2 sm:px-6 lg:max-w-3xl xl:max-w-4xl">
       <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-3 py-2">
-        <ShieldAlert className="size-4 shrink-0 text-amber-500 dark:text-amber-400" />
+        <IconShieldExclamation className="size-4 shrink-0 text-amber-500 dark:text-amber-400" />
         <p className="min-w-0 flex-1 truncate text-xs text-foreground">
           <span className="font-medium">Kiro</span>
           <span className="text-muted-foreground"> wants to use </span>
@@ -78,13 +78,13 @@ export const PermissionBanner = memo(function PermissionBanner({
                 onClick={() => onSelect('__allow__')}
                 className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-2 py-1 text-[11px] font-medium text-emerald-600 transition-colors hover:bg-emerald-500/20 dark:text-emerald-400"
               >
-                <Check className="size-3" /> Allow
+                <IconCheck className="size-3" /> Allow
               </button>
               <button
                 onClick={() => onSelect('__deny__')}
                 className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
               >
-                <X className="size-3" /> Deny
+                <IconX className="size-3" /> Deny
               </button>
             </>
           )}

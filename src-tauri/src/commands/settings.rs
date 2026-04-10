@@ -43,6 +43,8 @@ pub struct AppSettings {
     pub co_author: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub project_prefs: Option<std::collections::HashMap<String, ProjectPrefs>>,
+    #[serde(default)]
+    pub has_onboarded: bool,
 }
 
 fn default_kiro_bin() -> String { "kiro-cli".to_string() }
@@ -60,6 +62,7 @@ impl Default for AppSettings {
             respect_gitignore: true,
             co_author: true,
             project_prefs: None,
+            has_onboarded: false,
         }
     }
 }

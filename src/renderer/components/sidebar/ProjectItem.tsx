@@ -1,5 +1,5 @@
 import { memo, useState, useRef, useEffect, useCallback } from 'react'
-import { ChevronRight, SquarePen, Trash2, FolderOpen, Pencil, Archive } from 'lucide-react'
+import { IconFolder, IconFolderOpen, IconEdit, IconTrash, IconPencil, IconArchive, IconMessagePlus } from '@tabler/icons-react'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { ipc } from '@/lib/ipc'
@@ -32,6 +32,7 @@ export const ProjectItem = memo(function ProjectItem({
   onDragStart, onDragOver, onDrop, onDragEnd,
 }: ProjectItemProps) {
   const [expanded, setExpanded] = useState(true)
+  const [hovered, setHovered] = useState(false)
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null)
   const [editing, setEditing] = useState(false)
   const [editValue, setEditValue] = useState(name)
@@ -73,7 +74,7 @@ export const ProjectItem = memo(function ProjectItem({
       onDrop={(e) => { e.preventDefault(); onDrop() }}
       onDragEnd={onDragEnd}
     >
-      <div className="group/project-header relative">
+      <div className="relative" onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}>
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}
@@ -81,16 +82,13 @@ export const ProjectItem = memo(function ProjectItem({
           className={cn(
             'peer/menu-button flex w-full h-7 cursor-pointer items-center gap-1.5 overflow-hidden rounded-lg px-1.5 py-1.5 text-xs text-left',
             'outline-none focus-visible:ring-2 focus-visible:ring-ring',
-            'hover:bg-accent hover:text-foreground group-hover/project-header:bg-accent group-hover/project-header:text-foreground transition-colors',
+            'hover:bg-accent hover:text-foreground transition-colors',
           )}
         >
-          <ChevronRight
-            className={cn('size-3.5 shrink-0 text-muted-foreground/70 transition-transform duration-150', expanded && 'rotate-90')}
-            aria-hidden
-          />
-          <span className="size-3.5 shrink-0 rounded-sm bg-muted-foreground/20 flex items-center justify-center text-[8px] font-bold text-muted-foreground/60 uppercase">
-            {name.charAt(0)}
-          </span>
+          {expanded
+            ? <IconFolderOpen className="size-3.5 shrink-0 text-muted-foreground/70" aria-hidden />
+            : <IconFolder className="size-3.5 shrink-0 text-muted-foreground/70" aria-hidden />
+          }
           {editing ? (
             <input
               ref={inputRef}
@@ -112,9 +110,12 @@ export const ProjectItem = memo(function ProjectItem({
               type="button"
               aria-label={`New thread in ${name}`}
               onClick={onNewThread}
-              className="absolute top-1 right-7 flex size-5 cursor-pointer items-center justify-center rounded-md text-muted-foreground/70 hover:bg-secondary hover:text-foreground opacity-0 group-hover/menu-item:opacity-100 focus-visible:opacity-100 outline-none transition-opacity"
+              className={cn(
+                'absolute top-1 right-7 z-10 flex size-5 cursor-pointer items-center justify-center rounded-md text-muted-foreground/70 hover:bg-secondary hover:text-foreground outline-none transition-opacity',
+                hovered ? 'opacity-100' : 'opacity-0',
+              )}
             >
-              <SquarePen className="size-3.5" />
+              <IconEdit className="size-3.5" />
             </button>
           </TooltipTrigger>
           <TooltipContent side="right">New thread</TooltipContent>
@@ -126,9 +127,12 @@ export const ProjectItem = memo(function ProjectItem({
               type="button"
               aria-label={`Remove ${name}`}
               onClick={onRemoveProject}
-              className="absolute top-1 right-1.5 flex size-5 cursor-pointer items-center justify-center rounded-md text-muted-foreground/70 hover:bg-destructive/15 hover:text-destructive opacity-0 group-hover/menu-item:opacity-100 focus-visible:opacity-100 outline-none transition-opacity"
+              className={cn(
+                'absolute top-1 right-1.5 z-10 flex size-5 cursor-pointer items-center justify-center rounded-md text-muted-foreground/70 hover:bg-destructive/15 hover:text-destructive outline-none transition-opacity',
+                hovered ? 'opacity-100' : 'opacity-0',
+              )}
             >
-              <Trash2 className="size-3" />
+              <IconTrash className="size-3" />
             </button>
           </TooltipTrigger>
           <TooltipContent side="right">Remove project</TooltipContent>
@@ -138,21 +142,26 @@ export const ProjectItem = memo(function ProjectItem({
       {ctxMenu && (
         <div ref={ctxRef} className="fixed z-[300] min-w-[160px] rounded-lg border border-border bg-popover py-1 shadow-lg" style={{ left: ctxMenu.x, top: ctxMenu.y }}>
           <button type="button" className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-foreground transition-colors hover:bg-accent"
+            onClick={() => { onNewThread(); setCtxMenu(null) }}>
+            <IconMessagePlus className="size-3.5" /> New Thread
+          </button>
+          <div className="my-1 border-t border-border/50" />
+          <button type="button" className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-foreground transition-colors hover:bg-accent"
             onClick={() => { ipc.openUrl(cwd); setCtxMenu(null) }}>
-            <FolderOpen className="size-3.5" /> Open in Finder
+            <IconFolderOpen className="size-3.5" /> Open in Finder
           </button>
           <button type="button" className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-foreground transition-colors hover:bg-accent"
             onClick={() => { setEditValue(name); setEditing(true); setCtxMenu(null) }}>
-            <Pencil className="size-3.5" /> Edit Name
+            <IconPencil className="size-3.5" /> Edit Name
           </button>
           <button type="button" className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-foreground transition-colors hover:bg-accent"
             onClick={() => { onArchiveThreads(); setCtxMenu(null) }}>
-            <Archive className="size-3.5" /> Archive Threads
+            <IconArchive className="size-3.5" /> Archive Threads
           </button>
           <div className="my-1 border-t border-border/50" />
           <button type="button" className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-destructive transition-colors hover:bg-destructive/10"
             onClick={() => { onRemoveProject(); setCtxMenu(null) }}>
-            <Trash2 className="size-3.5" /> Delete
+            <IconTrash className="size-3.5" /> Delete
           </button>
         </div>
       )}

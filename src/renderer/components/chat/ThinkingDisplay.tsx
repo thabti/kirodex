@@ -1,5 +1,5 @@
 import { memo, useState } from 'react'
-import { Brain, ChevronDown, ChevronRight } from 'lucide-react'
+import { IconBrain, IconChevronDown, IconChevronRight } from '@tabler/icons-react'
 import { cn } from '@/lib/utils'
 
 interface ThinkingDisplayProps {
@@ -17,14 +17,14 @@ export const ThinkingDisplay = memo(function ThinkingDisplay({ text, isActive }:
         onClick={() => setExpanded(!expanded)}
         className="flex w-full items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-muted/30"
       >
-        <Brain className={cn('size-4 shrink-0 text-muted-foreground', isActive && 'animate-pulse')} />
+        <IconBrain className={cn('size-4 shrink-0 text-muted-foreground', isActive && 'animate-pulse')} />
         <span className="flex-1 truncate text-sm italic text-muted-foreground">
           {hasContent && !expanded ? text : 'Thinking...'}
         </span>
         {hasContent && (
           expanded
-            ? <ChevronDown className="size-3 text-muted-foreground" />
-            : <ChevronRight className="size-3 text-muted-foreground" />
+            ? <IconChevronDown className="size-3 text-muted-foreground" />
+            : <IconChevronRight className="size-3 text-muted-foreground" />
         )}
       </button>
       <div

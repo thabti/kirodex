@@ -10,7 +10,7 @@ Kirodex is a native macOS desktop app for managing AI coding agents via the Agen
 - **Backend**: Rust 2021 edition
 - **Frontend**: React 19, TypeScript 5, Vite 6
 - **Styling**: Tailwind CSS 4 (utility-first, dark theme)
-- **UI components**: Radix UI primitives, Lucide icons, Tabler icons
+- **UI components**: Radix UI primitives, Tabler icons (`@tabler/icons-react`)
 - **State management**: Zustand 5 (stores in `src/renderer/stores/`)
 - **Markdown**: react-markdown + remark-gfm
 - **Virtualization**: @tanstack/react-virtual
@@ -101,6 +101,7 @@ bun run clean         # Remove build artifacts
 - One export per file for components
 - Early returns for readability
 - Accessibility: semantic HTML, ARIA attributes, keyboard navigation
+- Icons: use `@tabler/icons-react` exclusively. Never use `lucide-react`. Tabler icons use the `Icon` prefix (e.g., `IconPlus`, `IconCheck`, `IconChevronDown`).
 - Conventional Commits for git messages (`feat:`, `fix:`, `chore:`, etc.)
 
 ## Build validation

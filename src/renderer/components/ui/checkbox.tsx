@@ -1,6 +1,6 @@
 import { forwardRef, type ElementRef, type ComponentPropsWithoutRef } from 'react'
 import * as CheckboxPrimitive from '@radix-ui/react-checkbox'
-import { CheckIcon } from 'lucide-react'
+import { IconCheck } from '@tabler/icons-react'
 import { cn } from '@/lib/utils'
 
 const Checkbox = forwardRef<
@@ -20,7 +20,7 @@ const Checkbox = forwardRef<
       className="flex items-center justify-center text-current"
       data-slot="checkbox-indicator"
     >
-      <CheckIcon className="size-3 stroke-[3]" />
+      <IconCheck className="size-3 stroke-[3]" />
     </CheckboxPrimitive.Indicator>
   </CheckboxPrimitive.Root>
 ))

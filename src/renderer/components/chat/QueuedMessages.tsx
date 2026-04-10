@@ -1,5 +1,5 @@
 import { memo, useCallback } from 'react'
-import { CornerDownLeft, Trash2, ChevronUp, ChevronDown } from 'lucide-react'
+import { IconCornerDownLeft, IconTrash, IconChevronUp, IconChevronDown } from '@tabler/icons-react'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
@@ -33,11 +33,11 @@ export const QueuedMessages = memo(function QueuedMessages({ messages, onRemove,
               <div className="flex shrink-0 flex-col -my-0.5">
                 <button type="button" disabled={i === 0} onClick={() => onReorder!(i, i - 1)}
                   className="text-muted-foreground/30 hover:text-foreground disabled:opacity-0 transition-colors" aria-label="Move up">
-                  <ChevronUp className="size-3" />
+                  <IconChevronUp className="size-3" />
                 </button>
                 <button type="button" disabled={i === messages.length - 1} onClick={() => onReorder!(i, i + 1)}
                   className="text-muted-foreground/30 hover:text-foreground disabled:opacity-0 transition-colors" aria-label="Move down">
-                  <ChevronDown className="size-3" />
+                  <IconChevronDown className="size-3" />
                 </button>
               </div>
             )}
@@ -47,7 +47,7 @@ export const QueuedMessages = memo(function QueuedMessages({ messages, onRemove,
                 <TooltipTrigger asChild>
                   <button type="button" onClick={() => onSteer(i)}
                     className="flex shrink-0 items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-medium text-muted-foreground/60 transition-colors hover:bg-accent hover:text-foreground">
-                    <CornerDownLeft className="size-3" /> Steer
+                    <IconCornerDownLeft className="size-3" /> Steer
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="top" className="text-[11px]">Pause agent and send this message</TooltipContent>
@@ -58,7 +58,7 @@ export const QueuedMessages = memo(function QueuedMessages({ messages, onRemove,
                 <button type="button" onClick={() => onRemove(i)}
                   aria-label={`Remove queued message ${i + 1}`}
                   className="shrink-0 rounded p-0.5 text-muted-foreground/30 transition-colors hover:text-destructive">
-                  <Trash2 className="size-3" />
+                  <IconTrash className="size-3" />
                 </button>
               </TooltipTrigger>
               <TooltipContent side="top" className="text-[11px]">Remove</TooltipContent>

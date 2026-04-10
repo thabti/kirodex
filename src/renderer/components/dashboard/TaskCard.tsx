@@ -1,5 +1,5 @@
 import { memo, useCallback } from 'react'
-import { ShieldAlert } from 'lucide-react'
+import { IconShieldExclamation } from '@tabler/icons-react'
 import type { AgentTask, TaskStatus } from '@/types'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
@@ -84,7 +84,7 @@ export const TaskCard = memo(function TaskCard({ task }: { task: AgentTask }) {
           <span className="text-[10px] text-muted-foreground">{relativeTime(task.createdAt)}</span>
           {task.pendingPermission && (
             <div className="flex items-center gap-1 text-[10px] text-warning-foreground">
-              <ShieldAlert className="h-3 w-3 animate-pulse" />
+              <IconShieldExclamation className="h-3 w-3 animate-pulse" />
               Needs attention
             </div>
           )}

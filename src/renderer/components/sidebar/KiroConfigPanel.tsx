@@ -1,10 +1,10 @@
 import { memo, useCallback, useEffect, useMemo, useState, useRef, type ElementType } from 'react'
 import {
-  Bot, Zap, Compass, ChevronRight, FolderDot, CircleDot, CircleDashed,
-  Search, X, Layers, Database, Globe, Terminal, Cpu,
-  Wrench, FlaskConical, BookOpen, Rocket, Shield, Palette,
-  BarChart2, Cloud, GitBranch, Boxes, Plug, Circle,
-} from 'lucide-react'
+  IconRobot, IconBolt, IconCompass, IconChevronRight, IconFolderCode, IconCircleDot, IconCircleDashed,
+  IconSearch, IconX, IconStack2, IconDatabase, IconWorld, IconTerminal, IconCpu,
+  IconTool, IconFlask, IconBook, IconRocket, IconShield, IconPalette,
+  IconChartBar, IconCloud, IconGitBranch, IconBoxMultiple, IconPlug, IconCircle,
+} from '@tabler/icons-react'
 import {
   IconBrandNextjs, IconBrandLaravel, IconBrandPython, IconBrandSwift,
   IconBrandReactNative, IconBrandNodejs, IconBrandDocker, IconBrandAws,
@@ -58,29 +58,29 @@ type StackMeta = { icon: ElementType; color: string }
 const STACK_META: Record<string, StackMeta> = {
   nextjs:             { icon: IconBrandNextjs,     color: 'text-foreground/70' },
   laravel:            { icon: IconBrandLaravel,    color: 'text-red-400' },
-  magento:            { icon: Boxes,               color: 'text-orange-400' },
-  strapi:             { icon: Database,            color: 'text-indigo-400' },
+  magento:            { icon: IconBoxMultiple,     color: 'text-orange-400' },
+  strapi:             { icon: IconDatabase,        color: 'text-indigo-400' },
   'expo-react-native':{ icon: IconBrandReactNative,color: 'text-cyan-400' },
-  express:            { icon: Layers,              color: 'text-green-400' },
+  express:            { icon: IconStack2,          color: 'text-green-400' },
   nodejs:             { icon: IconBrandNodejs,     color: 'text-emerald-400' },
   devops:             { icon: IconBrandDocker,     color: 'text-sky-400' },
   python:             { icon: IconBrandPython,     color: 'text-yellow-400' },
   swiftui:            { icon: IconBrandSwift,      color: 'text-orange-300' },
-  mumzworld:          { icon: Globe,               color: 'text-pink-400' },
-  other:              { icon: Wrench,              color: 'text-muted-foreground/60' },
+  mumzworld:          { icon: IconWorld,           color: 'text-pink-400' },
+  other:              { icon: IconTool,            color: 'text-muted-foreground/60' },
 }
 
 // Role-level icons for individual agents
 function getRoleIcon(name: string): { icon: ElementType; color: string } {
   const n = name.toLowerCase()
-  if (n.includes('orchestrator'))  return { icon: GitBranch,  color: 'text-violet-400' }
-  if (n.includes('workflow'))      return { icon: GitBranch,  color: 'text-violet-400' }
-  if (n.includes('automation'))    return { icon: FlaskConical,color: 'text-amber-400' }
-  if (n.includes('code-review'))   return { icon: Shield,     color: 'text-rose-400' }
-  if (n.includes('documentation')) return { icon: BookOpen,   color: 'text-blue-400' }
-  if (n.includes('senior'))        return { icon: Palette,    color: 'text-teal-400' }
-  if (n.includes('expert'))        return { icon: Rocket,     color: 'text-amber-300' }
-  return { icon: Bot, color: 'text-muted-foreground/50' }
+  if (n.includes('orchestrator'))  return { icon: IconGitBranch,  color: 'text-violet-400' }
+  if (n.includes('workflow'))      return { icon: IconGitBranch,  color: 'text-violet-400' }
+  if (n.includes('automation'))    return { icon: IconFlask,      color: 'text-amber-400' }
+  if (n.includes('code-review'))   return { icon: IconShield,     color: 'text-rose-400' }
+  if (n.includes('documentation')) return { icon: IconBook,       color: 'text-blue-400' }
+  if (n.includes('senior'))        return { icon: IconPalette,    color: 'text-teal-400' }
+  if (n.includes('expert'))        return { icon: IconRocket,     color: 'text-amber-300' }
+  return { icon: IconRobot, color: 'text-muted-foreground/50' }
 }
 
 // ── Viewer state ──────────────────────────────────────────────────
@@ -90,7 +90,7 @@ interface ViewerState { filePath: string; title: string }
 // ── Section toggle ────────────────────────────────────────────────
 
 function SectionToggle({ icon: Icon, iconColor, label, count, errorCount, expanded, onToggle }: {
-  icon: typeof Bot; iconColor?: string; label: string; count: number; errorCount?: number; expanded: boolean; onToggle: () => void
+  icon: typeof IconRobot; iconColor?: string; label: string; count: number; errorCount?: number; expanded: boolean; onToggle: () => void
 }) {
   return (
     <button type="button" onClick={onToggle} className={cn(
@@ -98,12 +98,12 @@ function SectionToggle({ icon: Icon, iconColor, label, count, errorCount, expand
       'outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring',
       'hover:bg-accent hover:text-foreground transition-colors',
     )}>
-      <ChevronRight className={cn('-ml-0.5 size-3.5 shrink-0 text-muted-foreground/70 transition-transform duration-150', expanded && 'rotate-90')} aria-hidden />
+      <IconChevronRight className={cn('-ml-0.5 size-3.5 shrink-0 text-muted-foreground/70 transition-transform duration-150', expanded && 'rotate-90')} aria-hidden />
       <Icon className={cn('size-3.5 shrink-0', iconColor ?? 'text-muted-foreground/60')} aria-hidden />
       <span className="flex-1 truncate text-xs font-medium text-foreground/90">{label}</span>
       {errorCount && errorCount > 0 ? (
         <span className="flex items-center gap-1">
-          <Circle className="size-1.5 shrink-0 fill-red-500 text-red-500" aria-hidden />
+          <IconCircle className="size-1.5 shrink-0 fill-red-500 text-red-500" aria-hidden />
           <span className="text-[10px] tabular-nums text-red-400/70">{errorCount}</span>
           <span className="text-[10px] text-muted-foreground/30">/</span>
           <span className="text-[10px] tabular-nums text-muted-foreground/50">{count}</span>
@@ -116,7 +116,7 @@ function SectionToggle({ icon: Icon, iconColor, label, count, errorCount, expand
 }
 
 function SourceDot({ source }: { source: 'global' | 'local' }) {
-  return source === 'local' ? <FolderDot className="size-2.5 shrink-0 text-primary/50" aria-hidden /> : null
+  return source === 'local' ? <IconFolderCode className="size-2.5 shrink-0 text-primary/50" aria-hidden /> : null
 }
 
 // ── Agent stack group ─────────────────────────────────────────────
@@ -135,7 +135,7 @@ const AgentStackGroup = memo(function AgentStackGroup({ stack, agents, onOpen }:
         'text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-colors',
         'outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring',
       )}>
-        <ChevronRight className={cn('size-2.5 shrink-0 text-muted-foreground/40 transition-transform duration-150', open && 'rotate-90')} aria-hidden />
+        <IconChevronRight className={cn('size-2.5 shrink-0 text-muted-foreground/40 transition-transform duration-150', open && 'rotate-90')} aria-hidden />
         <StackIcon className={cn('size-3.5 shrink-0', meta.color)} aria-hidden />
         <span className="flex-1 truncate font-medium text-left">{getStackLabel(stack)}</span>
         <span className="text-[9px] tabular-nums text-muted-foreground/40">{agents.length}</span>
@@ -194,7 +194,7 @@ const SkillRow = memo(function SkillRow({ skill, onOpen }: { skill: KiroSkill; o
         'text-muted-foreground/80 hover:bg-accent/50 hover:text-foreground transition-colors',
       )}
     >
-      <Zap className="size-3 shrink-0 text-amber-400 drop-shadow-[0_0_4px_rgba(251,191,36,0.6)]" aria-hidden />
+      <IconBolt className="size-3 shrink-0 text-amber-400 drop-shadow-[0_0_4px_rgba(251,191,36,0.6)]" aria-hidden />
       <span className="min-w-0 flex-1 truncate">{formatName(skill.name)}</span>
       <SourceDot source={skill.source} />
     </li>
@@ -218,8 +218,8 @@ const SteeringRow = memo(function SteeringRow({ rule, onOpen }: { rule: KiroStee
           )}
         >
           {rule.alwaysApply
-            ? <CircleDot className="size-3 shrink-0 text-emerald-400 drop-shadow-[0_0_4px_rgba(52,211,153,0.5)]" aria-hidden />
-            : <CircleDashed className="size-3 shrink-0 text-muted-foreground/30" aria-hidden />}
+            ? <IconCircleDot className="size-3 shrink-0 text-emerald-400 drop-shadow-[0_0_4px_rgba(52,211,153,0.5)]" aria-hidden />
+            : <IconCircleDashed className="size-3 shrink-0 text-muted-foreground/30" aria-hidden />}
           <span className="min-w-0 flex-1 truncate">{formatName(rule.name)}</span>
           {rule.alwaysApply && <span className="shrink-0 text-[9px] text-emerald-400/60">on</span>}
           <SourceDot source={rule.source} />
@@ -256,7 +256,7 @@ const McpRow = memo(function McpRow({ server, onOpen }: { server: KiroMcpServer;
             'text-muted-foreground/80 hover:bg-accent/50 hover:text-foreground transition-colors',
           )}
         >
-          <Circle className={cn('size-2 shrink-0', dotClass)} aria-hidden />
+          <IconCircle className={cn('size-2 shrink-0', dotClass)} aria-hidden />
           <span className="min-w-0 flex-1 truncate">{server.name}</span>
           <span className="shrink-0 text-[9px] text-muted-foreground/40">
             {server.transport}
@@ -285,7 +285,7 @@ function InlineSearch({ value, onChange, onClose }: { value: string; onChange: (
   useEffect(() => { ref.current?.focus() }, [])
   return (
     <div className="relative mx-2 mb-1">
-      <Search className="absolute left-2 top-1/2 -translate-y-1/2 size-3 text-muted-foreground/40 pointer-events-none" />
+      <IconSearch className="absolute left-2 top-1/2 -translate-y-1/2 size-3 text-muted-foreground/40 pointer-events-none" />
       <input ref={ref} type="text" value={value} onChange={(e) => onChange(e.target.value)}
         onKeyDown={(e) => { if (e.key === 'Escape') { onChange(''); onClose() } }}
         placeholder="Filter…"
@@ -294,7 +294,7 @@ function InlineSearch({ value, onChange, onClose }: { value: string; onChange: (
       {value && (
         <button type="button" onClick={() => { onChange(''); onClose() }}
           className="absolute right-1.5 top-1/2 -translate-y-1/2 flex size-3.5 items-center justify-center rounded text-muted-foreground/40 hover:text-foreground transition-colors">
-          <X className="size-2.5" />
+          <IconX className="size-2.5" />
         </button>
       )}
     </div>
@@ -382,7 +382,7 @@ export const KiroConfigPanel = memo(function KiroConfigPanel({
             onClick={onToggleCollapse}
             className="flex h-6 flex-1 items-center gap-1.5 pl-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/50 hover:text-muted-foreground transition-colors"
           >
-            <ChevronRight className={cn('size-3 shrink-0 transition-transform duration-150', !collapsed && 'rotate-90')} aria-hidden />
+            <IconChevronRight className={cn('size-3 shrink-0 transition-transform duration-150', !collapsed && 'rotate-90')} aria-hidden />
             Kiro
           </button>
           {!collapsed && (agents.length + skills.length + steeringRules.length + mcpServers.length) > 10 && (
@@ -391,7 +391,7 @@ export const KiroConfigPanel = memo(function KiroConfigPanel({
                 <button type="button" onClick={() => setSearching((v) => !v)}
                   className={cn('inline-flex size-5 cursor-pointer items-center justify-center rounded-md transition-colors',
                     searching ? 'bg-accent text-foreground' : 'text-muted-foreground/60 hover:bg-accent hover:text-foreground')}>
-                  <Search className="size-3.5" aria-hidden />
+                  <IconSearch className="size-3.5" aria-hidden />
                 </button>
               </TooltipTrigger>
               <TooltipContent side="right">Filter</TooltipContent>
@@ -406,7 +406,7 @@ export const KiroConfigPanel = memo(function KiroConfigPanel({
 
             {/* Steering */}
             {steeringRules.length > 0 && (filteredRules.length > 0 || !search) && (
-              <SectionToggle icon={Compass} iconColor="text-emerald-400" label="Steering" count={filteredRules.length} expanded={rulesOpen} onToggle={() => setRulesOpen((v) => !v)} />
+              <SectionToggle icon={IconCompass} iconColor="text-emerald-400" label="Steering" count={filteredRules.length} expanded={rulesOpen} onToggle={() => setRulesOpen((v) => !v)} />
             )}
             {rulesOpen && filteredRules.length > 0 && (
               <ul className="flex min-w-0 flex-col gap-px border-l mx-1 px-1.5 py-px" style={{ borderColor: 'var(--border)' }}>
@@ -416,7 +416,7 @@ export const KiroConfigPanel = memo(function KiroConfigPanel({
 
             {/* Skills */}
             {skills.length > 0 && (filteredSkills.length > 0 || !search) && (
-              <SectionToggle icon={Zap} iconColor="text-amber-400" label="Skills" count={filteredSkills.length} expanded={skillsOpen} onToggle={() => setSkillsOpen((v) => !v)} />
+              <SectionToggle icon={IconBolt} iconColor="text-amber-400" label="Skills" count={filteredSkills.length} expanded={skillsOpen} onToggle={() => setSkillsOpen((v) => !v)} />
             )}
             {skillsOpen && filteredSkills.length > 0 && (
               <ul className="flex min-w-0 flex-col gap-px border-l mx-1 px-1.5 py-px" style={{ borderColor: 'var(--border)' }}>
@@ -426,7 +426,7 @@ export const KiroConfigPanel = memo(function KiroConfigPanel({
 
             {/* Agents */}
             {agents.length > 0 && (totalAgents > 0 || !search) && (
-              <SectionToggle icon={Bot} iconColor="text-violet-400" label="Agents" count={totalAgents} expanded={agentsOpen} onToggle={() => setAgentsOpen((v) => !v)} />
+              <SectionToggle icon={IconRobot} iconColor="text-violet-400" label="Agents" count={totalAgents} expanded={agentsOpen} onToggle={() => setAgentsOpen((v) => !v)} />
             )}
             {agentsOpen && totalAgents > 0 && (
               <ul className="flex min-w-0 flex-col gap-px border-l mx-1 px-1.5 py-px" style={{ borderColor: 'var(--border)' }}>
@@ -440,7 +440,7 @@ export const KiroConfigPanel = memo(function KiroConfigPanel({
 
             {/* MCP */}
             {mcpServers.length > 0 && (filteredMcp.length > 0 || !search) && (
-              <SectionToggle icon={Plug} iconColor="text-sky-400" label="MCP" count={filteredMcp.length} errorCount={mcpErrorCount} expanded={mcpOpen} onToggle={() => setMcpOpen((v) => !v)} />
+              <SectionToggle icon={IconPlug} iconColor="text-sky-400" label="MCP" count={filteredMcp.length} errorCount={mcpErrorCount} expanded={mcpOpen} onToggle={() => setMcpOpen((v) => !v)} />
             )}
             {mcpOpen && filteredMcp.length > 0 && (
               <ul className="flex min-w-0 flex-col gap-px border-l mx-1 px-1.5 py-px" style={{ borderColor: 'var(--border)' }}>

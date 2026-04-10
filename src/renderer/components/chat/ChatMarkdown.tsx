@@ -1,7 +1,7 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState, Children, isValidElement, type ReactNode } from 'react'
 import ReactMarkdown, { type Components } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { CheckIcon, CopyIcon } from 'lucide-react'
+import { IconCheck, IconCopy } from '@tabler/icons-react'
 import { cn } from '@/lib/utils'
 import { QuestionCards, hasQuestionBlocks, stripQuestionBlocks } from './QuestionCards'
 import { useDiffStore } from '@/stores/diffStore'
@@ -51,7 +51,7 @@ const CopyButton = memo(function CopyButton({ text }: { text: string }) {
       className="rounded p-1 text-muted-foreground/50 transition-colors hover:bg-secondary hover:text-foreground"
       aria-label={copied ? 'Copied' : 'Copy code'}
     >
-      {copied ? <CheckIcon className="size-3.5" /> : <CopyIcon className="size-3.5" />}
+      {copied ? <IconCheck className="size-3.5" /> : <IconCopy className="size-3.5" />}
     </button>
   )
 })
@@ -74,7 +74,7 @@ function stabilizeStreamingMarkdown(text: string): string {
 }
 
 /** Single source of prose styling — all typography lives here, nothing in tailwind.css */
-const PROSE_CLASSES = 'chat-markdown w-full min-w-0 text-[14px] leading-[1.6] text-foreground'
+const PROSE_CLASSES = 'chat-markdown w-full min-w-0 leading-[1.6] text-foreground'
 
 /** Matches strings that look like file paths (contain / or \ and end with a file extension) */
 const FILE_PATH_RE = /^(?:\.{0,2}[\\/])?(?:[\w.@-]+[\\/])*[\w.@-]+\.\w{1,10}$/

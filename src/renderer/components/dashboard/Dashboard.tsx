@@ -1,5 +1,5 @@
 import { memo, useCallback, useMemo } from 'react'
-import { Bot, Plus, FolderOpen } from 'lucide-react'
+import { IconRobot, IconPlus, IconFolderOpen } from '@tabler/icons-react'
 import { useTaskStore } from '@/stores/taskStore'
 import { TaskCard } from './TaskCard'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -77,7 +77,7 @@ export const Dashboard = memo(function Dashboard() {
               {taskCount} task{taskCount !== 1 ? 's' : ''}
             </Badge>
             <Button size="sm" className="ml-auto gap-1.5" onClick={handleNewThread}>
-              <Plus className="h-3.5 w-3.5" />
+              <IconPlus className="h-3.5 w-3.5" />
               New Thread
             </Button>
           </div>
@@ -85,7 +85,7 @@ export const Dashboard = memo(function Dashboard() {
           {taskCount === 0 ? (
             <Empty>
               <EmptyHeader>
-                <Bot className="mb-4 h-10 w-10 text-muted-foreground/40" />
+                <IconRobot className="mb-4 h-10 w-10 text-muted-foreground/40" />
                 <EmptyTitle>No threads yet</EmptyTitle>
                 <EmptyDescription>
                   Import a project folder to start a new thread with Kiro.
@@ -93,7 +93,7 @@ export const Dashboard = memo(function Dashboard() {
               </EmptyHeader>
               <EmptyContent>
                 <Button onClick={handleNewThread} className="gap-1.5">
-                  <FolderOpen className="h-4 w-4" />
+                  <IconFolderOpen className="h-4 w-4" />
                   New thread
                 </Button>
               </EmptyContent>

@@ -1,5 +1,5 @@
 import { memo, useState } from 'react'
-import { Check, Circle, Loader2, ChevronDown, ChevronRight, ListChecks } from 'lucide-react'
+import { IconCheck, IconCircle, IconLoader2, IconChevronDown, IconChevronRight, IconListCheck } from '@tabler/icons-react'
 import type { PlanStep } from '@/types'
 import { cn } from '@/lib/utils'
 
@@ -8,9 +8,9 @@ interface ExecutionPlanProps {
 }
 
 const stepIcons = {
-  pending: <Circle className="mt-0.5 size-3.5 shrink-0 text-muted-foreground/40" />,
-  in_progress: <Loader2 className="mt-0.5 size-3.5 shrink-0 animate-spin text-primary" />,
-  completed: <Check className="mt-0.5 size-3.5 shrink-0 text-emerald-400" />,
+  pending: <IconCircle className="mt-0.5 size-3.5 shrink-0 text-muted-foreground/40" />,
+  in_progress: <IconLoader2 className="mt-0.5 size-3.5 shrink-0 animate-spin text-primary" />,
+  completed: <IconCheck className="mt-0.5 size-3.5 shrink-0 text-emerald-400" />,
 } as const
 
 const priorityDot: Record<string, string> = {
@@ -38,7 +38,7 @@ export const ExecutionPlan = memo(function ExecutionPlan({ steps }: ExecutionPla
         aria-label={`Execution plan, ${completed} of ${steps.length} steps completed`}
         className="flex w-full items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-accent/10"
       >
-        <ListChecks className={cn(
+        <IconListCheck className={cn(
           'size-4',
           isAllDone ? 'text-emerald-400' : 'text-primary/70',
         )} />
@@ -49,8 +49,8 @@ export const ExecutionPlan = memo(function ExecutionPlan({ steps }: ExecutionPla
           </span>
         </span>
         {expanded
-          ? <ChevronDown className="size-3 text-muted-foreground" />
-          : <ChevronRight className="size-3 text-muted-foreground" />}
+          ? <IconChevronDown className="size-3 text-muted-foreground" />
+          : <IconChevronRight className="size-3 text-muted-foreground" />}
       </button>
 
       {/* progress bar */}

@@ -1,5 +1,5 @@
 import { memo, useCallback, useRef, useState } from 'react'
-import { Plus, ArrowUpDown, Check } from 'lucide-react'
+import { IconPlus, IconArrowsUpDown, IconCheck } from '@tabler/icons-react'
 import { useTaskStore } from '@/stores/taskStore'
 import { useShallow } from 'zustand/react/shallow'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -27,7 +27,7 @@ const SortDropdown = memo(function SortDropdown({ sort, onChange }: { sort: Sort
           <button type="button" onClick={() => setOpen((v) => !v)}
             className={cn('inline-flex size-5 cursor-pointer items-center justify-center rounded-md transition-colors',
               open ? 'bg-accent text-foreground' : 'text-muted-foreground/60 hover:bg-accent hover:text-foreground')}>
-            <ArrowUpDown className="size-3.5" />
+            <IconArrowsUpDown className="size-3.5" />
           </button>
         </TooltipTrigger>
         <TooltipContent side="right">Sort tasks</TooltipContent>
@@ -40,7 +40,7 @@ const SortDropdown = memo(function SortDropdown({ sort, onChange }: { sort: Sort
               <button key={opt.key} type="button"
                 onClick={() => { onChange(opt.key); setOpen(false) }}
                 className="flex w-full items-center gap-2 px-3 py-1.5 text-xs text-foreground hover:bg-accent transition-colors">
-                <Check className={cn('size-3 shrink-0', sort === opt.key ? 'opacity-100' : 'opacity-0')} />
+                <IconCheck className={cn('size-3 shrink-0', sort === opt.key ? 'opacity-100' : 'opacity-0')} />
                 {opt.label}
               </button>
             ))}
@@ -122,7 +122,7 @@ export const TaskSidebar = memo(function TaskSidebar({ width, onResize }: TaskSi
                   <TooltipTrigger asChild>
                     <button type="button" aria-label="Add project" onClick={() => setNewProjectOpen(true)}
                       className="inline-flex size-5 cursor-pointer items-center justify-center rounded-md text-muted-foreground/60 transition-colors hover:bg-accent hover:text-foreground">
-                      <Plus className="size-3.5" />
+                      <IconPlus className="size-3.5" />
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="right">Import project folder</TooltipContent>

@@ -1,5 +1,5 @@
 import { useEffect, useCallback } from 'react'
-import { Pause, Play, XCircle, GitCompareArrows, TerminalSquare, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
+import { IconPlayerPause, IconPlayerPlay, IconCircleX, IconGitCompare, IconTerminal2, IconLayoutSidebarLeftCollapse, IconLayoutSidebarLeftExpand } from '@tabler/icons-react'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { useTaskStore } from '@/stores/taskStore'
 import { useDiffStore } from '@/stores/diffStore'
@@ -44,7 +44,7 @@ function AppHeaderInner({ sidePanelOpen, onToggleSidePanel, isSidebarCollapsed, 
   const task = useTaskStore((s) => selectedTaskId ? s.tasks[selectedTaskId] : null)
   const pendingWorkspace = useTaskStore((s) => s.pendingWorkspace)
   const taskStatus = task?.status
-  const terminalOpen = useTaskStore((s) => s.terminalOpen)
+  const terminalOpen = useTaskStore((s) => selectedTaskId ? s.terminalOpenTasks.has(selectedTaskId) : false)
   const toggleTerminal = useTaskStore((s) => s.toggleTerminal)
   const diffStats = useDiffStore((s) => s.stats)
   const fetchDiff = useDiffStore((s) => s.fetchDiff)
@@ -88,7 +88,7 @@ function AppHeaderInner({ sidePanelOpen, onToggleSidePanel, isSidebarCollapsed, 
               onClick={onToggleSidebar}
               className="inline-flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
             >
-              {isSidebarCollapsed ? <PanelLeftOpen className="size-4" aria-hidden /> : <PanelLeftClose className="size-4" aria-hidden />}
+              {isSidebarCollapsed ? <IconLayoutSidebarLeftExpand className="size-4" aria-hidden /> : <IconLayoutSidebarLeftCollapse className="size-4" aria-hidden />}
             </button>
           </TooltipTrigger>
           <TooltipContent side="bottom">Toggle sidebar <kbd className="ml-1 rounded bg-muted px-1 py-0.5 text-[10px]">⌘B</kbd></TooltipContent>
@@ -152,7 +152,7 @@ function AppHeaderInner({ sidePanelOpen, onToggleSidePanel, isSidebarCollapsed, 
                   sidePanelOpen ? 'bg-input/64 dark:bg-input text-foreground' : 'bg-popover hover:bg-accent/50 dark:bg-input/32 text-muted-foreground',
                 )}
               >
-                <GitCompareArrows className="size-3" aria-hidden />
+                <IconGitCompare className="size-3" aria-hidden />
                 {hasStats && (
                   <span className={cn('flex items-center gap-1 tabular-nums', canPause && 'animate-pulse')}>
                     {diffStats.fileCount > 0 && (
@@ -173,13 +173,13 @@ function AppHeaderInner({ sidePanelOpen, onToggleSidePanel, isSidebarCollapsed, 
                 type="button"
                 aria-label="Toggle terminal"
                 aria-pressed={terminalOpen}
-                onClick={toggleTerminal}
+                onClick={() => selectedTaskId && toggleTerminal(selectedTaskId)}
                 className={cn(
                   'inline-flex h-6 items-center rounded-md border border-input px-1.5 text-xs shadow-xs/5 transition-colors',
                   terminalOpen ? 'bg-input/64 dark:bg-input text-foreground' : 'bg-popover hover:bg-accent/50 dark:bg-input/32 text-muted-foreground',
                 )}
               >
-                <TerminalSquare className="size-3" aria-hidden />
+                <IconTerminal2 className="size-3" aria-hidden />
               </button>
             </TooltipTrigger>
             <TooltipContent side="bottom">Terminal</TooltipContent>
@@ -188,7 +188,7 @@ function AppHeaderInner({ sidePanelOpen, onToggleSidePanel, isSidebarCollapsed, 
           {canPause && (
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button size="icon-sm" variant="ghost" onClick={handlePause}><Pause className="size-3.5" /></Button>
+                <Button size="icon-sm" variant="ghost" onClick={handlePause}><IconPlayerPause className="size-3.5" /></Button>
               </TooltipTrigger>
               <TooltipContent side="bottom">Pause</TooltipContent>
             </Tooltip>
@@ -196,7 +196,7 @@ function AppHeaderInner({ sidePanelOpen, onToggleSidePanel, isSidebarCollapsed, 
           {canResume && (
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button size="icon-sm" variant="ghost" onClick={handleResume}><Play className="size-3.5" /></Button>
+                <Button size="icon-sm" variant="ghost" onClick={handleResume}><IconPlayerPlay className="size-3.5" /></Button>
               </TooltipTrigger>
               <TooltipContent side="bottom">Resume</TooltipContent>
             </Tooltip>
@@ -204,7 +204,7 @@ function AppHeaderInner({ sidePanelOpen, onToggleSidePanel, isSidebarCollapsed, 
           {canCancel && (
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button size="icon-sm" variant="ghost" onClick={handleCancel}><XCircle className="size-3.5" /></Button>
+                <Button size="icon-sm" variant="ghost" onClick={handleCancel}><IconCircleX className="size-3.5" /></Button>
               </TooltipTrigger>
               <TooltipContent side="bottom">Cancel</TooltipContent>
             </Tooltip>

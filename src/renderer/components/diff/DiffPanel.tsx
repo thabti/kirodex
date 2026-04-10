@@ -1,7 +1,7 @@
 import { memo, useCallback, useEffect, useRef, useState, useMemo } from 'react'
 import { parsePatchFiles, type FileDiffMetadata } from '@pierre/diffs'
 import { FileDiff, Virtualizer } from '@pierre/diffs/react'
-import { X, GripHorizontal, Columns2, Rows2, WrapText, FileCode, RefreshCw, Plus, Undo2 } from 'lucide-react'
+import { IconX, IconGripHorizontal, IconColumns, IconLayoutRows, IconTextWrap, IconFileCode, IconRefresh, IconPlus, IconArrowBackUp } from '@tabler/icons-react'
 import { useDiffStore } from '@/stores/diffStore'
 import { useTaskStore } from '@/stores/taskStore'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -151,7 +151,7 @@ export const DiffPanel = memo(function DiffPanel() {
         onMouseDown={onDragStart}
         className="flex h-2 cursor-row-resize items-center justify-center hover:bg-primary/20 active:bg-primary/30 transition-colors"
       >
-        <GripHorizontal className="size-3 text-muted-foreground/30" />
+        <IconGripHorizontal className="size-3 text-muted-foreground/30" />
       </div>
 
       {/* Toolbar */}
@@ -184,7 +184,7 @@ export const DiffPanel = memo(function DiffPanel() {
                 loading && 'animate-spin',
               )}
             >
-              <RefreshCw className="size-3" />
+              <IconRefresh className="size-3" />
             </button>
           </TooltipTrigger>
           <TooltipContent side="bottom">Refresh diff</TooltipContent>
@@ -200,7 +200,7 @@ export const DiffPanel = memo(function DiffPanel() {
                 diffStyle === 'unified' ? 'bg-accent text-foreground' : 'text-muted-foreground/50 hover:text-foreground',
               )}
             >
-              <Rows2 className="size-3" />
+              <IconLayoutRows className="size-3" />
             </button>
           </TooltipTrigger>
           <TooltipContent side="bottom">Unified view</TooltipContent>
@@ -215,7 +215,7 @@ export const DiffPanel = memo(function DiffPanel() {
                 diffStyle === 'split' ? 'bg-accent text-foreground' : 'text-muted-foreground/50 hover:text-foreground',
               )}
             >
-              <Columns2 className="size-3" />
+              <IconColumns className="size-3" />
             </button>
           </TooltipTrigger>
           <TooltipContent side="bottom">Split view</TooltipContent>
@@ -230,7 +230,7 @@ export const DiffPanel = memo(function DiffPanel() {
                 wordWrap ? 'bg-accent text-foreground' : 'text-muted-foreground/50 hover:text-foreground',
               )}
             >
-              <WrapText className="size-3" />
+              <IconTextWrap className="size-3" />
             </button>
           </TooltipTrigger>
           <TooltipContent side="bottom">Toggle word wrap</TooltipContent>
@@ -243,7 +243,7 @@ export const DiffPanel = memo(function DiffPanel() {
               onClick={() => setOpen(false)}
               className="flex size-5 items-center justify-center rounded text-muted-foreground/40 hover:bg-accent hover:text-foreground transition-colors"
             >
-              <X className="size-3" />
+              <IconX className="size-3" />
             </button>
           </TooltipTrigger>
           <TooltipContent side="bottom">Close</TooltipContent>
@@ -290,7 +290,7 @@ export const DiffPanel = memo(function DiffPanel() {
                     onClick={() => setSelectedFileIdx(i)}
                     className="flex items-center gap-1 min-w-0 flex-1 truncate"
                   >
-                    <FileCode className="size-3 shrink-0 text-muted-foreground/50" />
+                    <IconFileCode className="size-3 shrink-0 text-muted-foreground/50" />
                     <span className="min-w-0 flex-1 truncate text-left">{file.name.split('/').pop()}</span>
                     <span className="shrink-0 flex gap-1">
                       {file.additions > 0 && <span className="text-emerald-400">+{file.additions}</span>}
@@ -311,7 +311,7 @@ export const DiffPanel = memo(function DiffPanel() {
                     className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium text-emerald-400 hover:bg-emerald-400/10 transition-colors"
                     aria-label="Stage selected files"
                   >
-                    <Plus className="size-3" />
+                    <IconPlus className="size-3" />
                     Stage ({selectedFiles.size})
                   </button>
                 </TooltipTrigger>
@@ -325,7 +325,7 @@ export const DiffPanel = memo(function DiffPanel() {
                     className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium text-red-400 hover:bg-red-400/10 transition-colors"
                     aria-label="Revert selected files"
                   >
-                    <Undo2 className="size-3" />
+                    <IconArrowBackUp className="size-3" />
                     Revert
                   </button>
                 </TooltipTrigger>
@@ -339,7 +339,7 @@ export const DiffPanel = memo(function DiffPanel() {
         <div className="flex-1 min-w-0 overflow-auto">
           {loading ? (
             <div className="flex h-full items-center justify-center">
-              <RefreshCw className="size-4 animate-spin text-muted-foreground/30" />
+              <IconRefresh className="size-4 animate-spin text-muted-foreground/30" />
             </div>
           ) : parsedFiles.length === 0 ? (
             <div className="flex h-full items-center justify-center text-xs text-muted-foreground/40">

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { X, FileCode, Maximize2, Minimize2 } from 'lucide-react'
+import { IconX, IconFileCode, IconMaximize, IconMinimize } from '@tabler/icons-react'
 import { useTaskStore } from '@/stores/taskStore'
 import { ipc } from '@/lib/ipc'
 import { useResizeHandle } from '@/hooks/useResizeHandle'
@@ -51,7 +51,7 @@ export function CodePanel({ onClose }: CodePanelProps) {
         {/* Header */}
         <div className="flex items-center border-b">
           <div className="flex flex-1 items-center gap-1.5 px-3 py-1.5">
-            <FileCode className="h-3 w-3 text-muted-foreground" />
+            <IconFileCode className="h-3 w-3 text-muted-foreground" />
             <span className="text-[11px] font-medium text-foreground">Files Changed</span>
           </div>
           <button
@@ -59,10 +59,10 @@ export function CodePanel({ onClose }: CodePanelProps) {
             title={isExpanded ? 'Collapse panel' : 'Expand to full width'}
             className="px-1.5 py-1.5 text-muted-foreground hover:text-foreground"
           >
-            {isExpanded ? <Minimize2 className="h-3 w-3" /> : <Maximize2 className="h-3 w-3" />}
+            {isExpanded ? <IconMinimize className="h-3 w-3" /> : <IconMaximize className="h-3 w-3" />}
           </button>
           <button onClick={onClose} className="px-2 py-1.5 text-muted-foreground hover:text-foreground">
-            <X className="h-3.5 w-3.5" />
+            <IconX className="h-3.5 w-3.5" />
           </button>
         </div>
 

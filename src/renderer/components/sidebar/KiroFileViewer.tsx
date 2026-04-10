@@ -1,7 +1,7 @@
 import { useEffect, useState, memo } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { X, ExternalLink } from 'lucide-react'
+import { IconX, IconExternalLink } from '@tabler/icons-react'
 import { ipc } from '@/lib/ipc'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
@@ -44,7 +44,7 @@ export const KiroFileViewer = memo(function KiroFileViewer({ filePath, title, on
                 onClick={() => ipc.openInEditor(filePath, 'zed')}
                 className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground/60 hover:bg-accent hover:text-foreground transition-colors"
               >
-                <ExternalLink className="size-3.5" />
+                <IconExternalLink className="size-3.5" />
               </button>
             </TooltipTrigger>
             <TooltipContent side="bottom">Open in editor</TooltipContent>
@@ -56,7 +56,7 @@ export const KiroFileViewer = memo(function KiroFileViewer({ filePath, title, on
                 onClick={onClose}
                 className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground/60 hover:bg-accent hover:text-foreground transition-colors"
               >
-                <X className="size-3.5" />
+                <IconX className="size-3.5" />
               </button>
             </TooltipTrigger>
             <TooltipContent side="bottom">Close</TooltipContent>
