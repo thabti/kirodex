@@ -1,6 +1,18 @@
 # Activity Log
 
 
+## 2026-04-10 11:30 GST (Dubai, UTC+4)
+
+### Commit session: split working changes into 6 logical conventional commits
+
+Organized all unstaged changes into focused commits:
+
+1. `feat(backend)`: tauri-plugin-store integration + ValidationException hint in acp.rs
+2. `feat(history)`: persistent conversation threads via LazyStore, archived thread UI, clear history in settings
+3. `refactor(onboarding)`: single-step onboarding with terminal-style CLI detection
+4. `refactor(ui)`: remove Playground, extract useResizeHandle hook, simplify MCP status, add ThreadItem context menu with confirm-delete, project drag-to-reorder, file mention pills, fix sidebar structural sharing
+5. `chore`: remove unused .kiro agent configs, update activity log, fix plan-mode pause button color
+
 ## 2026-04-10 10:47 GST (Dubai, UTC+4)
 
 ### Fix sidebar sort: remove unused index prop, fix structural sharing
