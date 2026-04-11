@@ -234,7 +234,7 @@ export const ChatInput = memo(function ChatInput({ disabled, contextUsage, messa
                   className={cn(
                     'flex h-8 w-8 items-center justify-center rounded-full transition-all duration-150',
                     buttonBg, 'text-white hover:scale-105',
-                    'disabled:pointer-events-none disabled:opacity-30 disabled:hover:scale-100',
+                    'disabled:pointer-events-none disabled:opacity-50 disabled:hover:scale-100',
                   )}
                 >
                   <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
