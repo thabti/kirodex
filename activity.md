@@ -72,6 +72,14 @@
   - `ThreadItem.tsx`: Imported `Tooltip`, `TooltipTrigger`, `TooltipContent` from shadcn; wrapped the truncated thread name `<span>` with a tooltip that displays `task.name` on the right side
   - TypeScript compiles clean
 
+## 2026-04-11 20:41 (Dubai)
+- Committed all pending changes in logical groups:
+  - `e6567a7` feat(chat): add task completion card with JSON report
+  - `2b5eadd` feat(chat): aggregate task lists and add collapsible display
+  - `07f44ab` fix(chat): improve changed-files summary layout and row height estimates
+  - `e3cc44d` fix(sidebar): add thread tooltip, reorder archive icon, update agents color (also included plans, capabilities, activity)
+  - `0f1a0c8` style(chat): fix indentation in ChangedFilesSummary
+
 ## 2026-04-11 20:39 (Dubai)
 - Fixed squashed message bubbles by widening container max-width breakpoints from `max-w-2xl/3xl/4xl` to `max-w-3xl/4xl/5xl` across five chat components: `MessageList.tsx`, `ChatInput.tsx`, `ChatPanel.tsx`, `QueuedMessages.tsx`, `PermissionBanner.tsx`
 
@@ -87,3 +95,36 @@
   - `src/renderer/components/chat/TaskListDisplay.tsx` — added collapse toggle, `aggregateLatestTasks()`, `isLastTaskListToolCall()`
   - `src/renderer/components/chat/ToolCallEntry.tsx` — accepts `allToolCalls` prop, passes it to `TaskListDisplay`
   - `src/renderer/components/chat/ToolCallDisplay.tsx` — passes `toolCalls` array down to each `ToolCallEntry`
+
+## 2026-04-11 20:38 (Dubai)
+- Fixed overlapping file changes and tool calls sections in chat UI
+  - **Root cause**: The virtualizer uses absolute positioning with `translateY` for each row. Three issues combined to cause overlap:
+    1. Row size estimates were too small (`work`: 40px, `changed-files`: 64px) for actual rendered content
+    2. `ChangedFilesSummary` used CSS margins (`mt-2 mb-4`) which don't contribute to measured height on absolutely-positioned virtualizer children
+    3. `WorkGroupRow` with `squashed=true` had `pb-0`, leaving zero spacing before the changed-files row
+  - **Fixes applied**:
+    - `MessageList.tsx`: Increased row estimates for `work` (40→120) and `changed-files` (64→140)
+    - `ChangedFilesSummary.tsx`: Wrapped content in an outer `<div>` with `pt-2 pb-4` padding instead of margins (padding is included in box model measurement)
+    - `WorkGroupRow.tsx`: Changed squashed padding from `pb-0` to `pb-1`
+  - TypeScript compiles clean
+
+## 2026-04-11 20:50 (Dubai) — Auto-update feature implementation
+
+### Changes
+- Installed `tauri-plugin-updater` and `tauri-plugin-process` (Rust + JS)
+- Configured `tauri.conf.json`: `createUpdaterArtifacts: true`, updater plugin with GitHub endpoint
+- Added `updater:default` and `process:default` permissions to capabilities
+- Updated `release.yml` with `TAURI_SIGNING_PRIVATE_KEY` and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` env vars
+- Created `updateStore.ts` (zustand) for cross-component update state
+- Created `useUpdateChecker.ts` hook: auto-check on mount + every 4h, download with progress, restart via relaunch
+- Added `UpdateNotifier` component in `App.tsx` for Sonner toast notifications
+- Added `UpdatesCard` in Settings > General for manual update checks
+
+### Files modified
+- `.github/workflows/release.yml`
+- `bun.lock`, `package.json`
+- `src-tauri/Cargo.toml`, `src-tauri/src/lib.rs`, `src-tauri/tauri.conf.json`, `src-tauri/capabilities/default.json`
+- `src/renderer/App.tsx`
+- `src/renderer/components/settings/SettingsPanel.tsx`
+- `src/renderer/hooks/useUpdateChecker.ts` (new)
+- `src/renderer/stores/updateStore.ts` (new)

@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useState, lazy, Suspense } from "react";
+import { useEffect, useCallback, useState, useRef, lazy, Suspense } from "react";
 import { Toaster, toast } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -29,6 +29,7 @@ import { useDebugStore } from "@/stores/debugStore";
 import { useDiffStore } from "@/stores/diffStore";
 import { useKiroStore, initKiroListeners } from "@/stores/kiroStore";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { useUpdateChecker } from "@/hooks/useUpdateChecker";
 import { useShallow } from "zustand/react/shallow";
 const Onboarding = lazy(() =>
   import("@/components/Onboarding").then((m) => ({ default: m.Onboarding })),
@@ -188,6 +189,61 @@ function EmptyState() {
   );
 }
 
+function UpdateNotifier() {
+  const { status, updateInfo, progress, dismissedVersion, downloadAndInstall, restart, dismissVersion } = useUpdateChecker();
+  const toastIdRef = useRef<string | number | null>(null);
+
+  useEffect(() => {
+    if (status === 'available' && updateInfo) {
+      if (dismissedVersion === updateInfo.version) return;
+      toastIdRef.current = toast(`Kirodex v${updateInfo.version} available`, {
+        description: 'A new version is ready to install.',
+        duration: Infinity,
+        action: {
+          label: 'Update now',
+          onClick: () => downloadAndInstall(),
+        },
+        onDismiss: () => dismissVersion(updateInfo.version),
+      });
+    }
+
+    if (status === 'downloading') {
+      const pct = progress?.total
+        ? Math.round((progress.downloaded / progress.total) * 100)
+        : null;
+      const desc = pct !== null ? `Downloading... ${pct}%` : 'Downloading...';
+      if (toastIdRef.current) {
+        toast.loading(desc, { id: toastIdRef.current, duration: Infinity });
+      } else {
+        toastIdRef.current = toast.loading(desc, { duration: Infinity });
+      }
+    }
+
+    if (status === 'ready') {
+      if (toastIdRef.current) {
+        toast.success('Update installed', {
+          id: toastIdRef.current,
+          description: 'Restart to finish updating.',
+          duration: Infinity,
+          action: {
+            label: 'Restart',
+            onClick: () => restart(),
+          },
+        });
+      }
+    }
+
+    if (status === 'error') {
+      if (toastIdRef.current) {
+        toast.dismiss(toastIdRef.current);
+        toastIdRef.current = null;
+      }
+    }
+  }, [status, progress?.downloaded]);
+
+  return null;
+}
+
 export function App() {
   const { view, selectedTaskId, pendingWorkspace } = useTaskStore(
     useShallow((s) => ({
@@ -332,6 +388,7 @@ export function App() {
         toastOptions={{ duration: 8000 }}
         theme="system"
       />
+      <UpdateNotifier />
     </TooltipProvider>
   );
 }

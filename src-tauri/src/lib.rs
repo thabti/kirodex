@@ -96,12 +96,17 @@ pub fn run() {
         .plugin(tauri_plugin_log::Builder::new().build())
         .plugin(tauri_plugin_store::Builder::default().build())
         .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_process::init())
         .manage(settings::SettingsState::default())
         .manage(acp::AcpState::default())
         .manage(pty::PtyState::default())
         .setup(|app| {
             let window = app.get_webview_window("main")
                 .ok_or_else(|| "main window not found".to_string())?;
+
+            #[cfg(desktop)]
+            app.handle().plugin(tauri_plugin_updater::Builder::new().build())?;
+
             #[cfg(target_os = "macos")]
             {
                 use window_vibrancy::{apply_vibrancy, NSVisualEffectMaterial};

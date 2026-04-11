@@ -35,6 +35,7 @@
     "active": true,
     "targets": "all",
     "icon": ["icons/icon.png", "icons/icon.icns", "icons/icon.ico"],
+    "createUpdaterArtifacts": true,
     "macOS": {
       "minimumSystemVersion": "11.0",
       "signingIdentity": null,
@@ -45,6 +46,12 @@
     "longDescription": "A native macOS desktop client for Kiro CLI AI coding agents. Chat with agents, manage tasks, view diffs, and run terminals — all in one app."
   },
   "plugins": {
+    "updater": {
+      "pubkey": "REPLACE_WITH_TAURI_SIGNING_PUBLIC_KEY",
+      "endpoints": [
+        "https://github.com/thabti/kirodex/releases/latest/download/latest.json"
+      ]
+    },
     "shell": {
       "open": true
     }

@@ -4,10 +4,11 @@ import {
   IconX, IconCheck, IconAlertCircle, IconChevronDown, IconLoader2, IconSearch,
   IconHistory, IconKeyboard, IconSettings2, IconPaint, IconTool, IconTerminal,
   IconGitBranch, IconShield, IconEye, IconTypography, IconPalette, IconCommand, IconArrowLeft, IconTrash,
-  IconBrandGithub,
+  IconBrandGithub, IconDownload, IconRefresh,
 } from '@tabler/icons-react'
 import { useTaskStore } from '@/stores/taskStore'
 import { useSettingsStore } from '@/stores/settingsStore'
+import { useUpdateStore } from '@/stores/updateStore'
 import { ipc } from '@/lib/ipc'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
@@ -96,6 +97,121 @@ const Toggle = ({ checked, onChange, label, description }: { checked: boolean; o
     </button>
   </div>
 )
+
+function UpdatesCard() {
+  const { status, updateInfo, progress, error } = useUpdateStore()
+  const [isChecking, setIsChecking] = useState(false)
+
+  const handleCheck = async () => {
+    setIsChecking(true)
+    try {
+      const { check } = await import('@tauri-apps/plugin-updater')
+      useUpdateStore.getState().setStatus('checking')
+      const update = await check()
+      if (update) {
+        useUpdateStore.getState().setUpdateInfo({
+          version: update.version,
+          date: update.date ?? undefined,
+          body: update.body ?? undefined,
+        })
+        useUpdateStore.getState().setStatus('available')
+      } else {
+        useUpdateStore.getState().setStatus('idle')
+        useUpdateStore.getState().setUpdateInfo(null)
+      }
+    } catch (err) {
+      useUpdateStore.getState().setError(
+        err instanceof Error ? err.message : 'Check failed',
+      )
+    } finally {
+      setIsChecking(false)
+    }
+  }
+
+  const handleDownload = async () => {
+    // Trigger download via the same mechanism as the toast
+    const { check } = await import('@tauri-apps/plugin-updater')
+    const update = await check()
+    if (!update) return
+    useUpdateStore.getState().setStatus('downloading')
+    useUpdateStore.getState().setProgress({ downloaded: 0, total: null })
+    try {
+      let totalBytes: number | null = null
+      let downloadedBytes = 0
+      await update.downloadAndInstall((event) => {
+        if (event.event === 'Started') {
+          totalBytes = (event.data as { contentLength?: number }).contentLength ?? null
+        } else if (event.event === 'Progress') {
+          downloadedBytes += (event.data as { chunkLength: number }).chunkLength
+          useUpdateStore.getState().setProgress({ downloaded: downloadedBytes, total: totalBytes })
+        }
+      })
+      useUpdateStore.getState().setStatus('ready')
+    } catch (err) {
+      useUpdateStore.getState().setError(err instanceof Error ? err.message : 'Download failed')
+    }
+  }
+
+  const handleRestart = async () => {
+    const { relaunch } = await import('@tauri-apps/plugin-process')
+    await relaunch()
+  }
+
+  const isCheckingState = isChecking || status === 'checking'
+  const pct = progress?.total ? Math.round((progress.downloaded / progress.total) * 100) : null
+
+  return (
+    <Card className="flex items-center justify-between">
+      <div className="min-w-0">
+        <p className="text-[13px] font-medium text-foreground/90">Software updates</p>
+        <p className="text-[11px] text-muted-foreground/50">
+          {status === 'idle' && !updateInfo && 'Kirodex is up to date'}
+          {status === 'checking' && 'Checking for updates...'}
+          {status === 'available' && updateInfo && `v${updateInfo.version} available`}
+          {status === 'downloading' && (pct !== null ? `Downloading... ${pct}%` : 'Downloading...')}
+          {status === 'ready' && 'Update installed — restart to finish'}
+          {status === 'error' && (error ?? 'Update check failed')}
+        </p>
+      </div>
+      <div className="flex items-center gap-2">
+        {status === 'available' && (
+          <button
+            type="button"
+            onClick={handleDownload}
+            className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+          >
+            <IconDownload className="size-3" />
+            Update now
+          </button>
+        )}
+        {status === 'ready' && (
+          <button
+            type="button"
+            onClick={handleRestart}
+            className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+          >
+            <IconRefresh className="size-3" />
+            Restart
+          </button>
+        )}
+        {(status === 'idle' || status === 'error') && (
+          <button
+            type="button"
+            onClick={handleCheck}
+            disabled={isCheckingState}
+            className="flex items-center gap-1.5 rounded-lg border border-input px-3 py-1.5 text-xs font-medium transition-colors hover:bg-accent disabled:pointer-events-none disabled:opacity-50"
+          >
+            {isCheckingState ? <IconLoader2 className="size-3 animate-spin" /> : <IconRefresh className="size-3" />}
+            Check for updates
+          </button>
+        )}
+        {status === 'downloading' && (
+          <IconLoader2 className="size-4 animate-spin text-primary" />
+        )}
+      </div>
+    </Card>
+  )
+}
 
 // ── Main component ───────────────────────────────────────────────
 
@@ -339,6 +455,9 @@ export function SettingsPanel() {
                       description="Notify when the agent finishes a turn while the window is in the background"
                     />
                   </Card>
+
+                  <SectionTitle icon={IconDownload} title="Updates" description="Check for new versions of Kirodex" />
+                  <UpdatesCard />
                 </>
               )}
               {/* ── Appearance ── */}
