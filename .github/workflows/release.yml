@@ -90,6 +90,7 @@ jobs:
             > Requires [kiro-cli](https://kiro.dev)
           releaseDraft: false
           prerelease: false
+          includeUpdaterJson: true
           args: ${{ matrix.args }}
 
   # ── Update Homebrew tap ──────────────────────────────────────────
