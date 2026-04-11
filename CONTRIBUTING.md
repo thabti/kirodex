@@ -7,11 +7,12 @@ Thanks for your interest in contributing. This guide covers everything you need 
 ```bash
 git clone https://github.com/thabti/kirodex.git
 cd kirodex
+cargo install tauri-cli  # required for `bun run dev` and `bun run build`
 bun install
 bun run dev
 ```
 
-See the [README](README.md) for prerequisites (Rust, Bun, kiro-cli).
+See the [README](README.md) for prerequisites (Rust, Bun, Tauri CLI, kiro-cli).
 
 ## Development workflow
 

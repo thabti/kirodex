@@ -118,6 +118,7 @@ chmod +x Kirodex_*.AppImage && ./Kirodex_*.AppImage
 - macOS, Linux, or Windows
 - [Rust](https://rustup.rs) >= 1.78
 - [Bun](https://bun.sh) >= 1.0 (or Node >= 20)
+- [Tauri CLI](https://v2.tauri.app/start/create-project/#cargo): `cargo install tauri-cli`
 - [kiro-cli](https://kiro.dev) installed and in your PATH
 
 ### Clone and run
@@ -125,6 +126,7 @@ chmod +x Kirodex_*.AppImage && ./Kirodex_*.AppImage
 ```bash
 git clone https://github.com/thabti/kirodex.git
 cd kirodex
+cargo install tauri-cli  # if not already installed
 bun install
 bun run dev
 ```
@@ -164,6 +166,7 @@ See [docs/architecture.md](docs/architecture.md) for the system diagram, backend
 
 | Problem | Fix |
 |---------|-----|
+| `no such command: tauri` | Run `cargo install tauri-cli` to install the Tauri CLI. |
 | "Failed to spawn kiro-cli" | Check kiro-cli is installed. Run `kiro-cli --version`. |
 | Rust compilation errors | Run `rustup update`. Requires Rust >= 1.78. |
 | Frontend type errors | Run `bun install`, then `bun run check:ts`. |
