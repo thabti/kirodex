@@ -1,5 +1,13 @@
 import { memo, useMemo, useState, useCallback } from 'react'
-import { IconChevronRight, IconFolder, IconFolderOpen } from '@tabler/icons-react'
+import type { ComponentType } from 'react'
+import {
+  IconChevronRight, IconFolder, IconFolderOpen,
+  IconFileTypeTs, IconFileTypeTsx, IconFileTypeJs, IconFileTypeJsx,
+  IconFileTypeCss, IconFileTypeHtml, IconFileTypeRs, IconFileTypeSvg,
+  IconFileTypePng, IconFileTypeJpg, IconFileTypeSql, IconFileTypeTxt,
+  IconFileTypeXml, IconFileTypeVue, IconFileTypePhp, IconFileTypeCsv,
+  IconFileCode, IconFileText, IconFile, IconBrandPython, IconBrandGolang,
+} from '@tabler/icons-react'
 import { cn } from '@/lib/utils'
 import { useDiffStore } from '@/stores/diffStore'
 import { isFileMutation } from './tool-call-utils'
@@ -25,55 +33,62 @@ interface DirGroup {
 
 const MAX_VISIBLE_FILES = 30
 
-// ── VS Code file icon CDN ────────────────────────────────────────
+// ── File icon map (Tabler icons) ─────────────────────────────────
 
-const VSCODE_ICON_BASE = 'https://cdn.jsdelivr.net/gh/vscode-icons/vscode-icons@v12.17.0/icons'
+type IconComponent = ComponentType<{ className?: string; 'aria-hidden'?: boolean }>
 
-const EXT_ICON_MAP: Record<string, string> = {
-  ts: 'file_type_typescript',
-  tsx: 'file_type_reactts',
-  js: 'file_type_js',
-  jsx: 'file_type_reactjs',
-  json: 'file_type_json',
-  md: 'file_type_markdown',
-  css: 'file_type_css',
-  html: 'file_type_html',
-  rs: 'file_type_rust',
-  toml: 'file_type_toml',
-  yaml: 'file_type_yaml',
-  yml: 'file_type_yaml',
-  py: 'file_type_python',
-  go: 'file_type_go',
-  sh: 'file_type_shell',
-  svg: 'file_type_svg',
-  png: 'file_type_image',
-  jpg: 'file_type_image',
-  lock: 'file_type_lock',
+const EXT_ICON_MAP: Record<string, IconComponent> = {
+  ts: IconFileTypeTs, tsx: IconFileTypeTsx,
+  js: IconFileTypeJs, jsx: IconFileTypeJsx,
+  json: IconFileCode, css: IconFileTypeCss,
+  html: IconFileTypeHtml, rs: IconFileTypeRs,
+  svg: IconFileTypeSvg, png: IconFileTypePng,
+  jpg: IconFileTypeJpg, sql: IconFileTypeSql,
+  txt: IconFileTypeTxt, xml: IconFileTypeXml,
+  vue: IconFileTypeVue, php: IconFileTypePhp,
+  csv: IconFileTypeCsv, py: IconBrandPython,
+  go: IconBrandGolang, md: IconFileText,
+  yaml: IconFileCode, yml: IconFileCode,
+  toml: IconFileCode, sh: IconFileCode,
+  lock: IconFileCode, log: IconFileText,
 }
 
-function getFileIconUrl(ext: string): string {
-  const icon = EXT_ICON_MAP[ext] ?? 'default_file'
-  return `${VSCODE_ICON_BASE}/${icon}.svg`
+function getFileIcon(ext: string): IconComponent {
+  return EXT_ICON_MAP[ext] ?? IconFile
 }
 
 // ── Pure helpers ─────────────────────────────────────────────────
 
-function countLines(text: string): number {
-  if (!text) return 0
-  let n = 0
-  for (let i = 0; i < text.length; i++) {
-    if (text.charCodeAt(i) === 10) n++
-  }
-  return text.endsWith('\n') ? n : n + 1
+function splitLines(text: string): string[] {
+  if (!text) return []
+  return text.split('\n')
 }
 
 function computeLineDelta(oldText: string | null | undefined, newText: string | null | undefined): { additions: number; deletions: number } {
-  const oldLines = countLines(oldText ?? '')
-  const newLines = countLines(newText ?? '')
-  const delta = newLines - oldLines
-  return delta >= 0
-    ? { additions: delta || (newLines > 0 ? 1 : 0), deletions: 0 }
-    : { additions: 0, deletions: -delta }
+  const oldStr = oldText ?? ''
+  const newStr = newText ?? ''
+  if (!oldStr && !newStr) return { additions: 0, deletions: 0 }
+  if (!oldStr) return { additions: splitLines(newStr).length, deletions: 0 }
+  if (!newStr) return { additions: 0, deletions: splitLines(oldStr).length }
+  const oldLines = splitLines(oldStr)
+  const newLines = splitLines(newStr)
+  const oldSet = new Map<string, number>()
+  for (const line of oldLines) oldSet.set(line, (oldSet.get(line) ?? 0) + 1)
+  for (const line of newLines) {
+    const count = oldSet.get(line)
+    if (count && count > 0) oldSet.set(line, count - 1)
+  }
+  let deletions = 0
+  for (const count of oldSet.values()) deletions += count
+  const newSet = new Map<string, number>()
+  for (const line of newLines) newSet.set(line, (newSet.get(line) ?? 0) + 1)
+  for (const line of oldLines) {
+    const count = newSet.get(line)
+    if (count && count > 0) newSet.set(line, count - 1)
+  }
+  let additions = 0
+  for (const count of newSet.values()) additions += count
+  return { additions, deletions }
 }
 
 function extractDiffFilePaths(rawDiff: string): Set<string> {
@@ -164,6 +179,7 @@ const Stats = memo(function Stats({ additions, deletions }: { additions: number;
 })
 
 const FileRow = memo(function FileRow({ file, depth, onClick }: { file: FileStats; depth: number; onClick: (path: string) => void }) {
+  const FileIcon = getFileIcon(file.ext)
   return (
     <button
       type="button"
@@ -172,13 +188,7 @@ const FileRow = memo(function FileRow({ file, depth, onClick }: { file: FileStat
       style={{ paddingLeft: depth * 14 + 8 }}
     >
       <span aria-hidden className="size-3.5 shrink-0" />
-      <img
-        alt=""
-        aria-hidden
-        className="shrink-0 size-3.5 text-foreground/30"
-        loading="lazy"
-        src={getFileIconUrl(file.ext)}
-      />
+      <FileIcon className="shrink-0 size-3.5 text-foreground/40" aria-hidden />
       <span className="truncate font-mono text-[11px] text-foreground/60 group-hover:text-foreground/90">
         {file.name}
       </span>
