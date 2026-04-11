@@ -4,7 +4,7 @@ import {
   IconX, IconCheck, IconAlertCircle, IconChevronDown, IconLoader2, IconSearch,
   IconHistory, IconKeyboard, IconSettings2, IconPaint, IconTool, IconTerminal,
   IconGitBranch, IconShield, IconEye, IconTypography, IconPalette, IconCommand, IconArrowLeft, IconTrash,
-  IconBrandGithub, IconDownload, IconRefresh,
+  IconBrandGithub, IconDownload, IconRefresh, IconUser, IconLogin, IconLogout,
 } from '@tabler/icons-react'
 import { useTaskStore } from '@/stores/taskStore'
 import { useSettingsStore } from '@/stores/settingsStore'
@@ -16,13 +16,14 @@ import type { AppSettings } from '@/types'
 
 // ── Navigation ───────────────────────────────────────────────────
 
-type Section = 'general' | 'appearance' | 'keymap' | 'advanced'
+type Section = 'account' | 'general' | 'appearance' | 'keymap' | 'advanced'
 
-const NAV: { id: Section; label: string; icon: typeof IconSettings2; description: string }[] = [
-  { id: 'general', label: 'General', icon: IconSettings2, description: 'CLI path, model, permissions' },
-  { id: 'appearance', label: 'Appearance', icon: IconPaint, description: 'Theme, font size' },
-  { id: 'keymap', label: 'Keyboard', icon: IconKeyboard, description: 'Shortcuts reference' },
-  { id: 'advanced', label: 'Advanced', icon: IconTool, description: 'Data, commits' },
+const NAV: { id: Section; label: string; icon: typeof IconSettings2; description: string; group?: string }[] = [
+  { id: 'account', label: 'Account', icon: IconUser, description: 'Auth status, login', group: 'account' },
+  { id: 'general', label: 'General', icon: IconSettings2, description: 'CLI path, model, permissions', group: 'settings' },
+  { id: 'appearance', label: 'Appearance', icon: IconPaint, description: 'Theme, font size', group: 'settings' },
+  { id: 'keymap', label: 'Keyboard', icon: IconKeyboard, description: 'Shortcuts reference', group: 'settings' },
+  { id: 'advanced', label: 'Advanced', icon: IconTool, description: 'Data, commits', group: 'settings' },
 ]
 
 // ── Keymap data ──────────────────────────────────────────────────
@@ -55,7 +56,7 @@ const FONT_SIZES = [12, 13, 14, 15, 16]
 // ── Reusable components ──────────────────────────────────────────
 
 const Card = ({ children, className }: { children: React.ReactNode; className?: string }) => (
-  <div className={cn('rounded-xl border border-border/50 bg-card/50 p-4', className)}>
+  <div className={cn('rounded-xl border border-border/50 bg-card/50 p-4 transition-colors hover:border-border/70', className)}>
     {children}
   </div>
 )
@@ -218,7 +219,7 @@ function UpdatesCard() {
 export function SettingsPanel() {
   const open = useTaskStore((s) => s.isSettingsOpen)
   const setOpen = useTaskStore((s) => s.setSettingsOpen)
-  const { settings, saveSettings, availableModels, currentModelId, modelsLoading, modelsError, fetchModels } = useSettingsStore()
+  const { settings, saveSettings, availableModels, currentModelId, modelsLoading, modelsError, fetchModels, kiroAuth, kiroAuthChecked, checkAuth, logout, openLogin } = useSettingsStore()
 
   const [section, setSection] = useState<Section>('general')
   const [draft, setDraft] = useState<AppSettings>(settings)
@@ -228,6 +229,8 @@ export function SettingsPanel() {
   const [appVersion, setAppVersion] = useState('')
 
   useEffect(() => { getVersion().then(setAppVersion).catch(() => {}) }, [])
+
+  useEffect(() => { if (open && !kiroAuthChecked) checkAuth() }, [open, kiroAuthChecked, checkAuth])
 
   useEffect(() => { setDraft(settings) }, [settings])
 
@@ -279,23 +282,30 @@ export function SettingsPanel() {
           </div>
 
           <div className="flex flex-1 flex-col gap-0.5">
-            {NAV.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => setSection(item.id)}
-                className={cn(
-                  'flex items-center gap-2.5 rounded-lg px-3 py-2 text-left transition-colors',
-                  section === item.id
-                    ? 'bg-accent text-foreground'
-                    : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground',
+            {NAV.map((item, idx) => (
+              <div key={item.id}>
+                {idx > 0 && NAV[idx - 1].group !== item.group && (
+                  <div className="my-2 border-t border-border/20" />
                 )}
-              >
-                <item.icon className="size-4 shrink-0" />
-                <div className="min-w-0">
-                  <p className="text-[13px] font-medium leading-tight">{item.label}</p>
-                  <p className="truncate text-[10px] opacity-50">{item.description}</p>
-                </div>
-              </button>
+                <button
+                  onClick={() => setSection(item.id)}
+                  className={cn(
+                    'relative flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left transition-all',
+                    section === item.id
+                      ? 'bg-accent text-foreground'
+                      : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground',
+                  )}
+                >
+                  {section === item.id && (
+                    <div className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-primary" />
+                  )}
+                  <item.icon className={cn('size-4 shrink-0', section === item.id && 'text-primary')} />
+                  <div className="min-w-0">
+                    <p className="text-[13px] font-medium leading-tight">{item.label}</p>
+                    <p className="truncate text-[10px] opacity-50">{item.description}</p>
+                  </div>
+                </button>
+              </div>
             ))}
           </div>
 
@@ -363,6 +373,51 @@ export function SettingsPanel() {
           {/* Scrollable content */}
           <div className="flex-1 overflow-y-auto px-8 py-6">
             <div className="mx-auto max-w-2xl space-y-6">
+
+              {/* ── Account ── */}
+              {section === 'account' && (
+                <>
+                  <SectionTitle icon={IconUser} title="Account" description="Kiro authentication status" />
+                  <Card className="space-y-4">
+                    {kiroAuth ? (
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="flex size-10 items-center justify-center rounded-full bg-primary/10">
+                            <IconUser className="size-5 text-primary" />
+                          </div>
+                          <div>
+                            <p className="text-[13px] font-medium text-foreground/90">{kiroAuth.email ?? 'Authenticated'}</p>
+                            <p className="text-[11px] text-muted-foreground/50">{kiroAuth.accountType}{kiroAuth.region ? ` · ${kiroAuth.region}` : ''}</p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={logout}
+                          className="flex items-center gap-1.5 rounded-lg border border-destructive/30 px-3 py-1.5 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10"
+                        >
+                          <IconLogout className="size-3" />
+                          Sign out
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-[13px] font-medium text-foreground/90">Not signed in</p>
+                          <p className="text-[11px] text-muted-foreground/50">Sign in to access Kiro features</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={openLogin}
+                          className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+                        >
+                          <IconLogin className="size-3" />
+                          Sign in
+                        </button>
+                      </div>
+                    )}
+                  </Card>
+                </>
+              )}
 
               {/* ── General ── */}
               {section === 'general' && (

@@ -30,13 +30,37 @@ function showError(err: unknown) {
   console.error('[Kirodex crash]', err)
 }
 
+// Errors that are transient (HMR, StrictMode) and should auto-recover, not crash
+const RECOVERABLE_ERRORS = [
+  'hook.getSnapshot',       // Zustand/React store not yet initialized during HMR
+  'hook?.getSnapshot',      // same, alternate message
+  'useSyncExternalStore',   // same root cause
+]
+
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
   { error: Error | null }
 > {
-  state = { error: null }
+  state: { error: Error | null } = { error: null }
+  private retryTimer: ReturnType<typeof setTimeout> | null = null
+
   static getDerivedStateFromError(error: Error) { return { error } }
-  componentDidCatch(error: Error) { showError(error) }
+
+  componentDidCatch(error: Error) {
+    const msg = error.message ?? ''
+    // Auto-recover from transient HMR/store-init errors
+    if (RECOVERABLE_ERRORS.some((r) => msg.includes(r))) {
+      console.warn('[ErrorBoundary] Recoverable error, retrying:', msg)
+      this.retryTimer = setTimeout(() => this.setState({ error: null }), 100)
+      return
+    }
+    showError(error)
+  }
+
+  componentWillUnmount() {
+    if (this.retryTimer) clearTimeout(this.retryTimer)
+  }
+
   render() { return this.state.error ? null : this.props.children }
 }
 
@@ -46,6 +70,8 @@ const IGNORED_ERRORS = [
   'ResizeObserver loop completed', // same, different wording across browsers
   'listeners[eventId]',            // Tauri listener cleanup race during HMR/StrictMode
   'unregisterListener',            // same — stale listener map after hot reload
+  'hook.getSnapshot',              // Zustand store not ready during HMR
+  'hook?.getSnapshot',             // same
 ]
 
 window.addEventListener('unhandledrejection', (e) => {
