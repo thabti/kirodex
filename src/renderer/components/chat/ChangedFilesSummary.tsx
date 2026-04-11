@@ -87,8 +87,7 @@ function extractDiffFilePaths(rawDiff: string): Set<string> {
   return paths
 }
 
-function extractFileStats(toolCalls: readonly ToolCall[], rawDiff: string): FileStats[] {
-  const diffPaths = extractDiffFilePaths(rawDiff)
+function extractFileStats(toolCalls: readonly ToolCall[]): FileStats[] {
   const statsMap = new Map<string, { additions: number; deletions: number }>()
 
   for (const tc of toolCalls) {
@@ -97,7 +96,6 @@ function extractFileStats(toolCalls: readonly ToolCall[], rawDiff: string): File
 
     const filePath = tc.locations?.[0]?.path
     if (!filePath) continue
-    if (diffPaths.size > 0 && !diffPaths.has(filePath)) continue
 
     let additions = 0
     let deletions = 0
@@ -194,9 +192,7 @@ const FileRow = memo(function FileRow({ file, depth, onClick }: { file: FileStat
 export const ChangedFilesSummary = memo(function ChangedFilesSummary({ row }: { row: ChangedFilesRow }) {
   const [collapsedDirs, setCollapsedDirs] = useState<Set<string>>(() => new Set())
   const [showAll, setShowAll] = useState(false)
-  const rawDiff = useDiffStore((s) => s.diff)
-
-  const fileStats = useMemo(() => extractFileStats(row.toolCalls, rawDiff), [row.toolCalls, rawDiff])
+  const fileStats = useMemo(() => extractFileStats(row.toolCalls), [row.toolCalls])
   const dirGroups = useMemo(() => groupByDirectory(fileStats), [fileStats])
 
   const totals = useMemo(() => {

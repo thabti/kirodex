@@ -34,6 +34,33 @@ const Onboarding = lazy(() =>
   import("@/components/Onboarding").then((m) => ({ default: m.Onboarding })),
 );
 
+function LoginBanner() {
+  const kiroAuth = useSettingsStore((s) => s.kiroAuth);
+  const kiroAuthChecked = useSettingsStore((s) => s.kiroAuthChecked);
+  const openLogin = useSettingsStore((s) => s.openLogin);
+
+  if (!kiroAuthChecked || kiroAuth) return null;
+
+  return (
+    <div className="mx-auto mb-3 flex w-full max-w-2xl items-center gap-3 rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3 lg:max-w-3xl xl:max-w-4xl">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="shrink-0 text-amber-400" aria-hidden>
+        <path d="M8 1.333A6.667 6.667 0 1 0 14.667 8 6.674 6.674 0 0 0 8 1.333Zm0 10.334a.667.667 0 1 1 0-1.334.667.667 0 0 1 0 1.334ZM8.667 8a.667.667 0 0 1-1.334 0V5.333a.667.667 0 0 1 1.334 0V8Z" fill="currentColor"/>
+      </svg>
+      <div className="flex-1 min-w-0">
+        <p className="text-[13px] font-medium text-amber-200/90">Sign in to Kiro to start using AI agents</p>
+        <p className="text-[11px] text-amber-200/50">Authentication is required to create threads and interact with agents</p>
+      </div>
+      <button
+        type="button"
+        onClick={openLogin}
+        className="shrink-0 rounded-lg bg-amber-500/20 px-3 py-1.5 text-[12px] font-medium text-amber-200 transition-colors hover:bg-amber-500/30"
+      >
+        Sign in
+      </button>
+    </div>
+  );
+}
+
 function EmptyState() {
   const projects = useTaskStore((s) => s.projects);
   const handleNew = useCallback(() => {
@@ -114,6 +141,11 @@ function EmptyState() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Login banner */}
+      <div className="absolute inset-x-0 top-6 flex justify-center px-6 pointer-events-auto z-10">
+        <LoginBanner />
       </div>
 
       {/* New thread CTA over the skeleton */}

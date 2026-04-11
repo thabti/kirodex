@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
-import { IconChevronDown, IconCode } from '@tabler/icons-react'
+import { IconChevronDown, IconCode, IconFolder, IconTerminal2 } from '@tabler/icons-react'
 import { toast } from 'sonner'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { ipc } from '@/lib/ipc'
+import { cn } from '@/lib/utils'
 
 interface EditorInfo {
   bin: string
@@ -31,7 +32,9 @@ const EDITOR_MAP: Record<string, Omit<EditorInfo, 'bin'>> = {
   trae: { label: 'Trae', icon: <IconCode className="size-3.5" /> },
   code: { label: 'VS Code', icon: <IconCode className="size-3.5" /> },
   zed: { label: 'Zed', icon: <ZedIcon /> },
-  vim: { label: 'Vim', icon: <IconCode className="size-3.5" /> },
+  vim: { label: 'Terminal', icon: <IconTerminal2 className="size-3.5" /> },
+  nvim: { label: 'Terminal', icon: <IconTerminal2 className="size-3.5" /> },
+  finder: { label: 'Finder', icon: <IconFolder className="size-3.5" /> },
 }
 
 let cachedEditors: EditorInfo[] | null = null
@@ -80,7 +83,10 @@ export function OpenInEditorGroup({ workspace }: { workspace: string }) {
       <Tooltip>
         <TooltipTrigger asChild>
           <button type="button" onClick={() => open(primary.bin)}
-            className="inline-flex h-6 items-center gap-1 rounded-l-md border border-input bg-popover px-1.5 text-xs text-foreground shadow-xs/5 transition-colors hover:bg-accent/50 dark:bg-input/32">
+            className={cn(
+              'inline-flex h-6 items-center gap-1 border border-input bg-popover px-1.5 text-xs text-muted-foreground shadow-xs/5 transition-colors hover:bg-accent/50 hover:text-foreground dark:bg-input/32',
+              rest.length > 0 ? 'rounded-l-md' : 'rounded-md',
+            )}>
             {primary.icon}
           </button>
         </TooltipTrigger>

@@ -416,16 +416,33 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   },
 
   clearHistory: async () => {
-    await historyStore.clearHistory()
-    // Remove archived tasks from state
-    set((s) => {
-      const tasks = { ...s.tasks }
-      for (const [id, task] of Object.entries(tasks)) {
-        if (task.isArchived) delete tasks[id]
+    // Cancel all running tasks first
+    const currentTasks = get().tasks
+    for (const [id, task] of Object.entries(currentTasks)) {
+      if (task.status === 'running' || task.status === 'paused') {
+        ipc.cancelTask(id).catch(() => {})
       }
-      const projects = [...new Set(Object.values(tasks).map((t) => t.workspace))]
-      return { tasks, projects }
+    }
+    // Clear the persisted thread/project store
+    await historyStore.clearHistory()
+    // Reset all in-memory state
+    set({
+      tasks: {},
+      projects: [],
+      projectNames: {},
+      deletedTaskIds: new Set<string>(),
+      selectedTaskId: null,
+      pendingWorkspace: null,
+      streamingChunks: {},
+      thinkingChunks: {},
+      liveToolCalls: {},
+      queuedMessages: {},
+      terminalOpenTasks: new Set<string>(),
     })
+    // Reset settings to defaults and go back to onboarding
+    const defaultSettings = { ...useSettingsStore.getState().settings, hasOnboarded: false, projectPrefs: {} }
+    await useSettingsStore.getState().saveSettings(defaultSettings)
+    useSettingsStore.setState({ settings: defaultSettings })
   },
 }))
 

@@ -33,9 +33,17 @@ const NOOP_THEME = {
 // Highlighter stub that handles any method @pierre/diffs might call.
 // Known methods are implemented; unknown ones return a no-op via Proxy
 // so new @pierre/diffs versions don't crash the app.
+// Generate one token per line so @pierre/diffs has content to render.
+// Real shiki returns tokens: [[{content, color}], ...] — one sub-array per line.
+function tokenize(code: string) {
+  const lines = (code || '').split('\n')
+  const tokens = lines.map((line) => [{ content: line || ' ', color: '#eeeeee', fontStyle: 0 }])
+  return { tokens, bg: '#111114', fg: '#eeeeee', themeName: 'noop' }
+}
+
 const HIGHLIGHTER_IMPL: Record<string, unknown> = {
-  codeToTokens: () => ({ tokens: [], bg: '#111114', fg: '#eeeeee', themeName: 'noop' }),
-  codeToTokensBase: () => ({ tokens: [], bg: '#111114', fg: '#eeeeee', themeName: 'noop' }),
+  codeToTokens: (code: string) => tokenize(code),
+  codeToTokensBase: (code: string) => tokenize(code),
   codeToHtml: (code: string) => `<pre><code>${code}</code></pre>`,
   getLoadedLanguages: () => ['text'],
   getLoadedThemes: () => ['noop'],

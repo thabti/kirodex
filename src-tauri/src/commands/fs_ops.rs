@@ -47,58 +47,104 @@ pub async fn pick_folder(app: tauri::AppHandle) -> Option<String> {
 
 #[tauri::command]
 pub fn open_in_editor(path: String, editor: String) -> Result<(), AppError> {
-    const TERMINAL_EDITORS: &[&str] = &["vim", "vi", "nvim", "nano", "emacs"];
-    let is_terminal = TERMINAL_EDITORS.iter().any(|&e| editor == e);
-    if is_terminal {
-        // macOS: open in default Terminal.app
+    // Finder / file manager: reveal the path
+    if editor == "finder" {
         #[cfg(target_os = "macos")]
-        {
-            std::process::Command::new("open")
-                .arg("-a")
-                .arg("Terminal")
-                .arg("--args")
-                .spawn()
-                .map_err(|e| AppError::Other(format!("Failed to open Terminal: {}", e)))?;
-            // Use AppleScript to run the editor in the opened terminal
-            std::process::Command::new("osascript")
-                .arg("-e")
-                .arg(format!(
-                    "tell application \"Terminal\" to do script \"{} '{}'\"",
-                    editor,
-                    path.replace('\'', "'\\''")
-                ))
-                .spawn()
-                .map_err(|e| AppError::Other(format!("Failed to launch {} in Terminal: {}", editor, e)))?;
-            return Ok(());
-        }
+        std::process::Command::new("open").arg(&path).spawn()
+            .map_err(|e| AppError::Other(format!("Failed to open Finder: {e}")))?;
         #[cfg(not(target_os = "macos"))]
-        {
-            // Fallback: try xterm
-            std::process::Command::new("xterm")
-                .arg("-e")
-                .arg(&editor)
-                .arg(&path)
-                .spawn()
-                .map_err(|e| AppError::Other(format!("Failed to open {}: {}", editor, e)))?;
+        std::process::Command::new("xdg-open").arg(&path).spawn()
+            .map_err(|e| AppError::Other(format!("Failed to open file manager: {e}")))?;
+        return Ok(());
+    }
+
+    // Terminal editors: cd to the path and open the editor
+    const TERMINAL_EDITORS: &[&str] = &["vim", "vi", "nvim", "nano", "emacs"];
+    if TERMINAL_EDITORS.iter().any(|&e| editor == e) {
+        let escaped = path.replace('\\', "\\\\").replace('\'', "'\\''").replace('"', "\\\"");
+        #[cfg(target_os = "macos")]
+        std::process::Command::new("osascript")
+            .arg("-e")
+            .arg(format!(
+                "tell application \"Terminal\"\n  activate\n  do script \"cd '{escaped}'\"\nend tell"
+            ))
+            .output()
+            .map_err(|e| AppError::Other(format!("Failed to open Terminal: {e}")))?;
+        #[cfg(not(target_os = "macos"))]
+        std::process::Command::new("xterm")
+            .arg("-e").arg("sh").arg("-c")
+            .arg(format!("cd '{}' && {}", path.replace('\'', "'\\''"), editor))
+            .spawn()
+            .map_err(|e| AppError::Other(format!("Failed to open {editor}: {e}")))?;
+        return Ok(());
+    }
+
+    // GUI editors: try CLI binary first, then macOS `open -a` for .app bundles
+    #[cfg(target_os = "macos")]
+    {
+        const APP_MAP: &[(&str, &str)] = &[
+            ("zed", "Zed"), ("cursor", "Cursor"), ("code", "Visual Studio Code"),
+            ("kiro", "Kiro"), ("trae", "Trae"),
+        ];
+        if let Some((_, app_name)) = APP_MAP.iter().find(|(bin, _)| *bin == editor) {
+            if which::which(&editor).is_ok() {
+                std::process::Command::new(&editor).arg(&path).spawn()
+                    .map_err(|e| AppError::Other(format!("Failed to open {editor}: {e}")))?;
+            } else {
+                std::process::Command::new("open").arg("-a").arg(app_name).arg(&path).spawn()
+                    .map_err(|e| AppError::Other(format!("Failed to open {app_name}: {e}")))?;
+            }
             return Ok(());
         }
     }
-    std::process::Command::new(&editor)
-        .arg(&path)
-        .spawn()
-        .map_err(|e| AppError::Other(format!("Failed to open editor '{}': {}", editor, e)))?;
+
+    // Generic fallback
+    std::process::Command::new(&editor).arg(&path).spawn()
+        .map_err(|e| AppError::Other(format!("Failed to open '{editor}': {e}")))?;
     Ok(())
 }
 
 /// Detect which code editors are installed on the system.
+/// Checks CLI binaries in PATH and macOS .app bundles.
 #[tauri::command]
 pub fn detect_editors() -> Vec<String> {
-    // (binary, display-order priority)
-    let candidates = ["cursor", "kiro", "trae", "code", "zed", "vim"];
-    candidates.iter()
-        .filter(|bin| which::which(bin).is_ok())
-        .map(|s| s.to_string())
-        .collect()
+    let mut found = Vec::new();
+
+    // GUI editors: check CLI in PATH first
+    for bin in ["cursor", "kiro", "trae", "code", "zed"] {
+        if which::which(bin).is_ok() {
+            found.push(bin.to_string());
+        }
+    }
+
+    // macOS: also check for .app bundles (user may not have CLI shim)
+    #[cfg(target_os = "macos")]
+    {
+        const APP_CHECKS: &[(&str, &[&str])] = &[
+            ("zed", &["/Applications/Zed.app", "/Applications/Zed Preview.app"]),
+            ("cursor", &["/Applications/Cursor.app"]),
+            ("code", &["/Applications/Visual Studio Code.app"]),
+            ("kiro", &["/Applications/Kiro.app"]),
+            ("trae", &["/Applications/Trae.app"]),
+        ];
+        for (bin, paths) in APP_CHECKS {
+            if !found.contains(&bin.to_string()) && paths.iter().any(|p| std::path::Path::new(p).exists()) {
+                found.push(bin.to_string());
+            }
+        }
+    }
+
+    // Terminal editors (lower priority — vim opens a terminal, not an app window)
+    if which::which("nvim").is_ok() {
+        found.push("nvim".to_string());
+    } else if which::which("vim").is_ok() {
+        found.push("vim".to_string());
+    }
+
+    // Finder is always available
+    found.push("finder".to_string());
+
+    found
 }
 
 #[tauri::command]

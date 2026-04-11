@@ -13,6 +13,7 @@ A native desktop client for [Kiro CLI](https://kiro.dev) AI coding agents, built
 ## Features
 
 **Chat and agents**
+
 - Chat interface via the [Agent Client Protocol](https://github.com/anthropics/agent-client-protocol) SDK
 - Threaded agentic development — each conversation runs as an independent agent thread with its own context, tool calls, and execution history
 - Slash commands (`/clear`, `/model`, `/agent`, `/plan`, `/chat`) with inline model picker and MCP server panels
@@ -21,19 +22,23 @@ A native desktop client for [Kiro CLI](https://kiro.dev) AI coding agents, built
 - Kiro config sidebar — browse agents (grouped by stack), skills, steering rules, and MCP servers from `.kiro/`
 
 **Code and diffs**
+
 - Syntax-highlighted inline and side-by-side diff views ([Shiki](https://shiki.style))
 - Click a file operation in chat to jump to that file
 - Changed files summary with per-file +/- stats and one-click stage/revert
 
 **Git**
+
 - Branch, stage, commit, push, pull, fetch through [git2](https://crates.io/crates/git2) with SSH + HTTPS credential support (no shell commands)
 - Live diff stats in the header bar, always visible when a project is open
 
 **Notifications**
+
 - Native macOS notifications when the agent finishes a turn while the app is in the background
 - Configurable — toggle on/off in Settings > General > Permissions
 
 **Terminal and settings**
+
 - Integrated PTY terminal (xterm.js)
 - Full-screen settings panel: CLI path, default model, auto-approve, font size, keyboard shortcuts, git integration, and notification preferences
 
@@ -71,14 +76,14 @@ The app auto-detects kiro-cli at these paths (in order):
 
 ### Available commands
 
-| Command | What it does |
-|---------|-------------|
-| `bun run dev` | Start dev mode (Vite + Tauri) |
-| `bun run build` | Production build (.app + .dmg) |
-| `bun run check:ts` | TypeScript type check |
+| Command              | What it does                    |
+| -------------------- | ------------------------------- |
+| `bun run dev`        | Start dev mode (Vite + Tauri)   |
+| `bun run build`      | Production build (.app + .dmg)  |
+| `bun run check:ts`   | TypeScript type check           |
 | `bun run check:rust` | Rust type check (`cargo check`) |
-| `bun run test:rust` | Run Rust tests |
-| `bun run clean` | Remove build artifacts |
+| `bun run test:rust`  | Run Rust tests                  |
+| `bun run clean`      | Remove build artifacts          |
 
 > The DMG is not code-signed. Run `xattr -cr /path/to/Kirodex.app` before opening, or right-click → Open.
 
@@ -88,13 +93,13 @@ See [docs/architecture.md](docs/architecture.md) for the system diagram, backend
 
 ## Troubleshooting
 
-| Problem | Fix |
-|---------|-----|
+| Problem                    | Fix                                                    |
+| -------------------------- | ------------------------------------------------------ |
 | "Failed to spawn kiro-cli" | Check kiro-cli is installed. Run `kiro-cli --version`. |
-| Rust compilation errors | Run `rustup update`. Requires Rust >= 1.78. |
-| Frontend type errors | Run `bun install`, then `bun run check:ts`. |
-| First build is slow | Normal. Initial `cargo build` compiles ~430 crates. |
-| DMG says "damaged" | Run `xattr -cr /path/to/Kirodex.app` (unsigned app). |
+| Rust compilation errors    | Run `rustup update`. Requires Rust >= 1.78.            |
+| Frontend type errors       | Run `bun install`, then `bun run check:ts`.            |
+| First build is slow        | Normal. Initial `cargo build` compiles ~430 crates.    |
+| DMG says "damaged"         | Run `xattr -cr /path/to/Kirodex.app` (unsigned app).   |
 
 ## Release and code signing
 
@@ -107,6 +112,7 @@ bun run build
 ```
 
 This runs `cargo tauri build`, which compiles the Rust backend in release mode, bundles the Vite frontend, and produces:
+
 - `src-tauri/target/release/bundle/macos/Kirodex.app`
 - `src-tauri/target/release/bundle/dmg/Kirodex_0.6.0_aarch64.dmg`
 
@@ -167,19 +173,17 @@ codesign --sign "Developer ID Application: Your Name (TEAM_ID)" \
   Kirodex-signed.dmg
 ```
 
-
-
 Or right-click the app > Open > Open (bypasses Gatekeeper once).
 
 ## Feature requests (PRs welcomed)
 
-| Feature | Description |
-|---------|-------------|
-| Git worktree | Support for managing multiple working trees |
-| Agent library | Browse and install agents from a curated registry |
-| Skills library | Browse and install skills from a curated registry |
-| UI improvements | General polish, layout, and interaction enhancements |
-| Testing (Windows) | Windows platform support and test coverage |
+| Feature           | Description                                          |
+| ----------------- | ---------------------------------------------------- |
+| Git worktree      | Support for managing multiple working trees          |
+| Agent library     | Browse and install agents from a curated registry    |
+| Skills library    | Browse and install skills from a curated registry    |
+| UI improvements   | General polish, layout, and interaction enhancements |
+| Testing (Windows) | Windows platform support and test coverage           |
 
 ## Contributing
 
