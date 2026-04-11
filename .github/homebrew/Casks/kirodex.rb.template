@@ -1,0 +1,19 @@
+cask "kirodex" do
+  version "{{VERSION}}"
+  sha256 "{{SHA256_ARM}}"
+
+  url "https://github.com/thabti/kirodex/releases/download/v{{VERSION}}/Kirodex_{{VERSION}}_aarch64.dmg"
+  name "Kirodex"
+  desc "AI coding agents on your desktop"
+  homepage "https://github.com/thabti/kirodex"
+
+  depends_on arch: :arm64
+
+  app "Kirodex.app"
+
+  zap trash: [
+    "~/Library/Application Support/com.kirodex.app",
+    "~/Library/Caches/com.kirodex.app",
+    "~/Library/Preferences/com.kirodex.app.plist",
+  ]
+end

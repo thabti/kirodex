@@ -6,3 +6,7 @@ src-tauri/target
 coverage
 *.lcov
 .DS_Store
+*.p12
+*.key
+*.csr
+*.cer

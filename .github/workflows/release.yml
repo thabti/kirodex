@@ -5,40 +5,75 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      draft:
+        description: 'Create as draft release'
+        required: false
+        default: 'true'
+        type: choice
+        options: ['true', 'false']
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: write
 
+# ── Extract version from Cargo.toml ──────────────────────────────
 jobs:
-  release:
+  setup:
+    runs-on: ubuntu-22.04
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+      tag: v${{ steps.meta.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract version
+        id: meta
+        run: |
+          VERSION=$(grep '^version' src-tauri/Cargo.toml | head -1 | sed 's/.*"\(.*\)"/\1/')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+  # ── Build for all platforms ──────────────────────────────────────
+  build:
+    needs: setup
+    permissions:
+      contents: write
     strategy:
       fail-fast: false
       matrix:
         include:
-          - platform: macos-latest
+          # macOS Apple Silicon
+          - platform: macos-14
             args: '--target aarch64-apple-darwin'
-          - platform: macos-latest
-            args: '--target x86_64-apple-darwin'
+            name: macOS
+          # Linux x86_64
           - platform: ubuntu-22.04
             args: ''
+            name: Linux
+          # Windows x86_64
           - platform: windows-latest
             args: ''
+            name: Windows
 
     runs-on: ${{ matrix.platform }}
+    name: Build (${{ matrix.name }})
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install system deps (Linux)
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Install Linux dependencies
         if: matrix.platform == 'ubuntu-22.04'
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
-      - uses: oven-sh/setup-bun@v2
-
       - uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+          targets: ${{ matrix.platform == 'macos-14' && 'aarch64-apple-darwin' || '' }}
 
       - uses: swatinem/rust-cache@v2
         with:
@@ -46,13 +81,95 @@ jobs:
 
       - run: bun install --frozen-lockfile
 
+      # ── macOS Code Signing ──────────────────────────────────────
+      - name: Import code signing certificate
+        if: matrix.platform == 'macos-14'
+        uses: apple-actions/import-codesign-certs@v3
+        with:
+          p12-file-base64: ${{ secrets.APPLE_CERTIFICATE }}
+          p12-password: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+
+      # ── Build + Release ─────────────────────────────────────────
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # macOS signing + notarization (ignored on other platforms)
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.TEAM_ID }}
         with:
-          tagName: v__VERSION__
-          releaseName: 'Kirodex v__VERSION__'
-          releaseBody: 'See the assets to download and install.'
-          releaseDraft: true
+          tagName: ${{ needs.setup.outputs.tag }}
+          releaseName: 'Kirodex ${{ needs.setup.outputs.tag }}'
+          releaseBody: |
+            ## Kirodex ${{ needs.setup.outputs.tag }}
+
+            ### Download
+
+            | Platform | File |
+            |----------|------|
+            | **macOS** (Apple Silicon) | `Kirodex_${{ needs.setup.outputs.version }}_aarch64.dmg` |
+            | **Linux** (x86_64) | `kirodex_${{ needs.setup.outputs.version }}_amd64.deb` / `.AppImage` |
+            | **Windows** (x86_64) | `Kirodex_${{ needs.setup.outputs.version }}_x64-setup.exe` / `.msi` |
+
+            ### Install via Homebrew (macOS)
+            ```bash
+            brew install --cask thabti/tap/kirodex
+            ```
+
+            ### Notes
+            - Requires [kiro-cli](https://kiro.dev) installed and in PATH
+            - macOS builds are code-signed and notarized
+            - Unsigned builds: run `xattr -cr /path/to/Kirodex.app`
+          releaseDraft: ${{ github.event.inputs.draft || 'true' }}
           prerelease: false
           args: ${{ matrix.args }}
+
+  # ── Update Homebrew tap after all builds succeed ─────────────────
+  homebrew:
+    needs: [setup, build]
+    runs-on: macos-14
+    if: startsWith(github.ref, 'refs/tags/v')
+    env:
+      VERSION: ${{ needs.setup.outputs.version }}
+      TAG: ${{ needs.setup.outputs.tag }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download release DMG and compute hash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Wait for release assets to be available
+          sleep 30
+          BASE="https://github.com/${{ github.repository }}/releases/download/${TAG}"
+          curl -fsSL -o /tmp/kirodex.dmg "${BASE}/Kirodex_${VERSION}_aarch64.dmg"
+          SHA256_ARM=$(shasum -a 256 /tmp/kirodex.dmg | awk '{print $1}')
+          echo "SHA256_ARM=$SHA256_ARM" >> $GITHUB_ENV
+          echo "SHA256_X64=$SHA256_ARM" >> $GITHUB_ENV
+
+      - name: Update homebrew cask
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+        run: |
+          # Clone or create the tap repo
+          if git clone "https://x-access-token:${GH_TOKEN}@github.com/thabti/homebrew-tap.git" /tmp/homebrew-tap 2>/dev/null; then
+            cd /tmp/homebrew-tap
+          else
+            echo "Homebrew tap repo not found — skipping"
+            exit 0
+          fi
+
+          mkdir -p Casks
+          sed -e "s|{{VERSION}}|${VERSION}|g" \
+              -e "s|{{SHA256_ARM}}|${SHA256_ARM}|g" \
+              -e "s|{{SHA256_X64}}|${SHA256_X64}|g" \
+              "${{ github.workspace }}/.github/homebrew/Casks/kirodex.rb.template" > Casks/kirodex.rb
+
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add Casks/kirodex.rb
+          git diff --cached --quiet || (git commit -m "Update kirodex to ${VERSION}" && git push)
