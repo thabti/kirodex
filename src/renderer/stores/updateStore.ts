@@ -36,14 +36,18 @@ export const useUpdateStore = create<UpdateState>((set) => ({
   updateInfo: null,
   progress: null,
   error: null,
-  dismissedVersion: localStorage.getItem(DISMISSED_KEY),
+  dismissedVersion: (() => { try { return localStorage.getItem(DISMISSED_KEY) } catch { return null } })(),
 
   setStatus: (status) => set({ status }),
   setUpdateInfo: (updateInfo) => set({ updateInfo }),
   setProgress: (progress) => set({ progress }),
   setError: (error) => set({ error, status: 'error' }),
   dismissVersion: (version) => {
-    localStorage.setItem(DISMISSED_KEY, version)
+    try {
+      localStorage.setItem(DISMISSED_KEY, version)
+    } catch (err) {
+      console.warn('Failed to persist dismissed version:', err)
+    }
     set({ dismissedVersion: version, status: 'idle' })
   },
   reset: () => set({ status: 'idle', updateInfo: null, progress: null, error: null }),

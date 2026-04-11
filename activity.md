@@ -176,3 +176,15 @@
   - Users can still queue messages by pressing Enter while the agent is running
   - File modified: `src/renderer/components/chat/ChatInput.tsx`
   - TypeScript compiles clean
+
+## 2026-04-12 03:47 (Dubai) — Applied Amazon Q code review fixes for PR #4
+
+- Applied 4 review suggestions from Amazon Q on PR #4 (`feat/auto-updater`)
+- `updateStore.ts`:
+  - Wrapped `localStorage.getItem` in try-catch IIFE on store init (crash risk in private browsing / restricted contexts)
+  - Wrapped `localStorage.setItem` in `dismissVersion` with try-catch + `console.warn` fallback (crash risk on quota exceeded)
+- `useUpdateChecker.ts`:
+  - Replaced module-level `let pendingUpdate` with `useRef<Update | null>(null)` to prevent stale references across component remounts
+  - Updated all 4 references: assignment, null guard, `downloadAndInstall` call
+  - Added `import type { Update }` from `@tauri-apps/plugin-updater`
+- TypeScript compiles clean (`npx tsc --noEmit` passes)

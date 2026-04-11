@@ -1,14 +1,14 @@
 import { useEffect, useRef, useCallback } from 'react'
 import { useUpdateStore } from '@/stores/updateStore'
 
-const CHECK_INTERVAL_MS = 4 * 60 * 60 * 1000 // 4 hours
+import type { Update } from '@tauri-apps/plugin-updater'
 
-/** Shared update object from the last successful check */
-let pendingUpdate: Awaited<ReturnType<typeof check>> | null = null
+const CHECK_INTERVAL_MS = 4 * 60 * 60 * 1000 // 4 hours
 
 export const useUpdateChecker = () => {
   const store = useUpdateStore()
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const pendingUpdateRef = useRef<Update | null>(null)
 
   const checkForUpdate = useCallback(async () => {
     const { status } = useUpdateStore.getState()
@@ -26,7 +26,7 @@ export const useUpdateChecker = () => {
         return
       }
 
-      pendingUpdate = update
+      pendingUpdateRef.current = update
       useUpdateStore.getState().setUpdateInfo({
         version: update.version,
         date: update.date ?? undefined,
@@ -42,7 +42,7 @@ export const useUpdateChecker = () => {
   }, [])
 
   const downloadAndInstall = useCallback(async () => {
-    if (!pendingUpdate) return
+    if (!pendingUpdateRef.current) return
 
     useUpdateStore.getState().setStatus('downloading')
     useUpdateStore.getState().setProgress({ downloaded: 0, total: null })
@@ -51,7 +51,7 @@ export const useUpdateChecker = () => {
       let totalBytes: number | null = null
       let downloadedBytes = 0
 
-      await pendingUpdate.downloadAndInstall((event) => {
+      await pendingUpdateRef.current.downloadAndInstall((event) => {
         if (event.event === 'Started') {
           totalBytes = (event.data as { contentLength?: number }).contentLength ?? null
         } else if (event.event === 'Progress') {
