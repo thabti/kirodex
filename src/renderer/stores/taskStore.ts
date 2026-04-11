@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type { AgentTask, ActivityEntry, ToolCall, PlanStep } from '@/types'
 import { ipc } from '@/lib/ipc'
+import { joinChunk } from '@/lib/utils'
 import * as historyStore from '@/lib/history-store'
 import { useDebugStore } from './debugStore'
 import { useSettingsStore } from './settingsStore'
@@ -193,7 +194,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     set((state) => ({
       streamingChunks: {
         ...state.streamingChunks,
-        [taskId]: (state.streamingChunks[taskId] ?? '') + chunk,
+        [taskId]: joinChunk(state.streamingChunks[taskId] ?? '', chunk),
       },
     })),
 
@@ -201,7 +202,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     set((state) => ({
       thinkingChunks: {
         ...state.thinkingChunks,
-        [taskId]: (state.thinkingChunks[taskId] ?? '') + chunk,
+        [taskId]: joinChunk(state.thinkingChunks[taskId] ?? '', chunk),
       },
     })),
 
@@ -472,7 +473,7 @@ export function initTaskListeners(): () => void {
     const buf = chunkBuf; chunkBuf = {}; chunkRaf = null
     useTaskStore.setState((s) => {
       const next = { ...s.streamingChunks }
-      for (const [id, text] of Object.entries(buf)) next[id] = (next[id] ?? '') + text
+      for (const [id, text] of Object.entries(buf)) next[id] = joinChunk(next[id] ?? '', text)
       return { streamingChunks: next }
     })
   }
@@ -487,7 +488,7 @@ export function initTaskListeners(): () => void {
     const buf = thinkBuf; thinkBuf = {}; thinkRaf = null
     useTaskStore.setState((s) => {
       const next = { ...s.thinkingChunks }
-      for (const [id, text] of Object.entries(buf)) next[id] = (next[id] ?? '') + text
+      for (const [id, text] of Object.entries(buf)) next[id] = joinChunk(next[id] ?? '', text)
       return { thinkingChunks: next }
     })
   }
