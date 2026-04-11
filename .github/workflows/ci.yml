@@ -3,7 +3,7 @@ name: CI
 on:
   push:
     branches: [main]
-    tags-ignore: ['v*']  # Don't run CI on release tags — release.yml handles those
+    tags-ignore: ['v*']
   pull_request:
     branches: [main]
 
@@ -16,87 +16,78 @@ permissions:
   pull-requests: write
 
 jobs:
-  # ── Fast checks (every push + PR) ─────────────────────────────
+  # ── Step 1: Lint + type check + vite build ─────────────────────
   check:
-    name: Lint & Check
+    name: Lint & Build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
       - uses: oven-sh/setup-bun@v2
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: swatinem/rust-cache@v2
-        with:
-          workspaces: src-tauri
-
       - run: bun install --frozen-lockfile
-
-      # TypeScript
       - name: TypeScript check
         run: bunx tsc --noEmit
-
-      # Vite build (catches import errors, dead code)
-      - name: Frontend build
+      - name: Vite build
         run: bunx vite build
 
-      # Rust (needs system deps on Linux)
-      - name: Install system deps
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
-
-      - name: Rust check
-        working-directory: src-tauri
-        run: cargo check
-
-  # ── Tests (PRs only — skip on direct push to main) ────────────
-  test:
-    name: Tests
+  # ── Step 2: UI tests (after check passes) ──────────────────────
+  test-ui:
+    name: UI Tests
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
     needs: check
     steps:
       - uses: actions/checkout@v6
       - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - name: Vitest
+        run: bunx vitest run --reporter=verbose
+
+  # ── Step 3: Rust check + tests (after UI tests pass) ───────────
+  test-rust:
+    name: Rust Check & Tests
+    runs-on: ubuntu-latest
+    needs: test-ui
+    steps:
+      - uses: actions/checkout@v6
       - uses: dtolnay/rust-toolchain@stable
       - uses: swatinem/rust-cache@v2
         with:
           workspaces: src-tauri
-
-      - run: bun install --frozen-lockfile
-
       - name: Install system deps
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
-
-      - name: UI tests (Vitest)
-        run: bunx vitest run --reporter=verbose
-
-      - name: Rust tests
+      - name: Cargo check
+        working-directory: src-tauri
+        run: cargo check
+      - name: Cargo test
         working-directory: src-tauri
         run: cargo test
 
-  # ── PR comment with results ────────────────────────────────────
+  # ── Step 4: PR comment (PRs only) ─────────────────────────────
   pr-comment:
     name: PR Summary
     runs-on: ubuntu-latest
-    needs: [check, test]
+    needs: [check, test-ui, test-rust]
     if: github.event_name == 'pull_request' && always()
     steps:
       - uses: actions/github-script@v9
         with:
           script: |
-            const checkJob = '${{ needs.check.result }}';
-            const testJob = '${{ needs.test.result }}';
-            const passed = checkJob === 'success' && testJob === 'success';
+            const results = {
+              'Lint & Build': '${{ needs.check.result }}',
+              'UI Tests': '${{ needs.test-ui.result }}',
+              'Rust Check & Tests': '${{ needs.test-rust.result }}',
+            };
+            const allPassed = Object.values(results).every(r => r === 'success');
+            const rows = Object.entries(results).map(([name, status]) => {
+              const icon = status === 'success' ? '✅' : status === 'skipped' ? '⏭️' : '❌';
+              return `| ${name} | ${icon} ${status} |`;
+            });
 
             const body = [
-              `## ${passed ? '✅' : '❌'} CI Results`,
-              '',
-              '| Job | Status |',
-              '|-----|--------|',
-              `| Lint & Check | ${checkJob === 'success' ? '✅' : '❌'} ${checkJob} |`,
-              `| Tests | ${testJob === 'success' ? '✅' : testJob === 'skipped' ? '⏭️' : '❌'} ${testJob} |`,
+              `## ${allPassed ? '✅' : '❌'} CI Results`,
+              '', '| Job | Status |', '|-----|--------|',
+              ...rows,
             ].join('\n');
 
             const { data: comments } = await github.rest.issues.listComments({
@@ -104,15 +95,8 @@ jobs:
               repo: context.repo.repo,
               issue_number: context.issue.number,
             });
-            const existing = comments.find(c =>
-              c.user.type === 'Bot' && c.body.includes('CI Results')
-            );
-
-            const params = {
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body,
-            };
+            const existing = comments.find(c => c.user.type === 'Bot' && c.body.includes('CI Results'));
+            const params = { owner: context.repo.owner, repo: context.repo.repo, body };
 
             if (existing) {
               await github.rest.issues.updateComment({ ...params, comment_id: existing.id });
