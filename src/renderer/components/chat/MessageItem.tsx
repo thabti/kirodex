@@ -212,9 +212,9 @@ export const MessageItem = memo(function MessageItem({
       data-timeline-row-kind="message"
       data-message-role="assistant"
     >
-      {/*{thinkingText && (
-        <ThinkingDisplay text={thinkingText} isActive={streaming} />
-      )}*/}
+      {streaming && !displayContent && !thinkingText && (
+        <GeneratingIndicator />
+      )}
 
       {toolCalls && toolCalls.length > 0 && (
         <ToolCallDisplay toolCalls={toolCalls} />
@@ -222,10 +222,6 @@ export const MessageItem = memo(function MessageItem({
 
       {displayContent ? (
         <ChatMarkdown text={displayContent} isStreaming={streaming} />
-      ) : streaming ? (
-        !thinkingText && (!toolCalls || toolCalls.length === 0) ? (
-          <GeneratingIndicator />
-        ) : null
       ) : null}
 
       {report && <TaskCompletionCard report={report} />}

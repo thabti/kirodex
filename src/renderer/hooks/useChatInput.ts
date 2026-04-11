@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo, useCallback, type KeyboardEvent, type ChangeEvent, type ClipboardEvent } from 'react'
+import { useState, useRef, useMemo, useCallback, useEffect, type KeyboardEvent, type ChangeEvent, type ClipboardEvent } from 'react'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useTaskStore } from '@/stores/taskStore'
 import { useSlashAction } from '@/hooks/useSlashAction'
@@ -82,22 +82,46 @@ export function useChatInput({ disabled, isRunning, onSendMessage, onPause }: Us
     setPastedChunks((prev) => {
       const chunk = prev.find((c) => c.id === id)
       if (chunk) {
-        const placeholder = makePlaceholder(chunk.id, chunk.lines, chunk.chars)
-        setValue((v) => v.replace(placeholder, ''))
+        const exact = makePlaceholder(chunk.id, chunk.lines, chunk.chars)
+        const fuzzy = new RegExp(`\\[Pasted text #${chunk.id}\\b[^\\]]*\\]`)
+        setValue((v) => {
+          const replaced = v.replace(exact, '')
+          return replaced !== v ? replaced : v.replace(fuzzy, '')
+        })
       }
       return prev.filter((c) => c.id !== id)
     })
   }, [])
 
-  // Expand placeholders back to full text
+  // Expand placeholders back to full text.
+  // Uses regex so minor edits to the detail suffix don't break expansion.
   const expandChunks = useCallback((text: string): string => {
     let result = text
     for (const chunk of pastedChunks) {
-      const placeholder = makePlaceholder(chunk.id, chunk.lines, chunk.chars)
-      result = result.replace(placeholder, chunk.text)
+      const exact = makePlaceholder(chunk.id, chunk.lines, chunk.chars)
+      if (result.includes(exact)) {
+        result = result.replace(exact, chunk.text)
+      } else {
+        // Tolerate edits: match [Pasted text #<id> ...anything... ]
+        const fuzzy = new RegExp(`\\[Pasted text #${chunk.id}\\b[^\\]]*\\]`)
+        result = result.replace(fuzzy, chunk.text)
+      }
     }
     return result
   }, [pastedChunks])
+
+  // Remove orphaned chunks whose placeholder was deleted from the textarea
+  useEffect(() => {
+    if (pastedChunks.length === 0) return
+    setPastedChunks((prev) =>
+      prev.filter((chunk) => {
+        const exact = makePlaceholder(chunk.id, chunk.lines, chunk.chars)
+        if (value.includes(exact)) return true
+        const fuzzy = new RegExp(`\\[Pasted text #${chunk.id}\\b`)
+        return fuzzy.test(value)
+      }),
+    )
+  }, [value]) // eslint-disable-line react-hooks/exhaustive-deps -- intentionally only reacts to value
 
   // ── Message history cycling (ArrowUp/Down) ─────────────────────
   // -1 = composing new message, 0 = most recent, 1 = second most recent, etc.

@@ -144,3 +144,19 @@
 - Added `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` GitHub secret (empty)
 - Replaced pubkey placeholder in `tauri.conf.json` with actual public key
 - Committed and pushed to `feat/auto-updater` branch (PR #4)
+
+## 2026-04-12 03:20 (Dubai)
+- Moved "Synthesizing…" loading indicator above tool calls in `MessageItem.tsx`
+  - Previously: indicator only showed when no tool calls existed (mutually exclusive)
+  - Now: indicator renders above `ToolCallDisplay` during streaming whenever there's no content and no thinking text, even when tool calls are active
+  - Removed commented-out `ThinkingDisplay` block
+  - Visual rationale: top-down flow of status → actions → output; user sees continuous "working" feedback while tool calls stack below
+
+## 2026-04-11 23:19 (Dubai)
+- Fixed pasted text chunks disappearing on send when placeholder text is edited in textarea
+  - **Root cause**: `expandChunks` used exact string match against `[Pasted text #N +47 chars]`; any edit to the placeholder (cursor inside it, accidental keystroke) broke the match, sending raw placeholder text instead of the original pasted content
+  - `expandChunks`: Added regex fallback `\[Pasted text #<id>\b[^\]]*\]` when exact match fails
+  - `handleRemoveChunk`: Same fuzzy matching so the X button works even if placeholder was edited
+  - Added `useEffect` orphan cleanup: when a placeholder is fully deleted from the textarea, the corresponding chunk is removed from state (pill no longer lingers)
+  - File modified: `src/renderer/hooks/useChatInput.ts`
+  - TypeScript compiles clean
