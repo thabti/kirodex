@@ -125,8 +125,12 @@ jobs:
 
       - name: Update homebrew cask
         env:
-          GH_TOKEN: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::error::GH_PAT secret is not set — required to push to homebrew-tap"
+            exit 1
+          fi
           if ! git clone "https://x-access-token:${GH_TOKEN}@github.com/thabti/homebrew-tap.git" /tmp/tap 2>/dev/null; then
             echo "::warning::thabti/homebrew-tap not found — skipping"
             exit 0

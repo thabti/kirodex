@@ -188,3 +188,16 @@
   - Updated all 4 references: assignment, null guard, `downloadAndInstall` call
   - Added `import type { Update }` from `@tauri-apps/plugin-updater`
 - TypeScript compiles clean (`npx tsc --noEmit` passes)
+
+## 2026-04-12 00:12 GST (Dubai)
+
+- Fixed homebrew tap push failure in `.github/workflows/release.yml`
+- Root cause: `GH_PAT` secret not set, falling back to `GITHUB_TOKEN` which lacks cross-repo push permission
+- Changed workflow to require `GH_PAT` explicitly and fail fast with a clear error if missing
+- File modified: `.github/workflows/release.yml`
+
+## 2026-04-12 00:13 GST (Dubai)
+
+- Set `GH_PAT` secret on `thabti/kirodex` repo using `gh auth token | gh secret set`
+- This gives the homebrew workflow push access to `thabti/homebrew-tap`
+- Note: token is the current `gh` OAuth token; may need replacing with a long-lived classic PAT later
