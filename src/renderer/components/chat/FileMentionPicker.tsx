@@ -16,7 +16,7 @@ const EXT_ICONS: Record<string, { label: string; cls: string }> = {
   rs:    { label: 'RS',  cls: 'bg-orange-500/20 text-orange-400' },
   toml:  { label: 'TL',  cls: 'bg-gray-500/20 text-gray-400' },
   json:  { label: '{}',  cls: 'bg-green-500/20 text-green-400' },
-  md:    { label: 'MD',  cls: 'bg-purple-500/20 text-purple-400' },
+  md:    { label: 'MD',  cls: 'bg-blue-500/20 text-blue-400' },
   css:   { label: 'CSS', cls: 'bg-pink-500/20 text-pink-400' },
   html:  { label: 'HTM', cls: 'bg-red-500/20 text-red-400' },
   yml:   { label: 'YML', cls: 'bg-rose-500/20 text-rose-400' },
@@ -211,7 +211,7 @@ export const FileMentionPill = memo(function FileMentionPill({ path, onRemove }:
   return (
     <span className={cn(
       'inline-flex h-7 items-center gap-1 rounded-md px-2 text-[12px] font-medium align-middle',
-      isAgent ? 'bg-purple-500/15 text-purple-300' :
+      isAgent ? 'bg-blue-500/15 text-blue-300' :
       isSkill ? 'bg-yellow-500/15 text-yellow-300' :
       'bg-accent/60 text-foreground/70',
     )}>

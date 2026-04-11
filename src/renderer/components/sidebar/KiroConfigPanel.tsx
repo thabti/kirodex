@@ -74,8 +74,8 @@ const STACK_META: Record<string, StackMeta> = {
 // Role-level icons for individual agents
 function getRoleIcon(name: string): { icon: ElementType; color: string } {
   const n = name.toLowerCase()
-  if (n.includes('orchestrator'))  return { icon: IconGitBranch,  color: 'text-violet-400' }
-  if (n.includes('workflow'))      return { icon: IconGitBranch,  color: 'text-violet-400' }
+  if (n.includes('orchestrator'))  return { icon: IconGitBranch,  color: 'text-blue-400' }
+  if (n.includes('workflow'))      return { icon: IconGitBranch,  color: 'text-blue-400' }
   if (n.includes('automation'))    return { icon: IconFlask,      color: 'text-amber-400' }
   if (n.includes('code-review'))   return { icon: IconShield,     color: 'text-rose-400' }
   if (n.includes('documentation')) return { icon: IconBook,       color: 'text-blue-400' }
@@ -431,7 +431,7 @@ export const KiroConfigPanel = memo(function KiroConfigPanel({
 
             {/* Agents */}
             {agents.length > 0 && (totalAgents > 0 || !search) && (
-              <SectionToggle icon={IconRobot} iconColor="text-violet-400" label="Agents" count={totalAgents} expanded={agentsOpen} onToggle={() => setAgentsOpen((v) => !v)} />
+              <SectionToggle icon={IconRobot} iconColor="text-blue-400" label="Agents" count={totalAgents} expanded={agentsOpen} onToggle={() => setAgentsOpen((v) => !v)} />
             )}
             {agentsOpen && totalAgents > 0 && (
               <ul className="flex min-w-0 flex-col gap-px border-l mx-1 px-1.5 py-px" style={{ borderColor: 'var(--border)' }}>

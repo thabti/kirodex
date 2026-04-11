@@ -40,8 +40,22 @@ class ErrorBoundary extends React.Component<
   render() { return this.state.error ? null : this.props.children }
 }
 
-window.addEventListener('unhandledrejection', (e) => showError(e.reason))
-window.addEventListener('error', (e) => showError(e.error ?? e.message))
+// Errors that are safe to ignore — they don't indicate a real crash
+const IGNORED_ERRORS = [
+  'ResizeObserver loop',           // benign: layout shift during observation
+  'ResizeObserver loop completed', // same, different wording across browsers
+]
+
+window.addEventListener('unhandledrejection', (e) => {
+  const msg = e.reason instanceof Error ? e.reason.message : String(e.reason ?? '')
+  if (IGNORED_ERRORS.some((i) => msg.includes(i))) return
+  showError(e.reason)
+})
+window.addEventListener('error', (e) => {
+  const msg = e.message ?? (e.error instanceof Error ? e.error.message : '')
+  if (IGNORED_ERRORS.some((i) => msg.includes(i))) return
+  showError(e.error ?? e.message)
+})
 
 // Wire up error fallback buttons
 document.getElementById('reload-btn')?.addEventListener('click', () => {
@@ -53,6 +67,14 @@ document.getElementById('copy-error-btn')?.addEventListener('click', () => {
     const btn = document.getElementById('copy-error-btn')
     if (btn) { btn.textContent = 'Copied!'; setTimeout(() => { btn.textContent = 'Copy Error' }, 2000) }
   }).catch(() => {})
+})
+
+// ⌘R / Ctrl+R to reload (works even when error screen is showing)
+window.addEventListener('keydown', (e) => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'r') {
+    e.preventDefault()
+    window.location.reload()
+  }
 })
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
