@@ -44,6 +44,8 @@ class ErrorBoundary extends React.Component<
 const IGNORED_ERRORS = [
   'ResizeObserver loop',           // benign: layout shift during observation
   'ResizeObserver loop completed', // same, different wording across browsers
+  'listeners[eventId]',            // Tauri listener cleanup race during HMR/StrictMode
+  'unregisterListener',            // same — stale listener map after hot reload
 ]
 
 window.addEventListener('unhandledrejection', (e) => {

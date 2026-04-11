@@ -7,30 +7,28 @@ type UnsubscribeFn = () => void
 const tauriListen = <T>(event: string, cb: (payload: T) => void): UnsubscribeFn => {
   let unlisten: (() => void) | null = null
   let cleaned = false
-  let unlistened = false
-  const safeUnlisten = (fn: () => void) => {
-    if (unlistened) return
-    unlistened = true
-    try { fn() } catch { /* listener already removed by Tauri */ }
-  }
+
   const ready = listen<T>(event, (e) => { if (!cleaned) cb(e.payload) })
   ready.then((fn) => {
     if (cleaned) {
-      safeUnlisten(fn)
+      // Component already unmounted — schedule unlisten on next tick
+      // to avoid synchronous throw from Tauri's internal listener map
+      setTimeout(() => { try { fn() } catch { /* stale listener */ } }, 0)
     } else {
       unlisten = fn
     }
-  }).catch((err) => {
-    console.warn(`[tauriListen] failed to register "${event}":`, err)
-  })
+  }).catch(() => {})
+
   return () => {
     if (cleaned) return
     cleaned = true
     if (unlisten) {
-      safeUnlisten(unlisten)
-    } else {
-      ready.then((fn) => safeUnlisten(fn)).catch(() => {})
+      // Defer to avoid "listeners[eventId].handlerId" crash during HMR/StrictMode cleanup
+      const fn = unlisten
+      unlisten = null
+      setTimeout(() => { try { fn() } catch { /* already removed */ } }, 0)
     }
+    // If ready hasn't resolved yet, the .then() branch above handles it
   }
 }
 
