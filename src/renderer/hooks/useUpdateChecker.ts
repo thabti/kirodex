@@ -1,6 +1,4 @@
 import { useEffect, useRef, useCallback } from 'react'
-import { check } from '@tauri-apps/plugin-updater'
-import { relaunch } from '@tauri-apps/plugin-process'
 import { useUpdateStore } from '@/stores/updateStore'
 
 const CHECK_INTERVAL_MS = 4 * 60 * 60 * 1000 // 4 hours
@@ -20,6 +18,7 @@ export const useUpdateChecker = () => {
     useUpdateStore.getState().setProgress(null)
 
     try {
+      const { check } = await import('@tauri-apps/plugin-updater')
       const update = await check()
       if (!update) {
         useUpdateStore.getState().setStatus('idle')
@@ -79,13 +78,14 @@ export const useUpdateChecker = () => {
   }, [])
 
   const restart = useCallback(async () => {
+    const { relaunch } = await import('@tauri-apps/plugin-process')
     await relaunch()
   }, [])
 
   // Auto-check on mount + periodic interval
   useEffect(() => {
-    checkForUpdate()
-    intervalRef.current = setInterval(checkForUpdate, CHECK_INTERVAL_MS)
+    checkForUpdate().catch(() => {})
+    intervalRef.current = setInterval(() => { checkForUpdate().catch(() => {}) }, CHECK_INTERVAL_MS)
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current)
     }
