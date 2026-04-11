@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { getVersion } from '@tauri-apps/api/app'
 import {
   IconX, IconCheck, IconAlertCircle, IconChevronDown, IconLoader2, IconSearch,
   IconHistory, IconKeyboard, IconSettings2, IconPaint, IconTool, IconTerminal,
@@ -108,6 +109,9 @@ export function SettingsPanel() {
   const [cliStatus, setCliStatus] = useState<'idle' | 'ok' | 'fail'>('idle')
   const [isDetecting, setIsDetecting] = useState(false)
   const [keymapFilter, setKeymapFilter] = useState('')
+  const [appVersion, setAppVersion] = useState('')
+
+  useEffect(() => { getVersion().then(setAppVersion).catch(() => {}) }, [])
 
   useEffect(() => { setDraft(settings) }, [settings])
 
@@ -188,7 +192,10 @@ export function SettingsPanel() {
               Back
             </button>
             <div className="flex items-center justify-between px-3">
-              <p className="text-[10px] text-muted-foreground/30">Kirodex v0.6.0</p>
+              <div>
+                <p className="text-[10px] text-muted-foreground/30">Kirodex {appVersion ? `v${appVersion}` : ''}</p>
+                <p className="text-[10px] text-muted-foreground/30">Copyright © 2026 Thabti</p>
+              </div>
               <a
                 href="https://github.com/thabti/kirodex"
                 target="_blank"
