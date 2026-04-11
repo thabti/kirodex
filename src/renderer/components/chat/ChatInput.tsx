@@ -193,37 +193,19 @@ export const ChatInput = memo(function ChatInput({ disabled, contextUsage, messa
                 aria-hidden
               />
               {isRunning ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={handleSend}
-                    disabled={!canSend}
-                    aria-label="Queue message"
-                    data-testid="queue-button"
-                    className={cn(
-                      'flex h-8 w-8 items-center justify-center rounded-full transition-all duration-150',
-                      'bg-muted text-foreground/70 hover:bg-muted/80 hover:scale-105',
-                      'disabled:pointer-events-none disabled:opacity-30 disabled:hover:scale-100',
-                    )}
-                  >
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                      <path d="M7 11.5V2.5M7 2.5L3 6.5M7 2.5L11 6.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={onPause}
-                    aria-label="Pause agent"
-                    data-testid="pause-button"
-                    className="flex h-8 w-8 items-center justify-center rounded-full text-white transition-all duration-150 hover:scale-105"
-                    style={{ backgroundColor: isPlanMode ? 'rgba(20,184,166,0.9)' : 'rgba(59,130,246,0.9)' }}
-                  >
-                    <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" aria-hidden="true">
-                      <rect x="1.5" y="1" width="3" height="10" rx="1" />
-                      <rect x="7.5" y="1" width="3" height="10" rx="1" />
-                    </svg>
-                  </button>
-                </>
+                <button
+                  type="button"
+                  onClick={onPause}
+                  aria-label="Pause agent"
+                  data-testid="pause-button"
+                  className="flex h-8 w-8 items-center justify-center rounded-full text-white transition-all duration-150 hover:scale-105"
+                  style={{ backgroundColor: isPlanMode ? 'rgba(20,184,166,0.9)' : 'rgba(59,130,246,0.9)' }}
+                >
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" aria-hidden="true">
+                    <rect x="1.5" y="1" width="3" height="10" rx="1" />
+                    <rect x="7.5" y="1" width="3" height="10" rx="1" />
+                  </svg>
+                </button>
               ) : (
                 <button
                   type="button"

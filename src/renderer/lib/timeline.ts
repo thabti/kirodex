@@ -160,17 +160,17 @@ export function deriveTimeline(
     })
   }
 
+  // Show "Working..." indicator above tool calls so it reads as a status header
+  if (isRunning) {
+    rows.push({ kind: 'working', id: 'working' })
+  }
+
   if (hasLiveTools) {
     rows.push({
       kind: 'work',
       id: 'live-work',
       toolCalls: liveToolCalls,
     })
-  }
-
-  // Show "Working..." indicator whenever the agent is running
-  if (isRunning) {
-    rows.push({ kind: 'working', id: 'working' })
   }
 
   return rows

@@ -90,6 +90,6 @@ describe('deriveTimeline', () => {
   it('combines persisted messages with live state', () => {
     const msgs = [makeMsg('user', 'hi')]
     const rows = deriveTimeline(msgs, 'responding...', [makeTool()], undefined, true)
-    expect(rows.map((r) => r.kind)).toEqual(['user-message', 'assistant-text', 'work', 'working'])
+    expect(rows.map((r) => r.kind)).toEqual(['user-message', 'assistant-text', 'working', 'work'])
   })
 })

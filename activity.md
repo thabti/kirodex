@@ -160,3 +160,19 @@
   - Added `useEffect` orphan cleanup: when a placeholder is fully deleted from the textarea, the corresponding chunk is removed from state (pill no longer lingers)
   - File modified: `src/renderer/hooks/useChatInput.ts`
   - TypeScript compiles clean
+
+## 2026-04-11 23:36 (Dubai)
+- Moved WorkingRow ("Synthesizing…") indicator above tool calls in the timeline
+  - `timeline.ts`: Reordered `deriveTimeline()` live streaming section so the `working` row is inserted before the `work` row (was after)
+  - `timeline.test.ts`: Updated "combines persisted messages with live state" test expectation to match new order: `['user-message', 'assistant-text', 'working', 'work']`
+  - All 11 timeline tests pass
+  - Visual rationale: the cycling status label ("Thinking…", "Analyzing…") acts as a header above tool call activity, giving continuous feedback while tools stack below
+
+## 2026-04-11 23:12 (Dubai)
+- Fixed duplicate send/pause buttons in chat input
+  - When `isRunning=true`, ChatInput rendered both a queue button (arrow-up icon, gray) and a pause button (blue/teal) — the queue button looked identical to the send button, creating visual duplication
+  - Removed the queue button from the `isRunning=true` branch; now only the pause button renders when the agent is running
+  - When `isRunning=false`, only the send button renders (unchanged)
+  - Users can still queue messages by pressing Enter while the agent is running
+  - File modified: `src/renderer/components/chat/ChatInput.tsx`
+  - TypeScript compiles clean
