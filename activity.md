@@ -128,3 +128,19 @@
 - `src/renderer/components/settings/SettingsPanel.tsx`
 - `src/renderer/hooks/useUpdateChecker.ts` (new)
 - `src/renderer/stores/updateStore.ts` (new)
+
+## 2026-04-12 00:39 (Dubai)
+- Fixed missing spaces between agent message chunks (e.g. "first.Let me" → "first. Let me")
+  - **Root cause**: ACP protocol sends each agent thought as a separate chunk without leading spaces; `taskStore.ts` concatenated them with plain `+`
+  - Added `joinChunk()` utility to `src/renderer/lib/utils.ts` — inserts a space when accumulated text ends with `.!?:` and the new chunk starts with a non-whitespace character
+  - Updated three concatenation sites in `src/renderer/stores/taskStore.ts`: `appendChunk`, `appendThinkingChunk`, `flushChunks`, `flushThinking`
+  - Added 11 unit tests for `joinChunk` in `src/renderer/lib/utils.test.ts`
+  - All 258 tests pass (36 files), zero regressions
+
+## 2026-04-11 23:10 (Dubai) — Tauri signing keypair setup
+
+- Generated Tauri signing keypair at `~/.tauri/kirodex.key` (empty password)
+- Added `TAURI_SIGNING_PRIVATE_KEY` GitHub secret via `gh secret set`
+- Added `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` GitHub secret (empty)
+- Replaced pubkey placeholder in `tauri.conf.json` with actual public key
+- Committed and pushed to `feat/auto-updater` branch (PR #4)
