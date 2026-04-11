@@ -101,7 +101,7 @@ pub fn run() {
         .manage(acp::AcpState::default())
         .manage(pty::PtyState::default())
         .setup(|app| {
-            let window = app.get_webview_window("main")
+            let _window = app.get_webview_window("main")
                 .ok_or_else(|| "main window not found".to_string())?;
 
             #[cfg(desktop)]
@@ -110,14 +110,14 @@ pub fn run() {
             #[cfg(target_os = "macos")]
             {
                 use window_vibrancy::{apply_vibrancy, NSVisualEffectMaterial};
-                let _ = apply_vibrancy(&window, NSVisualEffectMaterial::Sidebar, None, None);
+                let _ = apply_vibrancy(&_window, NSVisualEffectMaterial::Sidebar, None, None);
 
                 // Set title bar background to match header (--card dark: ~#0c0c0c)
                 #[allow(deprecated)]
                 {
                     use cocoa::appkit::{NSColor, NSWindow};
                     use cocoa::base::{id, nil};
-                    let ns_window = window.ns_window().unwrap() as id;
+                    let ns_window = _window.ns_window().unwrap() as id;
                     // SAFETY: ns_window is valid for the lifetime of setup() — the window
                     // was just retrieved above. setBackgroundColor_ is a standard NSWindow
                     // message that does not violate aliasing or lifetime rules.
