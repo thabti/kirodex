@@ -1,3 +1,5 @@
+#![allow(unexpected_cfgs, unused_imports)]
+
 #[cfg(target_os = "macos")]
 #[macro_use]
 extern crate objc;
@@ -112,22 +114,20 @@ pub fn run() {
             app.handle().plugin(tauri_plugin_updater::Builder::new().build())?;
 
             #[cfg(target_os = "macos")]
+            #[allow(deprecated)]
             {
-                #[allow(deprecated)]
-                {
-                    use cocoa::appkit::{NSColor, NSWindow};
-                    use cocoa::base::{id, nil};
-                    let ns_window = _window.ns_window().unwrap() as id;
-                    unsafe {
-                        // Round the window corners natively
-                        let content_view: id = ns_window.contentView();
-                        let layer: id = msg_send![content_view, layer];
-                        let () = msg_send![layer, setCornerRadius: 12.0_f64];
-                        let () = msg_send![layer, setMasksToBounds: true];
-                        // Make window background clear so the rounded corners show
-                        let bg = NSColor::clearColor(nil);
-                        ns_window.setBackgroundColor_(bg);
-                    }
+                use cocoa::appkit::NSWindow;
+                use cocoa::base::id;
+                use objc::msg_send;
+                use objc::sel;
+                use objc::sel_impl;
+                let ns_window = _window.ns_window().unwrap() as id;
+                unsafe {
+                    let content_view: id = ns_window.contentView();
+                    let _: () = msg_send![content_view, setWantsLayer: true];
+                    let layer: id = msg_send![content_view, layer];
+                    let _: () = msg_send![layer, setCornerRadius: 12.0_f64];
+                    let _: () = msg_send![layer, setMasksToBounds: true];
                 }
             }
             log::info!("Kirodex started (pid={})", std::process::id());
