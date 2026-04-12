@@ -44,7 +44,7 @@ const SortDropdown = memo(function SortDropdown({ sort, onChange }: { sort: Sort
             <IconArrowsUpDown className="size-3.5" />
           </button>
         </TooltipTrigger>
-        <TooltipContent side="right">Sort tasks</TooltipContent>
+        <TooltipContent side="top">Sort tasks</TooltipContent>
       </Tooltip>
       {open && (
         <>
@@ -182,7 +182,7 @@ export const TaskSidebar = memo(function TaskSidebar({ width, onResize, position
                 <IconPlus className="size-3.5" />
               </button>
             </TooltipTrigger>
-            <TooltipContent side="right">Import project folder</TooltipContent>
+            <TooltipContent side="top">Import project folder</TooltipContent>
           </Tooltip>
         </div>
       </div>

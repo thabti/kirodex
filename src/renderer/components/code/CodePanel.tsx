@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { IconX, IconFileCode, IconMaximize, IconMinimize } from '@tabler/icons-react'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useTaskStore } from '@/stores/taskStore'
 import { ipc } from '@/lib/ipc'
 import { useResizeHandle } from '@/hooks/useResizeHandle'
@@ -54,16 +55,26 @@ export function CodePanel({ onClose }: CodePanelProps) {
             <IconFileCode className="h-3 w-3 text-muted-foreground" />
             <span className="text-[11px] font-medium text-foreground">Files Changed</span>
           </div>
-          <button
-            onClick={() => setIsExpanded((v) => !v)}
-            title={isExpanded ? 'Collapse panel' : 'Expand to full width'}
-            className="px-1.5 py-1.5 text-muted-foreground hover:text-foreground"
-          >
-            {isExpanded ? <IconMinimize className="h-3 w-3" /> : <IconMaximize className="h-3 w-3" />}
-          </button>
-          <button onClick={onClose} className="px-2 py-1.5 text-muted-foreground hover:text-foreground">
-            <IconX className="h-3.5 w-3.5" />
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => setIsExpanded((v) => !v)}
+                aria-label={isExpanded ? 'Collapse panel' : 'Expand to full width'}
+                className="px-1.5 py-1.5 text-muted-foreground hover:text-foreground"
+              >
+                {isExpanded ? <IconMinimize className="h-3 w-3" /> : <IconMaximize className="h-3 w-3" />}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">{isExpanded ? 'Collapse panel' : 'Expand to full width'}</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button onClick={onClose} aria-label="Close panel" className="px-2 py-1.5 text-muted-foreground hover:text-foreground">
+                <IconX className="h-3.5 w-3.5" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Close</TooltipContent>
+          </Tooltip>
         </div>
 
         {/* Diff content */}

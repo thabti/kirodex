@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { parsePatchFiles, type FileDiffMetadata } from '@pierre/diffs'
 import { FileDiff, Virtualizer } from '@pierre/diffs/react'
 import { IconColumns, IconLayoutRows, IconTextWrap, IconFileCode, IconChevronDown, IconChevronRight, IconPlus, IconArrowBackUp, IconExternalLink, IconLayoutSidebarLeftCollapse, IconLayoutSidebarLeftExpand } from '@tabler/icons-react'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { ipc } from '@/lib/ipc'
 import { useDiffStore } from '@/stores/diffStore'
@@ -109,30 +110,45 @@ function FileActionBar({
 
         {/* Actions */}
         <div className="ml-1 flex items-center gap-0.5">
-          <button
-            type="button"
-            onClick={onRevert}
-            title="Revert changes"
-            className="flex size-5 items-center justify-center rounded text-muted-foreground/50 transition-colors hover:bg-destructive/10 hover:text-destructive"
-          >
-            <IconArrowBackUp className="size-3" />
-          </button>
-          <button
-            type="button"
-            onClick={onStage}
-            title="Stage file"
-            className="flex size-5 items-center justify-center rounded text-muted-foreground/50 transition-colors hover:bg-emerald-500/10 hover:text-emerald-500"
-          >
-            <IconPlus className="size-3" />
-          </button>
-          <button
-            type="button"
-            onClick={onOpenInEditor}
-            title="Open in editor"
-            className="flex size-5 items-center justify-center rounded text-muted-foreground/50 transition-colors hover:bg-accent hover:text-foreground"
-          >
-            <IconExternalLink className="size-3" />
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={onRevert}
+                aria-label="Revert changes"
+                className="flex size-5 items-center justify-center rounded text-muted-foreground/50 transition-colors hover:bg-destructive/10 hover:text-destructive"
+              >
+                <IconArrowBackUp className="size-3" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="top">Revert changes</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={onStage}
+                aria-label="Stage file"
+                className="flex size-5 items-center justify-center rounded text-muted-foreground/50 transition-colors hover:bg-emerald-500/10 hover:text-emerald-500"
+              >
+                <IconPlus className="size-3" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="top">Stage file</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={onOpenInEditor}
+                aria-label="Open in editor"
+                className="flex size-5 items-center justify-center rounded text-muted-foreground/50 transition-colors hover:bg-accent hover:text-foreground"
+              >
+                <IconExternalLink className="size-3" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="top">Open in editor</TooltipContent>
+          </Tooltip>
         </div>
       </div>
 
@@ -276,50 +292,70 @@ export function DiffViewer({ diff, taskId, workspace, onRefreshDiff }: DiffViewe
 
         <div className="flex-1" />
 
-        <button
-          type="button"
-          onClick={() => setIsSidebarCollapsed((v) => !v)}
-          title={isSidebarCollapsed ? 'Show file list' : 'Hide file list'}
-          className={cn(
-            'flex size-5 items-center justify-center rounded transition-colors',
-            isSidebarCollapsed ? 'text-muted-foreground/50 hover:text-foreground' : 'bg-accent text-foreground',
-          )}
-        >
-          {isSidebarCollapsed ? <IconLayoutSidebarLeftExpand className="size-3" /> : <IconLayoutSidebarLeftCollapse className="size-3" />}
-        </button>
-        <button
-          type="button"
-          onClick={() => setDiffStyle('unified')}
-          title="Unified view"
-          className={cn(
-            'flex size-5 items-center justify-center rounded transition-colors',
-            diffStyle === 'unified' ? 'bg-accent text-foreground' : 'text-muted-foreground/50 hover:text-foreground',
-          )}
-        >
-          <IconLayoutRows className="size-3" />
-        </button>
-        <button
-          type="button"
-          onClick={() => setDiffStyle('split')}
-          title="Split view"
-          className={cn(
-            'flex size-5 items-center justify-center rounded transition-colors',
-            diffStyle === 'split' ? 'bg-accent text-foreground' : 'text-muted-foreground/50 hover:text-foreground',
-          )}
-        >
-          <IconColumns className="size-3" />
-        </button>
-        <button
-          type="button"
-          onClick={() => setWordWrap((v) => !v)}
-          title="Toggle word wrap"
-          className={cn(
-            'flex size-5 items-center justify-center rounded transition-colors',
-            wordWrap ? 'bg-accent text-foreground' : 'text-muted-foreground/50 hover:text-foreground',
-          )}
-        >
-          <IconTextWrap className="size-3" />
-        </button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              onClick={() => setIsSidebarCollapsed((v) => !v)}
+              aria-label={isSidebarCollapsed ? 'Show file list' : 'Hide file list'}
+              className={cn(
+                'flex size-5 items-center justify-center rounded transition-colors',
+                isSidebarCollapsed ? 'text-muted-foreground/50 hover:text-foreground' : 'bg-accent text-foreground',
+              )}
+            >
+              {isSidebarCollapsed ? <IconLayoutSidebarLeftExpand className="size-3" /> : <IconLayoutSidebarLeftCollapse className="size-3" />}
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">{isSidebarCollapsed ? 'Show file list' : 'Hide file list'}</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              onClick={() => setDiffStyle('unified')}
+              aria-label="Unified view"
+              className={cn(
+                'flex size-5 items-center justify-center rounded transition-colors',
+                diffStyle === 'unified' ? 'bg-accent text-foreground' : 'text-muted-foreground/50 hover:text-foreground',
+              )}
+            >
+              <IconLayoutRows className="size-3" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">Unified view</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              onClick={() => setDiffStyle('split')}
+              aria-label="Split view"
+              className={cn(
+                'flex size-5 items-center justify-center rounded transition-colors',
+                diffStyle === 'split' ? 'bg-accent text-foreground' : 'text-muted-foreground/50 hover:text-foreground',
+              )}
+            >
+              <IconColumns className="size-3" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">Split view</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              onClick={() => setWordWrap((v) => !v)}
+              aria-label="Toggle word wrap"
+              className={cn(
+                'flex size-5 items-center justify-center rounded transition-colors',
+                wordWrap ? 'bg-accent text-foreground' : 'text-muted-foreground/50 hover:text-foreground',
+              )}
+            >
+              <IconTextWrap className="size-3" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">{wordWrap ? 'Disable word wrap' : 'Enable word wrap'}</TooltipContent>
+        </Tooltip>
       </div>
 
       <div className="flex flex-1 min-h-0 overflow-hidden">

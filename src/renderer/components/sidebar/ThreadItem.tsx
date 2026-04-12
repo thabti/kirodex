@@ -128,7 +128,7 @@ export const ThreadItem = memo(function ThreadItem({ task, isActive, onSelect, o
             <TooltipTrigger asChild>
               <span className="min-w-0 flex-1 truncate text-xs">{task.name}</span>
             </TooltipTrigger>
-            <TooltipContent side="right" align="start">{task.name}</TooltipContent>
+            <TooltipContent side="top" align="start">{task.name}</TooltipContent>
           </Tooltip>
         )}
         {task.isDraft ? (
@@ -147,14 +147,19 @@ export const ThreadItem = memo(function ThreadItem({ task, isActive, onSelect, o
           : 'linear-gradient(to right, transparent 0%, hsl(var(--accent)) 35%)'
         }}
       >
-        <button
-          type="button"
-          aria-label="Delete thread"
-          onClick={(e) => { e.stopPropagation(); onDelete() }}
-          className="pointer-events-auto flex size-5 items-center justify-center rounded-md text-muted-foreground/60 hover:bg-destructive/15 hover:text-destructive"
-        >
-          <IconTrash className="size-3" />
-        </button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              aria-label="Delete thread"
+              onClick={(e) => { e.stopPropagation(); onDelete() }}
+              className="pointer-events-auto flex size-5 items-center justify-center rounded-md text-muted-foreground/60 hover:bg-destructive/15 hover:text-destructive"
+            >
+              <IconTrash className="size-3" />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="top">Delete thread</TooltipContent>
+        </Tooltip>
       </div>
 
       {ctxMenu && (
