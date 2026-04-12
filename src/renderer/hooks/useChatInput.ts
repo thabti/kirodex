@@ -4,7 +4,7 @@ import { useTaskStore } from '@/stores/taskStore'
 import { useSlashAction } from '@/hooks/useSlashAction'
 import { useAttachments } from '@/hooks/useAttachments'
 import { useFileMention } from '@/hooks/useFileMention'
-import { buildMessageWithInlineImages } from '@/components/chat/attachment-utils'
+import { buildAttachmentMessage } from '@/components/chat/attachment-utils'
 
 export interface PastedChunk {
   id: number
@@ -156,8 +156,6 @@ export function useChatInput({ disabled, isRunning, initialValue, onSendMessage,
       { name: 'plan', description: 'Start the planning agent to design before building' },
       { name: 'chat', description: 'Switch to chat mode' },
       { name: 'upload', description: 'Upload images or files' },
-      { name: 'close', description: 'Close and delete the current thread' },
-      { name: 'exit', description: 'Close and delete the current thread' },
     ]
     const names = new Set(backendCommands.map((c) => c.name.replace(/^\/+/, '')))
     return [...backendCommands, ...clientCommands.filter((c) => !names.has(c.name))]
@@ -199,7 +197,8 @@ export function useChatInput({ disabled, isRunning, initialValue, onSendMessage,
       }
     }
     if (hasAttachments) {
-      message = buildMessageWithInlineImages(message, attachmentsBag.attachments)
+      const attachmentBlock = buildAttachmentMessage(attachmentsBag.attachments)
+      message = message ? `${message}\n\n${attachmentBlock}` : attachmentBlock
     }
     setValue('')
     setSlashIndex(0)
@@ -295,22 +294,6 @@ export function useChatInput({ disabled, isRunning, initialValue, onSendMessage,
     mentionBag.detectMentionTrigger(el.value, el.selectionStart ?? el.value.length)
   }, [showPicker, showFilePicker, mentionBag.detectMentionTrigger])
 
-  // ── Auto-insert [Image filename] when images are added ───────
-  const prevAttachmentCountRef = useRef(0)
-  useEffect(() => {
-    const images = attachmentsBag.attachments.filter((a) => a.type === 'image')
-    if (images.length > prevAttachmentCountRef.current) {
-      const newImages = images.slice(prevAttachmentCountRef.current)
-      const tags = newImages.map((a) => `[Image ${a.name}]`).join(' ')
-      setValue((v) => {
-        const trimmed = v.trimEnd()
-        return trimmed ? `${trimmed} ${tags}` : tags
-      })
-      requestAnimationFrame(resize)
-    }
-    prevAttachmentCountRef.current = images.length
-  }, [attachmentsBag.attachments]) // eslint-disable-line react-hooks/exhaustive-deps
-
   const canSend = !disabled && (value.trim().length > 0 || attachmentsBag.attachments.length > 0)
 
   // Combined paste: intercept large text first, then fall through to image handler
@@ -337,19 +320,11 @@ export function useChatInput({ disabled, isRunning, initialValue, onSendMessage,
     // File mentions
     showFilePicker,
     ...mentionBag,
-    // Attachments (spread but override handlePaste + handleRemoveAttachment)
+    // Attachments (spread but override handlePaste)
     attachments: attachmentsBag.attachments,
     isDragOver: attachmentsBag.isDragOver,
     fileInputRef: attachmentsBag.fileInputRef,
-    handleRemoveAttachment: useCallback((id: string) => {
-      const att = attachmentsBag.attachments.find((a) => a.id === id)
-      if (att?.type === 'image') {
-        const tag = `[Image ${att.name}]`
-        setValue((v) => v.replace(tag, '').replace(/  +/g, ' ').trim())
-        prevAttachmentCountRef.current = Math.max(0, prevAttachmentCountRef.current - 1)
-      }
-      attachmentsBag.handleRemoveAttachment(id)
-    }, [attachmentsBag.attachments, attachmentsBag.handleRemoveAttachment]),
+    handleRemoveAttachment: attachmentsBag.handleRemoveAttachment,
     handleFilePickerClick: attachmentsBag.handleFilePickerClick,
     handleFileInputChange: attachmentsBag.handleFileInputChange,
     clearAttachments: attachmentsBag.clearAttachments,

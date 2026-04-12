@@ -383,7 +383,6 @@ fn spawn_connection(
     kiro_bin: String,
     auto_approve: bool,
     app: tauri::AppHandle,
-    initial_mode_id: Option<String>,
 ) -> Result<ConnectionHandle, String> {
     let (cmd_tx, mut cmd_rx) = mpsc::unbounded_channel::<AcpCommand>();
     let alive = Arc::new(std::sync::atomic::AtomicBool::new(true));
@@ -466,7 +465,7 @@ fn spawn_connection(
             local.block_on(&rt, async move {
                 let result = run_acp_connection(
                     tid3.clone(), workspace, kiro_bin, auto_approve,
-                    app3.clone(), perm_tx, &mut cmd_rx, initial_mode_id,
+                    app3.clone(), perm_tx, &mut cmd_rx,
                 ).await;
 
                 alive_clone.store(false, std::sync::atomic::Ordering::SeqCst);
@@ -497,7 +496,6 @@ async fn run_acp_connection(
     app: tauri::AppHandle,
     perm_tx: mpsc::UnboundedSender<(String, acp::RequestPermissionRequest, oneshot::Sender<PermissionReply>)>,
     cmd_rx: &mut mpsc::UnboundedReceiver<AcpCommand>,
-    initial_mode_id: Option<String>,
 ) -> Result<(), String> {
     // Spawn kiro-cli acp subprocess
     let mut child = tokio::process::Command::new(&kiro_bin)
@@ -600,13 +598,6 @@ async fn run_acp_connection(
         let _ = app.emit("mcp_connecting", Value::Null);
     }
 
-    // Apply initial mode if provided (e.g. user switched to /plan before first message)
-    if let Some(mode_id) = initial_mode_id {
-        let _ = conn.set_session_mode(
-            acp::SetSessionModeRequest::new(session_id.clone(), mode_id)
-        ).await;
-    }
-
     // Process commands from the main thread
     while let Some(cmd) = cmd_rx.recv().await {
         match cmd {
@@ -684,6 +675,7 @@ pub struct CreateTaskParams {
     pub workspace: String,
     pub prompt: String,
     pub auto_approve: Option<bool>,
+    #[allow(dead_code)]
     pub mode_id: Option<String>,
 }
 
@@ -735,7 +727,6 @@ pub fn task_create(
         kiro_bin,
         auto_approve,
         app.clone(),
-        params.mode_id,
     )?;
 
     // Send initial prompt with project rules prepended (not shown in UI)
@@ -831,7 +822,7 @@ pub fn task_send_message(
 
         let handle = spawn_connection(
             task_id.clone(), workspace, kiro_bin, auto_approve,
-            app.clone(), None,
+            app.clone(),
         )?;
         let _ = handle.cmd_tx.send(AcpCommand::Prompt(message));
         state.connections.lock().map_err(|e| format!("Lock poisoned: {e}"))?.insert(task_id.clone(), handle);

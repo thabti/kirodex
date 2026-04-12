@@ -1,9 +1,3 @@
-#![allow(unexpected_cfgs, unused_imports)]
-
-#[cfg(target_os = "macos")]
-#[macro_use]
-extern crate objc;
-
 mod commands;
 
 use commands::{acp, fs_ops, git, kiro_config, pty, settings};
@@ -114,20 +108,25 @@ pub fn run() {
             app.handle().plugin(tauri_plugin_updater::Builder::new().build())?;
 
             #[cfg(target_os = "macos")]
-            #[allow(deprecated)]
             {
-                use cocoa::appkit::NSWindow;
-                use cocoa::base::id;
-                use objc::msg_send;
-                use objc::sel;
-                use objc::sel_impl;
-                let ns_window = _window.ns_window().unwrap() as id;
-                unsafe {
-                    let content_view: id = ns_window.contentView();
-                    let _: () = msg_send![content_view, setWantsLayer: true];
-                    let layer: id = msg_send![content_view, layer];
-                    let _: () = msg_send![layer, setCornerRadius: 12.0_f64];
-                    let _: () = msg_send![layer, setMasksToBounds: true];
+                use window_vibrancy::{apply_vibrancy, NSVisualEffectMaterial};
+                let _ = apply_vibrancy(&_window, NSVisualEffectMaterial::Sidebar, None, None);
+
+                // Set title bar background to match header (--card dark: ~#0c0c0c)
+                #[allow(deprecated)]
+                {
+                    use cocoa::appkit::{NSColor, NSWindow};
+                    use cocoa::base::{id, nil};
+                    let ns_window = _window.ns_window().unwrap() as id;
+                    // SAFETY: ns_window is valid for the lifetime of setup() — the window
+                    // was just retrieved above. setBackgroundColor_ is a standard NSWindow
+                    // message that does not violate aliasing or lifetime rules.
+                    unsafe {
+                        let bg = NSColor::colorWithRed_green_blue_alpha_(
+                            nil, 12.0 / 255.0, 12.0 / 255.0, 12.0 / 255.0, 1.0,
+                        );
+                        ns_window.setBackgroundColor_(bg);
+                    }
                 }
             }
             log::info!("Kirodex started (pid={})", std::process::id());
@@ -168,7 +167,6 @@ pub fn run() {
             git::task_diff,
             git::git_diff_file,
             git::git_diff_stats,
-            git::git_staged_stats,
             git::git_remote_url,
             // ACP
             acp::task_create,

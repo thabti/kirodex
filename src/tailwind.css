@@ -204,11 +204,11 @@ body {
 }
 
 .dark ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .dark ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.18);
 }
 
 /* Code blocks */
@@ -317,68 +317,4 @@ input[type="search"] {
 }
 .xterm .xterm-viewport {
   overflow-y: auto !important;
-}
-
-/* macOS Traffic Light Styling */
-.traffic-lights-group {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 2px;
-}
-
-.traffic-light {
-  width: 13px;
-  height: 13px;
-  border-radius: 50%;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  border: 0.5px solid rgba(0, 0, 0, 0.08);
-  transition: background-color 0.12s ease;
-  font-size: 8px;
-  font-weight: 700;
-  line-height: 1;
-  box-shadow: 0 0.5px 1px rgba(0, 0, 0, 0.1);
-}
-
-.traffic-light-close { background: #ff5f56; border-color: #e0443e; }
-.traffic-light-close:hover { background: #ff453a; }
-.traffic-light-minimize { background: #ffbd30; border-color: #dea123; }
-.traffic-light-minimize:hover { background: #ffb524; }
-.traffic-light-maximize { background: #28ca42; border-color: #1aac29; }
-.traffic-light-maximize:hover { background: #1fb932; }
-
-.traffic-light .symbol {
-  opacity: 0;
-  transition: opacity 0.12s ease;
-  color: rgba(0, 0, 0, 0.75);
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-family: system-ui, -apple-system;
-}
-
-.traffic-lights-group:hover .traffic-light .symbol { opacity: 1; }
-
-.traffic-light-close .symbol { font-size: 8px; font-weight: 800; transform: translate(-50%, -51%); }
-.traffic-light-minimize .symbol { font-size: 7px; font-weight: 900; transform: translate(-50%, -49%); }
-.traffic-light-maximize .symbol { font-size: 6px; font-weight: 600; }
-
-/* Window unfocused state */
-.window-unfocused .traffic-light-close,
-.window-unfocused .traffic-light-minimize,
-.window-unfocused .traffic-light-maximize {
-  background: #c4c4c4 !important;
-  border-color: #a0a0a0 !important;
-}
-
-.dark .window-unfocused .traffic-light-close,
-.dark .window-unfocused .traffic-light-minimize,
-.dark .window-unfocused .traffic-light-maximize {
-  background: #5a5a5a !important;
-  border-color: #4a4a4a !important;
 }
