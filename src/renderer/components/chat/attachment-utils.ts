@@ -132,7 +132,7 @@ export const buildMessageWithInlineImages = (
     if (a.type !== 'image' || !a.base64Content) continue
     const tag = `[Image ${a.name}]`
     if (result.includes(tag)) {
-      result = result.replace(tag, `<image src="data:${a.mimeType};base64,${a.base64Content}" />`)
+      result = result.replaceAll(tag, `<image src=" />`)
       usedIds.add(a.id)
     }
   }
