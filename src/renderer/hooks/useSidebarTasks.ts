@@ -82,7 +82,7 @@ export function useSidebarTasks(sort: SortKey): readonly SidebarProject[] {
         id: `draft:${ws}`,
         name: content.trim(),
         workspace: ws,
-        createdAt: new Date().toISOString(),
+        createdAt: new Date(0).toISOString(),
         status: 'draft',
         isDraft: true,
       }
