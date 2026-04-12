@@ -10,7 +10,7 @@ import { AttachmentPreview } from './AttachmentPreview'
 import { DragOverlay } from './DragOverlay'
 import { ContextRing } from './ContextRing'
 import { ModelPicker } from './ModelPicker'
-import { ModeToggle } from './ModeToggle'
+import { PlanToggle } from './PlanToggle'
 import { AutoApproveToggle } from './AutoApproveToggle'
 import { useChatInput } from '@/hooks/useChatInput'
 import { useSettingsStore } from '@/stores/settingsStore'
@@ -197,7 +197,7 @@ export const ChatInput = memo(function ChatInput({ disabled, contextUsage, messa
                 <TooltipContent side="top" className="text-[11px]">Attach files or images</TooltipContent>
               </Tooltip>
               <ToolbarGroup>
-                <ModeToggle />
+                <PlanToggle />
                 <Dot />
                 <ModelPicker />
                 <Dot />

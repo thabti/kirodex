@@ -54,29 +54,30 @@ beforeEach(() => {
   })
 })
 
-describe('useSlashAction mode switching', () => {
-  it('/plan sets currentModeId to kiro_planner', () => {
+describe('useSlashAction /plan toggle', () => {
+  it('/plan enables plan mode from default', () => {
     const { result } = renderHook(() => useSlashAction())
     act(() => { result.current.execute('/plan') })
     expect(useSettingsStore.getState().currentModeId).toBe('kiro_planner')
   })
 
-  it('/chat sets currentModeId to kiro_default', () => {
+  it('/plan disables plan mode when already in plan mode', () => {
     useSettingsStore.setState({ currentModeId: 'kiro_planner' })
     const { result } = renderHook(() => useSlashAction())
-    act(() => { result.current.execute('/chat') })
+    act(() => { result.current.execute('/plan') })
     expect(useSettingsStore.getState().currentModeId).toBe('kiro_default')
   })
 
-  it('/plan calls ipc.setMode with kiro_planner when task is selected', () => {
+  it('/plan calls ipc.setMode with kiro_planner when enabling', () => {
     const { result } = renderHook(() => useSlashAction())
     act(() => { result.current.execute('/plan') })
     expect(ipc.setMode).toHaveBeenCalledWith('task-1', 'kiro_planner')
   })
 
-  it('/chat calls ipc.setMode with kiro_default when task is selected', () => {
+  it('/plan calls ipc.setMode with kiro_default when disabling', () => {
+    useSettingsStore.setState({ currentModeId: 'kiro_planner' })
     const { result } = renderHook(() => useSlashAction())
-    act(() => { result.current.execute('/chat') })
+    act(() => { result.current.execute('/plan') })
     expect(ipc.setMode).toHaveBeenCalledWith('task-1', 'kiro_default')
   })
 
@@ -97,12 +98,10 @@ describe('useSlashAction mode switching', () => {
     expect(task.messages[0].content).toContain('Plan mode')
   })
 
-  it('execute returns true for /plan and /chat', () => {
+  it('execute returns true for /plan', () => {
     const { result } = renderHook(() => useSlashAction())
     let handled: boolean
     act(() => { handled = result.current.execute('/plan') })
-    expect(handled!).toBe(true)
-    act(() => { handled = result.current.execute('/chat') })
     expect(handled!).toBe(true)
   })
 
@@ -117,7 +116,6 @@ describe('useSlashAction mode switching', () => {
 describe('createTask passes modeId', () => {
   it('includes modeId when currentModeId is kiro_planner', async () => {
     useSettingsStore.setState({ currentModeId: 'kiro_planner', activeWorkspace: '/ws' })
-    // Simulate what PendingChat/ChatPanel does
     const { currentModeId } = useSettingsStore.getState()
     const modeId = currentModeId && currentModeId !== 'kiro_default' ? currentModeId : undefined
     await ipc.createTask({ name: 'Test', workspace: '/ws', prompt: 'hello', modeId })
