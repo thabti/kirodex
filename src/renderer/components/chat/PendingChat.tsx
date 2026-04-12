@@ -15,10 +15,11 @@ export function PendingChat({ workspace }: PendingChatProps) {
 
   const handleSend = useCallback(async (msg: string) => {
     const name = msg.length > 60 ? msg.slice(0, 57) + '\u2026' : msg
-    const { settings, activeWorkspace } = useSettingsStore.getState()
+    const { settings, activeWorkspace, currentModeId } = useSettingsStore.getState()
     const projectPrefs = activeWorkspace ? settings.projectPrefs?.[activeWorkspace] : undefined
     const autoApprove = projectPrefs?.autoApprove !== undefined ? projectPrefs.autoApprove : settings.autoApprove
-    const created = await ipc.createTask({ name, workspace, prompt: msg, autoApprove })
+    const modeId = currentModeId && currentModeId !== 'kiro_default' ? currentModeId : undefined
+    const created = await ipc.createTask({ name, workspace, prompt: msg, autoApprove, modeId })
     upsertTask(created)
     setPendingWorkspace(null)
     setSelectedTask(created.id)
