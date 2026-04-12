@@ -1,5 +1,6 @@
 {
   "bundle": {
-    "createUpdaterArtifacts": "v1Compatible"
+    "createUpdaterArtifacts": "v1Compatible",
+    "icon": ["icons/prod/icon.png", "icons/prod/icon.icns", "icons/prod/icon.ico"]
   }
 }
