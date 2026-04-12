@@ -237,23 +237,23 @@ input[type="search"] {
 .chat-markdown blockquote,
 .chat-markdown pre,
 .chat-markdown table {
-  margin: 0.5rem 0;
+  margin: 0.625rem 0;
 }
 
 /* ── Lists ── */
-.chat-markdown ul { padding-left: 1.25rem; list-style-type: disc; }
-.chat-markdown ol { padding-left: 1.25rem; list-style-type: decimal; }
+.chat-markdown ul { padding-left: 1.5rem; list-style-type: disc; }
+.chat-markdown ol { padding-left: 1.5rem; list-style-type: decimal; }
 .chat-markdown ul ul   { list-style-type: circle; }
 .chat-markdown ul ul ul { list-style-type: square; }
 .chat-markdown ol ol   { list-style-type: lower-alpha; }
 .chat-markdown ol ol ol { list-style-type: lower-roman; }
-.chat-markdown li + li  { margin-top: 0.2rem; }
+.chat-markdown li + li  { margin-top: 0.3rem; }
 .chat-markdown li::marker { color: var(--muted-foreground); }
 
 /* ── Headings ── */
-.chat-markdown h1 { font-size: 1rem;    font-weight: 600; margin: 1.25rem 0 0.5rem; }
-.chat-markdown h2 { font-size: 0.875rem; font-weight: 600; margin: 1rem 0 0.375rem; }
-.chat-markdown h3 { font-size: 0.875rem; font-weight: 500; margin: 0.75rem 0 0.25rem; }
+.chat-markdown h1 { font-size: 1.1875rem; font-weight: 600; margin: 1.5rem 0 0.625rem; }
+.chat-markdown h2 { font-size: 1.0625rem; font-weight: 600; margin: 1.25rem 0 0.5rem; }
+.chat-markdown h3 { font-size: 0.9375rem; font-weight: 500; margin: 1rem 0 0.375rem; }
 
 /* ── Blockquote ── */
 .chat-markdown blockquote {
@@ -264,11 +264,11 @@ input[type="search"] {
 }
 
 /* ── Table ── */
-.chat-markdown table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }
+.chat-markdown table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
 .chat-markdown th,
 .chat-markdown td {
   border: 1px solid var(--border);
-  padding: 0.375rem 0.625rem;
+  padding: 0.4375rem 0.75rem;
   text-align: left;
 }
 .chat-markdown th { font-weight: 500; background: var(--muted); }

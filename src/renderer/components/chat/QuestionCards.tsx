@@ -256,14 +256,14 @@ export const QuestionCards = memo(function QuestionCards({
   const selectedCount = Object.keys(selections).length;
 
   return (
-    <div className="my-3 rounded-2xl border border-border bg-muted shadow-lg">
+    <div className="my-4 rounded-2xl border border-border bg-muted shadow-lg">
       {/* Header: question + pagination */}
-      <div className="flex items-start gap-3 px-5 pt-4 pb-3">
-        <p className="flex-1 text-[13px] font-medium leading-relaxed text-foreground">
+      <div className="flex items-start gap-3 px-6 pt-5 pb-4">
+        <p className="flex-1 text-[15px] font-medium leading-relaxed text-foreground">
           {current?.question}
         </p>
         {total > 1 && (
-          <div className="flex shrink-0 items-center gap-1 text-[11px] text-muted-foreground/50">
+          <div className="flex shrink-0 items-center gap-1 text-[12px] text-muted-foreground/50">
             <button
               type="button"
               onClick={() => setPage((p) => Math.max(0, p - 1))}
@@ -291,7 +291,7 @@ export const QuestionCards = memo(function QuestionCards({
 
       {/* Options */}
       {current?.options.length > 0 && (
-        <div className="flex flex-col gap-0.5 px-3 pb-2">
+        <div className="flex flex-col gap-1 px-4 pb-3">
           {current.options.map((opt) => {
             const isSelected = selections[current.number] === opt.letter;
             return (
@@ -300,7 +300,7 @@ export const QuestionCards = memo(function QuestionCards({
                 type="button"
                 onClick={() => handleSelect(current.number, opt.letter)}
                 className={cn(
-                  "flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-2 text-left text-[12.5px] transition-all",
+                  "flex cursor-pointer items-center gap-3 rounded-lg border px-4 py-2.5 text-left text-[14px] transition-all",
                   isSelected
                     ? "border-primary/30 bg-primary/8 text-foreground"
                     : "border-border/40 bg-transparent text-foreground/60 hover:border-primary/30 hover:bg-muted/30",
@@ -308,14 +308,14 @@ export const QuestionCards = memo(function QuestionCards({
               >
                 <span
                   className={cn(
-                    "shrink-0 font-mono text-[12px] font-semibold",
+                    "shrink-0 font-mono text-[13px] font-semibold",
                     isSelected ? "text-primary" : "text-gray-300",
                   )}
                 >
                   {opt.letter}.
                 </span>
                 <span
-                  className={cn("text-[12px]", isSelected && "font-medium")}
+                  className={cn("text-[13px]", isSelected && "font-medium")}
                 >
                   {opt.text}
                 </span>
@@ -326,30 +326,30 @@ export const QuestionCards = memo(function QuestionCards({
       )}
 
       {/* Extra text input for custom answers */}
-      <div className="px-5 pb-3">
+      <div className="px-6 pb-4">
         <input
           type="text"
           value={currentExtra}
           onChange={(e) => setExtraText((prev) => ({ ...prev, [current?.number ?? '']: e.target.value }))}
           placeholder="Add extra context (optional)"
-          className="w-full rounded-lg border border-border/50 bg-background/50 px-3 py-1.5 text-[12px] text-black dark:text-white outline-none placeholder:text-muted-foreground/30 focus:border-primary/30"
+          className="w-full rounded-lg border border-border/50 bg-background/50 px-3.5 py-2 text-[13px] text-black dark:text-white outline-none placeholder:text-muted-foreground/30 focus:border-primary/30"
         />
       </div>
 
       {/* Footer: dismiss + continue */}
-      <div className="flex items-center justify-end gap-2 border-t border-border/30 px-4 py-2.5">
+      <div className="flex items-center justify-end gap-2 border-t border-border/30 px-5 py-3">
         {selectedCount > 0 && total > 1 && (
-          <span className="mr-auto text-[10px] text-muted-foreground/40">
+          <span className="mr-auto text-[11px] text-muted-foreground/40">
             {selectedCount} of {total} answered
           </span>
         )}
         <button
           type="button"
           onClick={handleDismiss}
-          className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] text-muted-foreground/60 transition-colors hover:text-foreground"
+          className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12px] text-muted-foreground/60 transition-colors hover:text-foreground"
         >
           Dismiss
-          <kbd className="rounded border border-border/50 bg-muted/50 px-1 py-0.5 text-[9px] font-medium">
+          <kbd className="rounded border border-border/50 bg-muted/50 px-1 py-0.5 text-[10px] font-medium">
             ESC
           </kbd>
         </button>
@@ -358,7 +358,7 @@ export const QuestionCards = memo(function QuestionCards({
           onClick={handleContinue}
           disabled={!hasAnyInput}
           className={cn(
-            "flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-[11px] font-medium transition-all",
+            "flex items-center gap-1.5 rounded-lg px-4 py-2 text-[12px] font-medium transition-all",
             hasAnyInput
               ? "bg-primary text-primary-foreground hover:bg-primary/90"
               : "bg-muted text-muted-foreground/40 cursor-not-allowed",

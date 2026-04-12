@@ -43,19 +43,19 @@ export const TaskCompletionCard = memo(function TaskCompletionCard({ report }: {
 
   return (
     <div
-      className={cn('mt-3 rounded-lg border p-3', cfg.border, cfg.bg)}
+      className={cn('mt-4 rounded-lg border p-4', cfg.border, cfg.bg)}
       data-testid="task-completion-card"
       role="status"
       aria-label={`Task ${cfg.label}: ${report.summary}`}
     >
       <div className="flex items-center gap-2">
         <Icon className={cn('size-4 shrink-0', cfg.color)} aria-hidden />
-        <span className={cn('text-xs font-medium', cfg.color)}>{cfg.label}</span>
+        <span className={cn('text-[13px] font-medium', cfg.color)}>{cfg.label}</span>
       </div>
-      <p className="mt-1.5 text-[13px] leading-relaxed text-foreground/80">{report.summary}</p>
+      <p className="mt-2 text-[15px] leading-relaxed text-foreground/80">{report.summary}</p>
 
       {hasStats && (
-        <div className="mt-2 flex items-center gap-3 text-[11px] text-muted-foreground/60">
+        <div className="mt-2.5 flex items-center gap-3 text-[12px] text-muted-foreground/60">
           {(report.linesAdded ?? 0) > 0 && (
             <span className="flex items-center gap-0.5 text-emerald-400/70">
               <IconPlus className="size-3" aria-hidden />
@@ -72,9 +72,9 @@ export const TaskCompletionCard = memo(function TaskCompletionCard({ report }: {
       )}
 
       {files.length > 0 && (
-        <div className="mt-2 space-y-0.5">
+        <div className="mt-2.5 space-y-0.5">
           {files.map((f) => (
-            <div key={f} className="flex items-center gap-1.5 text-[11px] text-muted-foreground/50">
+            <div key={f} className="flex items-center gap-1.5 text-[12px] text-muted-foreground/50">
               <IconFile className="size-3 shrink-0" aria-hidden />
               <span className="truncate">{f}</span>
             </div>

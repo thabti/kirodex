@@ -48,9 +48,9 @@ export const PermissionBanner = memo(function PermissionBanner({
 
   return (
     <div data-testid="permission-banner" className="mx-auto w-full max-w-3xl shrink-0 px-4 pb-2 sm:px-6 lg:max-w-4xl xl:max-w-5xl">
-      <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-3 py-2">
-        <IconShieldExclamation className="size-4 shrink-0 text-amber-500 dark:text-amber-400" />
-        <p className="min-w-0 flex-1 truncate text-xs text-foreground">
+      <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-2.5">
+        <IconShieldExclamation className="size-5 shrink-0 text-amber-500 dark:text-amber-400" />
+        <p className="min-w-0 flex-1 truncate text-[13px] text-foreground">
           <span className="font-medium">Kiro</span>
           <span className="text-muted-foreground"> wants to use </span>
           <span className="font-medium">{displayName}</span>
@@ -63,7 +63,7 @@ export const PermissionBanner = memo(function PermissionBanner({
                 key={opt.optionId}
                 onClick={() => onSelect(opt.optionId)}
                 className={cn(
-                  'inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium transition-colors',
+                  'inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-[12px] font-medium transition-colors',
                   KIND_STYLES[opt.kind] ?? 'text-muted-foreground hover:bg-accent',
                 )}
               >
@@ -76,13 +76,13 @@ export const PermissionBanner = memo(function PermissionBanner({
             <>
               <button
                 onClick={() => onSelect('__allow__')}
-                className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-2 py-1 text-[11px] font-medium text-emerald-600 transition-colors hover:bg-emerald-500/20 dark:text-emerald-400"
+                className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-2.5 py-1.5 text-[12px] font-medium text-emerald-600 transition-colors hover:bg-emerald-500/20 dark:text-emerald-400"
               >
                 <IconCheck className="size-3" /> Allow
               </button>
               <button
                 onClick={() => onSelect('__deny__')}
-                className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                className="inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-[12px] font-medium text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
               >
                 <IconX className="size-3" /> Deny
               </button>

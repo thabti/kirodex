@@ -170,7 +170,7 @@ function groupByDirectory(files: readonly FileStats[]): DirGroup[] {
 
 const Stats = memo(function Stats({ additions, deletions }: { additions: number; deletions: number }) {
   return (
-    <span className="ml-auto shrink-0 font-mono text-[10px] tabular-nums">
+    <span className="ml-auto shrink-0 font-mono text-[11px] tabular-nums">
       <span className="text-emerald-400">+{additions}</span>
       <span className="mx-0.5 text-foreground/30">/</span>
       <span className="text-red-400/80">-{deletions}</span>
@@ -189,7 +189,7 @@ const FileRow = memo(function FileRow({ file, depth, onClick }: { file: FileStat
     >
       <span aria-hidden className="size-3.5 shrink-0" />
       <FileIcon className="shrink-0 size-3.5 text-foreground/40" aria-hidden />
-      <span className="truncate font-mono text-[11px] text-foreground/60 group-hover:text-foreground/90">
+      <span className="truncate font-mono text-[12px] text-foreground/60 group-hover:text-foreground/90">
         {file.name}
       </span>
       <Stats additions={file.additions} deletions={file.deletions} />
@@ -245,10 +245,10 @@ export const ChangedFilesSummary = memo(function ChangedFilesSummary({ row }: { 
 
   return (
     <div className="pt-2 pb-4" data-timeline-row-kind="changed-files">
-      <div className="rounded-lg border border-border/80 bg-card/45 p-2.5">
+      <div className="rounded-lg border border-border/80 bg-card/45 p-3">
       {/* Header */}
       <div className="mb-1.5 flex items-center justify-between gap-2">
-        <p className="text-[10px] uppercase tracking-[0.12em] text-foreground/40">
+        <p className="text-[11px] uppercase tracking-[0.12em] text-foreground/40">
           <span>Changed files ({totalFiles})</span>
           <span className="mx-1">&middot;</span>
           <span className="text-emerald-400">+{totals.additions}</span>
@@ -260,7 +260,7 @@ export const ChangedFilesSummary = memo(function ChangedFilesSummary({ row }: { 
             <button
               type="button"
               onClick={toggleAll}
-              className="rounded-md border border-input bg-popover px-2 py-0.5 text-[11px] font-medium text-foreground shadow-xs/5 transition-colors hover:bg-accent/50"
+              className="rounded-md border border-input bg-popover px-2 py-0.5 text-[12px] font-medium text-foreground shadow-xs/5 transition-colors hover:bg-accent/50"
             >
               {allCollapsed ? 'Expand all' : 'Collapse all'}
             </button>
@@ -268,7 +268,7 @@ export const ChangedFilesSummary = memo(function ChangedFilesSummary({ row }: { 
           <button
             type="button"
             onClick={handleViewDiff}
-            className="rounded-md border border-input bg-popover px-2 py-0.5 text-[11px] font-medium text-foreground shadow-xs/5 transition-colors hover:bg-accent/50"
+            className="rounded-md border border-input bg-popover px-2 py-0.5 text-[12px] font-medium text-foreground shadow-xs/5 transition-colors hover:bg-accent/50"
           >
             View diff
           </button>
@@ -300,7 +300,7 @@ export const ChangedFilesSummary = memo(function ChangedFilesSummary({ row }: { 
                   {isDirCollapsed
                     ? <IconFolder className="size-3.5 shrink-0 text-foreground/35" aria-hidden />
                     : <IconFolderOpen className="size-3.5 shrink-0 text-foreground/35" aria-hidden />}
-                  <span className="truncate font-mono text-[11px] text-foreground/50 group-hover:text-foreground/80">
+                  <span className="truncate font-mono text-[12px] text-foreground/50 group-hover:text-foreground/80">
                     {group.dir}
                   </span>
                   <Stats additions={group.additions} deletions={group.deletions} />
@@ -332,7 +332,7 @@ export const ChangedFilesSummary = memo(function ChangedFilesSummary({ row }: { 
           <button
             type="button"
             onClick={() => setShowAll(true)}
-            className="flex w-full justify-center py-1.5 text-[11px] text-foreground/30 transition-colors hover:text-foreground/30"
+            className="flex w-full justify-center py-1.5 text-[12px] text-foreground/30 transition-colors hover:text-foreground/30"
           >
             Show {totalFiles - MAX_VISIBLE_FILES} more files
           </button>

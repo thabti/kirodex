@@ -2,6 +2,11 @@
 
 ## 2026-04-12 16:00 GST (Dubai)
 
+### Chat: Full message area UX overhaul — typography, spacing & visual polish
+
+Overhauled the entire chat message area for a more spacious, polished feel inspired by modern AI coding interfaces. Body text bumped from 13px to 15px, secondary text from 11px to 13px, micro labels from 10px to 11px. Line height increased to 1.7 for prose. Generous vertical breathing room added between messages. Tool calls, question cards, thinking display, permission banners, completion cards, inline diffs, and changed files summary all received proportional size and spacing increases.
+
+**Modified:** `src/tailwind.css`, `src/renderer/components/chat/ChatMarkdown.tsx`, `src/renderer/components/chat/UserMessageRow.tsx`, `src/renderer/components/chat/AssistantTextRow.tsx`, `src/renderer/components/chat/WorkGroupRow.tsx`, `src/renderer/components/chat/ToolCallDisplay.tsx`, `src/renderer/components/chat/ToolCallEntry.tsx`, `src/renderer/components/chat/QuestionCards.tsx`, `src/renderer/components/chat/CollapsedAnswers.tsx`, `src/renderer/components/chat/ThinkingDisplay.tsx`, `src/renderer/components/chat/WorkingRow.tsx`, `src/renderer/components/chat/SystemMessageRow.tsx`, `src/renderer/components/chat/PermissionBanner.tsx`, `src/renderer/components/chat/TaskCompletionCard.tsx`, `src/renderer/components/chat/TaskListDisplay.tsx`, `src/renderer/components/chat/InlineDiff.tsx`, `src/renderer/components/chat/ChangedFilesSummary.tsx`, `src/renderer/components/chat/MessageList.tsx`
 ### Chat: Thread draft saving
 
 Added per-workspace draft saving so users don't lose typed content when navigating away from a new thread. Drafts are stored in-memory in the task store, auto-saved on keystroke (300ms debounce), and shown in the sidebar with a "Draft" badge. Clicking a draft navigates back to PendingChat with the content restored; sending clears the draft.

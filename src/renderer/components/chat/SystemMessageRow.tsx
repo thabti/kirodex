@@ -3,11 +3,11 @@ import type { SystemMessageRow as SystemMessageRowData } from '@/lib/timeline'
 
 export const SystemMessageRow = memo(function SystemMessageRow({ row }: { row: SystemMessageRowData }) {
   return (
-    <div className="pb-3 px-1" data-timeline-row-kind="system-message">
-      <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/8 px-3 py-2 text-[13px] text-destructive/80">
+    <div className="pb-5 px-1" data-timeline-row-kind="system-message">
+      <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/8 px-4 py-2.5 text-[15px] text-destructive/80">
         <svg
-          width="14"
-          height="14"
+          width="16"
+          height="16"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
