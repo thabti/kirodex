@@ -1,5 +1,29 @@
 # Kirodex Tauri Activity Log
 
+## 2026-04-12 18:59 GST (Dubai)
+
+### Chat: Add /close and /exit slash commands with Cmd+W shortcut
+
+Added `/close` and `/exit` slash commands that cancel, remove, and delete the current thread. Fixed Cmd+W (macOS) / Ctrl+W (Windows/Linux) to `preventDefault` so it closes the thread instead of the native browser/app window.
+
+**Modified:** src/renderer/hooks/useChatInput.ts, src/renderer/hooks/useSlashAction.ts, src/renderer/hooks/useKeyboardShortcuts.ts
+
+## 2026-04-12 11:32 GST (Dubai)
+
+### ACP: Fix plan mode not sent to backend on new task creation
+
+When switching to /plan mode and then starting a new thread, the mode was lost because `createTask` never passed `currentModeId` to the backend, and the Rust `CreateTaskParams.mode_id` field was dead code. Fixed by wiring `mode_id` through `spawn_connection` → `run_acp_connection`, applying it via `set_session_mode` after session creation. Frontend now passes `currentModeId` from settingsStore when creating draft tasks. Added 11 unit tests for mode switching validation.
+
+**Modified:** src-tauri/src/commands/acp.rs, src/renderer/lib/ipc.ts, src/renderer/components/chat/ChatPanel.tsx, src/renderer/components/chat/PendingChat.tsx, src/renderer/hooks/useSlashAction.test.ts
+
+## 2026-04-12 11:20 GST (Dubai)
+
+### DiffViewer: Make diff line color overlays a very thin layer
+
+Reduced the opacity of addition/deletion background color overlays in the diff panel. Changed `color-mix` percentages in `UNSAFE_CSS`: backgrounds 92%→97% (3% color), emphasis 82%→92% (8% color), line numbers 88%→95% (5% color), hover 86%→93% (7% color). Updated both DiffViewer.tsx and DiffPanel.tsx to stay in sync.
+
+**Modified:** src/renderer/components/code/DiffViewer.tsx, src/renderer/components/diff/DiffPanel.tsx
+
 ## 2026-04-12 11:12 GST (Dubai)
 
 ### AppHeader: Revert top navigation changes from unified title bar migration
