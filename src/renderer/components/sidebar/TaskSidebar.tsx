@@ -75,9 +75,10 @@ export const TaskSidebar = memo(function TaskSidebar({ width, onResize }: TaskSi
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null)
   const dragSrcIdx = useRef<number | null>(null)
 
-  const { selectedTaskId, setSelectedTask, setView, setNewProjectOpen, removeTask, removeProject, archiveThreads, renameProject, renameTask, reorderProject } = useTaskStore(
+  const { selectedTaskId, pendingWorkspace, setSelectedTask, setView, setNewProjectOpen, removeTask, removeProject, archiveThreads, renameProject, renameTask, reorderProject } = useTaskStore(
     useShallow((s) => ({
       selectedTaskId: s.selectedTaskId,
+      pendingWorkspace: s.pendingWorkspace,
       setSelectedTask: s.setSelectedTask,
       setView: s.setView,
       setNewProjectOpen: s.setNewProjectOpen,
@@ -90,8 +91,27 @@ export const TaskSidebar = memo(function TaskSidebar({ width, onResize }: TaskSi
     }))
   )
 
-  const handleSelectTask = useCallback((id: string) => { setSelectedTask(id); setView('chat') }, [setSelectedTask, setView])
-  const handleDeleteTask = useCallback((id: string) => { void ipc.cancelTask(id).catch(() => {}); removeTask(id); void ipc.deleteTask(id) }, [removeTask])
+  const handleSelectTask = useCallback((id: string) => {
+    if (id.startsWith('draft:')) {
+      useTaskStore.getState().setPendingWorkspace(id.slice(6))
+    } else {
+      setSelectedTask(id); setView('chat')
+    }
+  }, [setSelectedTask, setView])
+  const handleDeleteTask = useCallback((id: string) => {
+    if (id.startsWith('draft:')) {
+      const ws = id.slice(6)
+      const store = useTaskStore.getState()
+      // Clear pendingWorkspace first so PendingChat unmounts before removeDraft,
+      // preventing the unmount flush from resurrecting the draft
+      if (store.pendingWorkspace === ws) {
+        store.setPendingWorkspace(null)
+      }
+      store.removeDraft(ws)
+    } else {
+      void ipc.cancelTask(id).catch(() => {}); removeTask(id); void ipc.deleteTask(id)
+    }
+  }, [removeTask])
   const handleNewThread = useCallback((workspace: string) => { useTaskStore.getState().setPendingWorkspace(workspace) }, [])
 
   // Project drag-to-reorder handlers
@@ -152,7 +172,7 @@ export const TaskSidebar = memo(function TaskSidebar({ width, onResize }: TaskSi
                   name={project.name}
                   cwd={project.cwd}
                   tasks={project.tasks}
-                  selectedTaskId={selectedTaskId}
+                  selectedTaskId={selectedTaskId ?? (pendingWorkspace ? `draft:${pendingWorkspace}` : null)}
                   isDragOver={dragOverIdx === idx && dragSrcIdx.current !== idx}
                   onSelectTask={handleSelectTask}
                   onNewThread={() => handleNewThread(project.cwd)}

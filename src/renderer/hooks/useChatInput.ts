@@ -30,12 +30,14 @@ function makePlaceholder(id: number, lines: number, chars: number): string {
 interface UseChatInputOptions {
   disabled?: boolean
   isRunning?: boolean
+  initialValue?: string
   onSendMessage: (message: string) => void
   onPause?: () => void
+  onDraftChange?: (value: string) => void
 }
 
-export function useChatInput({ disabled, isRunning, onSendMessage, onPause }: UseChatInputOptions) {
-  const [value, setValue] = useState('')
+export function useChatInput({ disabled, isRunning, initialValue, onSendMessage, onPause, onDraftChange }: UseChatInputOptions) {
+  const [value, setValue] = useState(initialValue ?? '')
   const [slashIndex, setSlashIndex] = useState(0)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const backendCommands = useSettingsStore((s) => s.availableCommands)
@@ -122,6 +124,23 @@ export function useChatInput({ disabled, isRunning, onSendMessage, onPause }: Us
       }),
     )
   }, [value]) // eslint-disable-line react-hooks/exhaustive-deps -- intentionally only reacts to value
+
+  // ── Draft save (debounced) ─────────────────────────────────────
+  const onDraftChangeRef = useRef(onDraftChange)
+  onDraftChangeRef.current = onDraftChange
+  const valueRef = useRef(value)
+  valueRef.current = value
+
+  useEffect(() => {
+    if (!onDraftChangeRef.current) return
+    const timer = setTimeout(() => onDraftChangeRef.current?.(value), 300)
+    return () => clearTimeout(timer)
+  }, [value])
+
+  // Flush draft on unmount so a fast navigate doesn't lose the last keystrokes
+  useEffect(() => {
+    return () => onDraftChangeRef.current?.(valueRef.current)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps -- intentional unmount-only effect
 
   // ── Message history cycling (ArrowUp/Down) ─────────────────────
   // -1 = composing new message, 0 = most recent, 1 = second most recent, etc.

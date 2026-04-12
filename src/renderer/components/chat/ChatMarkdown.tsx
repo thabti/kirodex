@@ -74,7 +74,7 @@ function stabilizeStreamingMarkdown(text: string): string {
 }
 
 /** Single source of prose styling — all typography lives here, nothing in tailwind.css */
-const PROSE_CLASSES = 'chat-markdown w-full min-w-0 leading-[1.6] text-foreground'
+const PROSE_CLASSES = 'chat-markdown w-full min-w-0 leading-[1.7] text-[15px] text-foreground'
 
 /** Matches strings that look like file paths (contain / or \ and end with a file extension) */
 const FILE_PATH_RE = /^(?:\.{0,2}[\\/])?(?:[\w.@-]+[\\/])*[\w.@-]+\.\w{1,10}$/
@@ -91,11 +91,11 @@ function ChatMarkdown({ text, isStreaming = false }: ChatMarkdownProps) {
       const lang = extractLanguage(block.className)
       return (
         <div className="group relative my-3 overflow-hidden rounded-lg border border-border/50 bg-muted/50 dark:bg-[#0d1117]">
-          <div className="flex items-center justify-between border-b border-border/40 px-3 py-1.5">
-            <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/50">{lang}</span>
+          <div className="flex items-center justify-between border-b border-border/40 px-3.5 py-2">
+            <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground/50">{lang}</span>
             <CopyButton text={block.code} />
           </div>
-          <pre className="overflow-x-auto px-4 py-3 text-[13px] leading-[1.6] text-foreground">
+          <pre className="overflow-x-auto px-4 py-3.5 text-[14px] leading-[1.6] text-foreground">
             <code className={block.className}>{block.code}</code>
           </pre>
         </div>
@@ -112,7 +112,7 @@ function ChatMarkdown({ text, isStreaming = false }: ChatMarkdownProps) {
             tabIndex={0}
             onClick={() => useDiffStore.getState().openToFile(text)}
             onKeyDown={(e) => e.key === 'Enter' && useDiffStore.getState().openToFile(text)}
-            className="cursor-pointer rounded-md border border-border/50 bg-muted px-1.5 py-0.5 text-[12.5px] text-primary underline decoration-primary/30 underline-offset-2 transition-colors hover:bg-accent hover:decoration-primary/60"
+            className="cursor-pointer rounded-md border border-border/50 bg-muted px-1.5 py-0.5 text-[13.5px] text-primary underline decoration-primary/30 underline-offset-2 transition-colors hover:bg-accent hover:decoration-primary/60"
             title={`Open diff for ${text}`}
             {...props}
           >
@@ -122,7 +122,7 @@ function ChatMarkdown({ text, isStreaming = false }: ChatMarkdownProps) {
       }
       return (
         <code
-          className="rounded-md border border-border/50 bg-muted px-1.5 py-0.5 text-[12.5px] text-foreground"
+          className="rounded-md border border-border/50 bg-muted px-1.5 py-0.5 text-[13.5px] text-foreground"
           {...props}
         >
           {children}

@@ -10,3 +10,4 @@ coverage
 *.key
 *.csr
 *.cer
+.claude/

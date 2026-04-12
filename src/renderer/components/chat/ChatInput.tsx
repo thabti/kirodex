@@ -30,12 +30,14 @@ interface ChatInputProps {
   contextUsage?: { used: number; size: number } | null
   messageCount?: number
   isRunning?: boolean
+  initialValue?: string
   onSendMessage: (message: string) => void
   onPause?: () => void
+  onDraftChange?: (value: string) => void
   workspace?: string | null
 }
 
-export const ChatInput = memo(function ChatInput({ disabled, contextUsage, messageCount = 0, isRunning, onSendMessage, onPause, workspace }: ChatInputProps) {
+export const ChatInput = memo(function ChatInput({ disabled, contextUsage, messageCount = 0, isRunning, initialValue, onSendMessage, onPause, onDraftChange, workspace }: ChatInputProps) {
   const {
     value, setValue, textareaRef, canSend,
     slashIndex, slashQuery, commands, filteredCmds, showPicker,
@@ -46,7 +48,7 @@ export const ChatInput = memo(function ChatInput({ disabled, contextUsage, messa
     handleRemoveAttachment, handlePaste, handleFilePickerClick, handleFileInputChange,
     pastedChunks, handleRemoveChunk,
     handleChange, handleSend, handleKeyDown, handleSelect,
-  } = useChatInput({ disabled, isRunning, onSendMessage, onPause })
+  } = useChatInput({ disabled, isRunning, initialValue, onSendMessage, onPause, onDraftChange })
 
   const currentModeId = useSettingsStore((s) => s.currentModeId)
 

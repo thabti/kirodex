@@ -15,12 +15,12 @@ import {
 const AUTO_SCROLL_THRESHOLD = 150
 
 const ROW_ESTIMATES: Record<TimelineRow['kind'], number> = {
-  'user-message': 60,
-  'system-message': 60,
-  'assistant-text': 80,
-  'work': 120,
-  'working': 40,
-  'changed-files': 140,
+  'user-message': 72,
+  'system-message': 72,
+  'assistant-text': 96,
+  'work': 140,
+  'working': 48,
+  'changed-files': 160,
 }
 
 interface MessageListProps {
@@ -96,13 +96,13 @@ export const MessageList = memo(function MessageList({
   if (!timelineRows.length) {
     return (
       <div className="flex flex-1 items-center justify-center text-muted-foreground">
-        <p className="text-sm">Send a message to start the conversation.</p>
+        <p className="text-[15px]">Send a message to start the conversation.</p>
       </div>
     )
   }
 
   return (
-    <div ref={parentRef} data-testid="message-list" className="relative min-h-0 flex-1 overflow-auto overscroll-y-contain px-0 py-3 sm:py-4">
+    <div ref={parentRef} data-testid="message-list" className="relative min-h-0 flex-1 overflow-auto overscroll-y-contain px-0 py-4 sm:py-6">
       <div
         className="relative w-full"
         style={{ height: `${virtualizer.getTotalSize()}px` }}
@@ -118,7 +118,7 @@ export const MessageList = memo(function MessageList({
               className="absolute left-0 top-0 w-full"
               style={{ transform: `translateY(${virtualRow.start}px)` }}
             >
-              <div className="mx-auto w-full min-w-0 max-w-3xl overflow-x-hidden px-4 sm:px-6 lg:max-w-4xl xl:max-w-5xl">
+              <div className="mx-auto w-full min-w-0 max-w-3xl overflow-x-hidden px-5 sm:px-8 lg:max-w-4xl xl:max-w-5xl">
                 <TimelineRowRenderer row={row} />
               </div>
             </div>
@@ -131,7 +131,7 @@ export const MessageList = memo(function MessageList({
           type="button"
           onClick={scrollToBottom}
           data-testid="scroll-to-bottom-button"
-          className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs text-muted-foreground shadow-lg transition-colors hover:bg-secondary"
+          className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-2 text-[13px] text-muted-foreground shadow-lg transition-colors hover:bg-secondary"
         >
           <IconArrowDown className="size-3" />
           Scroll to bottom

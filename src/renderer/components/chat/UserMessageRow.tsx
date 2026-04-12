@@ -23,24 +23,24 @@ function renderWithMentions(text: string): ReactNode {
     if (ref.startsWith('agent:')) {
       const name = ref.slice(6)
       parts.push(
-        <span key={idx} className="mx-0.5 inline-flex items-center gap-0.5 rounded bg-blue-500/15 px-1 py-px align-middle text-[11px] font-medium leading-normal text-blue-400">
-          <IconRobot className="size-2.5 shrink-0" />{name}
+        <span key={idx} className="mx-0.5 inline-flex items-center gap-0.5 rounded bg-blue-500/15 px-1 py-px align-middle text-[13px] font-medium leading-normal text-blue-400">
+          <IconRobot className="size-3 shrink-0" />{name}
         </span>
       )
     } else if (ref.startsWith('skill:')) {
       const name = ref.slice(6)
       parts.push(
-        <span key={idx} className="mx-0.5 inline-flex items-center gap-0.5 rounded bg-yellow-500/15 px-1 py-px align-middle text-[11px] font-medium leading-normal text-yellow-400">
-          <IconTool className="size-2.5 shrink-0" />{name}
+        <span key={idx} className="mx-0.5 inline-flex items-center gap-0.5 rounded bg-yellow-500/15 px-1 py-px align-middle text-[13px] font-medium leading-normal text-yellow-400">
+          <IconTool className="size-3 shrink-0" />{name}
         </span>
       )
     } else {
       parts.push(
         <button key={idx} type="button"
           onClick={() => useDiffStore.getState().openToFile(ref)}
-          className="mx-0.5 inline-flex items-center gap-0.5 rounded bg-accent/40 px-1 py-px align-middle font-mono text-[11px] leading-normal text-foreground/60 transition-colors hover:bg-accent hover:text-foreground cursor-pointer"
+          className="mx-0.5 inline-flex items-center gap-0.5 rounded bg-accent/40 px-1 py-px align-middle font-mono text-[13px] leading-normal text-foreground/60 transition-colors hover:bg-accent hover:text-foreground cursor-pointer"
         >
-          <IconFileText className="size-2.5 shrink-0" />{ref.split('/').pop()}
+          <IconFileText className="size-3 shrink-0" />{ref.split('/').pop()}
         </button>
       )
     }
@@ -86,7 +86,7 @@ const AttachmentPill = memo(function AttachmentPill({ name, type, src }: { name:
       <button
         type="button"
         onClick={() => type === 'image' && src && setShowPreview((v) => !v)}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-border/50 bg-background/50 px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-accent/30"
+        className="inline-flex items-center gap-1.5 rounded-lg border border-border/50 bg-background/50 px-2 py-1 text-[13px] text-muted-foreground transition-colors hover:bg-accent/30"
       >
         <Icon className="size-3 shrink-0" />
         <span className="max-w-[200px] truncate">{name}</span>
@@ -117,16 +117,16 @@ export const UserMessageRow = memo(function UserMessageRow({ row }: { row: UserM
   const { text: cleanText, attachments: parsedAttachments } = useMemo(() => parseAttachments(row.content), [row.content])
 
   return (
-    <div data-testid="user-message-row" className="pb-3" data-timeline-row-kind="user-message">
+    <div data-testid="user-message-row" className="pb-5" data-timeline-row-kind="user-message">
       <div className="flex justify-end">
         <div className="group relative max-w-[75%]">
-          <div className="rounded-2xl rounded-br-md bg-primary/10 px-3.5 py-2 dark:bg-primary/[0.08]">
+          <div className="rounded-2xl rounded-br-md bg-primary/10 px-4 py-2.5 dark:bg-primary/[0.08]">
             {row.questionAnswers?.length ? (
               <CollapsedAnswers questionAnswers={row.questionAnswers} />
             ) : (
               <div className="space-y-2">
                 {cleanText && (
-                  <p className="whitespace-pre-wrap break-words leading-[1.6] text-foreground">
+                  <p className="whitespace-pre-wrap break-words text-[15px] leading-[1.7] text-foreground">
                     {renderWithMentions(cleanText)}
                   </p>
                 )}
@@ -159,7 +159,7 @@ export const UserMessageRow = memo(function UserMessageRow({ row }: { row: UserM
                 {copied ? 'Copied!' : 'Copy message'}
               </TooltipContent>
             </Tooltip>
-            <span className="text-[10px] tabular-nums text-muted-foreground/30">
+            <span className="text-[11px] tabular-nums text-muted-foreground/30">
               {timeStr}
             </span>
           </div>

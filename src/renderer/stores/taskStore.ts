@@ -29,6 +29,10 @@ interface TaskStore {
   activityFeed: ActivityEntry[]
   connected: boolean
   terminalOpenTasks: Set<string>
+  /** Per-workspace draft text (in-memory only, not persisted to disk) */
+  drafts: Record<string, string>
+  /** One-shot guard: workspace whose next setDraft call should be suppressed */
+  _suppressDraftSave: string | null
   setSelectedTask: (id: string | null) => void
   setView: (view: 'chat' | 'dashboard') => void
   setNewProjectOpen: (open: boolean) => void
@@ -54,6 +58,8 @@ interface TaskStore {
   projectNames: Record<string, string>
   renameProject: (workspace: string, name: string) => void
   reorderProject: (from: number, to: number) => void
+  setDraft: (workspace: string, content: string) => void
+  removeDraft: (workspace: string) => void
   toggleTerminal: (taskId: string) => void
   loadTasks: () => Promise<void>
   setConnected: (v: boolean) => void
@@ -79,6 +85,8 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   activityFeed: [],
   connected: false,
   terminalOpenTasks: new Set<string>(),
+  drafts: {},
+  _suppressDraftSave: null,
 
   setSelectedTask: (id) => {
     if (get().selectedTaskId === id) return
@@ -104,11 +112,14 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     const selectedTaskId = taskIds.includes(s.selectedTaskId ?? '') ? null : s.selectedTaskId
     const deletedTaskIds = new Set(s.deletedTaskIds)
     taskIds.forEach((id) => deletedTaskIds.add(id))
+    const { [workspace]: _, ...drafts } = s.drafts
     return {
       projects: s.projects.filter((p) => p !== workspace),
       tasks,
       selectedTaskId,
       deletedTaskIds,
+      drafts,
+      pendingWorkspace: s.pendingWorkspace === workspace ? null : s.pendingWorkspace,
       view: selectedTaskId === null && s.view === 'chat' ? 'dashboard' : s.view,
     }
   }),
@@ -350,6 +361,37 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
       return { projects: arr }
     }),
 
+  setDraft: (workspace, content) => {
+    // Skip save if this workspace was just explicitly deleted (unmount flush guard)
+    if (get()._suppressDraftSave === workspace) {
+      set({ _suppressDraftSave: null })
+      return
+    }
+    const trimmed = content.trim()
+    if (!trimmed) {
+      // Remove empty drafts
+      const { [workspace]: _, ...rest } = get().drafts
+      if (_ === undefined) return  // bail-out: nothing to remove
+      set({ drafts: rest })
+    } else {
+      if (get().drafts[workspace] === content) return  // bail-out: no change
+      set((s) => ({ drafts: { ...s.drafts, [workspace]: content } }))
+    }
+  },
+
+  removeDraft: (workspace) => {
+    if (get().drafts[workspace] === undefined) return
+    set((s) => {
+      const { [workspace]: _, ...rest } = s.drafts
+      return {
+        drafts: rest,
+        // Suppress the next setDraft call for this workspace so the
+        // PendingChat unmount flush doesn't resurrect the deleted draft
+        _suppressDraftSave: workspace,
+      }
+    })
+  },
+
   toggleTerminal: (taskId) => set((s) => {
     const next = new Set(s.terminalOpenTasks)
     if (next.has(taskId)) next.delete(taskId); else next.add(taskId)
@@ -441,6 +483,8 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
       liveToolCalls: {},
       queuedMessages: {},
       terminalOpenTasks: new Set<string>(),
+      drafts: {},
+      _suppressDraftSave: null,
     })
     // Reset settings to defaults and go back to onboarding
     const defaultSettings = { ...useSettingsStore.getState().settings, hasOnboarded: false, projectPrefs: {} }

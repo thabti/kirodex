@@ -12,8 +12,16 @@ export function PendingChat({ workspace }: PendingChatProps) {
   const upsertTask = useTaskStore((s) => s.upsertTask)
   const setSelectedTask = useTaskStore((s) => s.setSelectedTask)
   const setPendingWorkspace = useTaskStore((s) => s.setPendingWorkspace)
+  const draft = useTaskStore((s) => s.drafts[workspace])
+  const setDraft = useTaskStore((s) => s.setDraft)
+  const removeDraft = useTaskStore((s) => s.removeDraft)
+
+  const handleDraftChange = useCallback((val: string) => {
+    setDraft(workspace, val)
+  }, [workspace, setDraft])
 
   const handleSend = useCallback(async (msg: string) => {
+    removeDraft(workspace)
     const name = msg.length > 60 ? msg.slice(0, 57) + '\u2026' : msg
     const { settings, activeWorkspace, currentModeId } = useSettingsStore.getState()
     const projectPrefs = activeWorkspace ? settings.projectPrefs?.[activeWorkspace] : undefined
@@ -23,7 +31,7 @@ export function PendingChat({ workspace }: PendingChatProps) {
     upsertTask(created)
     setPendingWorkspace(null)
     setSelectedTask(created.id)
-  }, [workspace, upsertTask, setSelectedTask, setPendingWorkspace])
+  }, [workspace, upsertTask, setSelectedTask, setPendingWorkspace, removeDraft])
 
   const kiroAuth = useSettingsStore((s) => s.kiroAuth)
   const kiroAuthChecked = useSettingsStore((s) => s.kiroAuthChecked)
@@ -56,7 +64,7 @@ export function PendingChat({ workspace }: PendingChatProps) {
           <p className="text-sm text-muted-foreground/40 select-none">New thread</p>
         )}
       </div>
-      <ChatInput disabled={isLoggedOut} onSendMessage={handleSend} workspace={workspace} />
+      <ChatInput disabled={isLoggedOut} initialValue={draft} onDraftChange={handleDraftChange} onSendMessage={handleSend} workspace={workspace} />
     </div>
   )
 }

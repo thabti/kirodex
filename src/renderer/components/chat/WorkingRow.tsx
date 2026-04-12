@@ -36,10 +36,10 @@ export const WorkingRow = memo(function WorkingRow() {
   }, [])
 
   return (
-    <div className="py-1 select-none" data-timeline-row-kind="working">
+    <div className="py-2 select-none" data-timeline-row-kind="working">
       <div className="flex items-center gap-2">
         <span
-          className="text-xs text-muted-foreground/50 transition-opacity duration-300"
+          className="text-[13px] text-muted-foreground/50 transition-opacity duration-300"
           style={{ opacity: visible ? 1 : 0 }}
         >
           {LOADING_WORDS[idx]}&hellip;

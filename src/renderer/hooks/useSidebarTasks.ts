@@ -10,6 +10,7 @@ export interface SidebarTask {
   readonly lastActivityAt: string
   readonly status: string
   readonly isArchived?: boolean
+  readonly isDraft?: boolean
 }
 
 export type SortKey = 'recent' | 'oldest' | 'name-asc' | 'name-desc'
@@ -38,6 +39,7 @@ export function useSidebarTasks(sort: SortKey): readonly SidebarProject[] {
   const tasks = useTaskStore((s) => s.tasks)
   const projects = useTaskStore((s) => s.projects)
   const projectNames = useTaskStore((s) => s.projectNames)
+  const drafts = useTaskStore((s) => s.drafts)
 
   // Extract only sidebar-relevant fields and memoize with structural sharing
   const prevRef = useRef<Map<string, SidebarTask>>(new Map())
@@ -51,7 +53,7 @@ export function useSidebarTasks(sort: SortKey): readonly SidebarProject[] {
       const lastMsg = msgs.length > 0 ? msgs[msgs.length - 1].timestamp : ''
       const lastActivityAt = lastMsg || t.createdAt
       const p = prev.get(t.id)
-      if (p && p.name === t.name && p.status === t.status && p.createdAt === t.createdAt && p.workspace === t.workspace && p.isArchived === t.isArchived && p.lastActivityAt === lastActivityAt) {
+      if (p && p.name === t.name && p.status === t.status && p.createdAt === t.createdAt && p.workspace === t.workspace && p.isArchived === t.isArchived && p.lastActivityAt === lastActivityAt && !p.isDraft) {
         next.set(t.id, p)
       } else {
         changed = true
@@ -75,6 +77,22 @@ export function useSidebarTasks(sort: SortKey): readonly SidebarProject[] {
     // Sort tasks within each group
     for (const [cwd, tasks] of grouped) {
       grouped.set(cwd, sortTasks(tasks, sort))
+    }
+
+    // Inject draft entries at the top of each workspace's list
+    for (const [ws, content] of Object.entries(drafts)) {
+      if (!content.trim()) continue
+      const draftTask: SidebarTask = {
+        id: `draft:${ws}`,
+        name: content.trim(),
+        workspace: ws,
+        createdAt: new Date(0).toISOString(),
+        lastActivityAt: new Date(0).toISOString(),
+        status: 'draft',
+        isDraft: true,
+      }
+      const existing = grouped.get(ws) ?? []
+      grouped.set(ws, [draftTask, ...existing])
     }
 
     // Build project list from all known workspaces
@@ -115,5 +133,5 @@ export function useSidebarTasks(sort: SortKey): readonly SidebarProject[] {
     }
 
     return result as readonly SidebarProject[]
-  }, [sidebarTasks, sort, projects, projectNames])
+  }, [sidebarTasks, sort, projects, projectNames, drafts])
 }

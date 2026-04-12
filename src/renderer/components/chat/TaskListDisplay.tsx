@@ -106,30 +106,30 @@ export const TaskListDisplay = memo(function TaskListDisplay({ toolCall, allTool
       <button
         type="button"
         onClick={() => setExpanded(!expanded)}
-        className="flex w-full items-center gap-2 px-3 py-2 text-left transition-colors hover:bg-accent/5"
+        className="flex w-full items-center gap-2 px-3.5 py-2.5 text-left transition-colors hover:bg-accent/5"
       >
         {expanded ? (
-          <IconChevronDown className="size-3 shrink-0 text-muted-foreground/40" />
+          <IconChevronDown className="size-3.5 shrink-0 text-muted-foreground/40" />
         ) : (
-          <IconChevronRight className="size-3 shrink-0 text-muted-foreground/40" />
+          <IconChevronRight className="size-3.5 shrink-0 text-muted-foreground/40" />
         )}
         <IconListCheck className="size-3.5 shrink-0 text-primary/60" />
-        <span className="flex-1 truncate text-[11px] font-medium text-muted-foreground/70">
+        <span className="flex-1 truncate text-[13px] font-medium text-muted-foreground/70">
           {description ?? 'Task list'}
         </span>
-        <span className="text-[10px] tabular-nums text-muted-foreground/40">
+        <span className="text-[11px] tabular-nums text-muted-foreground/40">
           {completed}/{tasks.length}
         </span>
       </button>
       {expanded && (
-        <div className="border-t border-border/20 px-2 py-1.5">
+        <div className="border-t border-border/20 px-3 py-2">
           {tasks.map((task) => (
-            <div key={task.id} className="flex items-start gap-2 px-1 py-0.5">
+            <div key={task.id} className="flex items-start gap-2 px-1.5 py-1">
               {task.completed
                 ? <IconCircleCheck className="mt-0.5 size-3.5 shrink-0 text-emerald-400/70" />
                 : <IconCircle className="mt-0.5 size-3.5 shrink-0 text-muted-foreground/25" />
               }
-              <span className={`text-[11px] leading-relaxed ${task.completed ? 'text-muted-foreground/40 line-through' : 'text-foreground/70'}`}>
+              <span className={`text-[13px] leading-[1.6] ${task.completed ? 'text-muted-foreground/40 line-through' : 'text-foreground/70'}`}>
                 {task.task_description}
               </span>
             </div>
