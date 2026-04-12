@@ -33,7 +33,7 @@ const tauriListen = <T>(event: string, cb: (payload: T) => void): UnsubscribeFn 
 }
 
 export const ipc = {
-  createTask: (params: { name: string; workspace: string; prompt: string; autoApprove?: boolean }): Promise<AgentTask> =>
+  createTask: (params: { name: string; workspace: string; prompt: string; autoApprove?: boolean; modeId?: string }): Promise<AgentTask> =>
     invoke('task_create', { params }),
   listTasks: (): Promise<AgentTask[]> =>
     invoke('task_list'),
@@ -83,6 +83,8 @@ export const ipc = {
     invoke('git_diff_file', { taskId, filePath }),
   gitDiffStats: (cwd: string): Promise<{ additions: number; deletions: number; fileCount: number }> =>
     invoke('git_diff_stats', { cwd }),
+  gitStagedStats: (cwd: string): Promise<{ additions: number; deletions: number; fileCount: number }> =>
+    invoke('git_staged_stats', { cwd }),
   gitRemoteUrl: (cwd: string): Promise<string> =>
     invoke('git_remote_url', { cwd }),
   openInEditor: (path: string, editor: string): Promise<void> =>

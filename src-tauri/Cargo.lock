@@ -2371,6 +2371,7 @@ dependencies = [
  "git2",
  "ignore",
  "log",
+ "objc",
  "open",
  "portable-pty",
  "serde",

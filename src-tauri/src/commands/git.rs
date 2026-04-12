@@ -362,6 +362,22 @@ pub fn git_diff_stats(cwd: String) -> Result<GitDiffStats, AppError> {
     Ok(stats)
 }
 
+/// Stats for staged changes only (index vs HEAD).
+#[tauri::command]
+pub fn git_staged_stats(cwd: String) -> Result<GitDiffStats, AppError> {
+    let repo = Repository::open(&cwd)?;
+    let head_tree = repo.head().ok().and_then(|h| h.peel_to_tree().ok());
+    let mut stats = GitDiffStats { additions: 0, deletions: 0, file_count: 0 };
+    if let Ok(staged) = repo.diff_tree_to_index(head_tree.as_ref(), None, None) {
+        if let Ok(ds) = staged.stats() {
+            stats.additions = ds.insertions() as u32;
+            stats.deletions = ds.deletions() as u32;
+            stats.file_count = ds.files_changed() as u32;
+        }
+    }
+    Ok(stats)
+}
+
 /// Get unified diff for a single file (relative path) within a task's workspace.
 /// Returns empty string if the file has no changes.
 #[tauri::command]

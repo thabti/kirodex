@@ -35,7 +35,6 @@
     "active": true,
     "targets": "all",
     "icon": ["icons/icon.png", "icons/icon.icns", "icons/icon.ico"],
-    "createUpdaterArtifacts": true,
     "macOS": {
       "minimumSystemVersion": "11.0",
       "signingIdentity": null,

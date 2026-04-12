@@ -1,4 +1,4 @@
-import { memo, useEffect } from 'react'
+import { memo, useEffect, useMemo } from 'react'
 import { IconPaperclip, IconClipboard, IconX } from '@tabler/icons-react'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
@@ -51,6 +51,9 @@ export const ChatInput = memo(function ChatInput({ disabled, contextUsage, messa
   } = useChatInput({ disabled, isRunning, initialValue, onSendMessage, onPause, onDraftChange })
 
   const currentModeId = useSettingsStore((s) => s.currentModeId)
+
+  const imageAttachments = useMemo(() => attachments.filter((a) => a.type === 'image' && a.preview), [attachments])
+  const nonImageAttachments = useMemo(() => attachments.filter((a) => a.type !== 'image' || !a.preview), [attachments])
 
   // Listen for /upload slash command
   useEffect(() => {
@@ -106,14 +109,37 @@ export const ChatInput = memo(function ChatInput({ disabled, contextUsage, messa
               />
             )}
             {panel && <SlashActionPanel panel={panel} onDismiss={dismissPanel} />}
-            {/* Pills row — mentions, attachments, pasted text */}
-            {(mentionedFiles.length > 0 || attachments.length > 0 || pastedChunks.length > 0) && (
+            {/* Inline image previews */}
+            {imageAttachments.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-2">
+                {imageAttachments.map((a) => (
+                  <div key={a.id} className="group relative">
+                    <img
+                      src={a.preview}
+                      alt={a.name}
+                      className="h-16 w-auto rounded-lg border border-border/40 object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveAttachment(a.id)}
+                      aria-label={`Remove ${a.name}`}
+                      className="absolute -top-1.5 -right-1.5 flex size-5 items-center justify-center rounded-full bg-background border border-border/60 text-foreground/40 opacity-0 transition-opacity group-hover:opacity-100 hover:text-foreground/80"
+                    >
+                      <IconX className="size-3" />
+                    </button>
+                    <span className="mt-0.5 block max-w-[80px] truncate text-center text-[10px] text-foreground/40">{a.name}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {/* Pills row — mentions, non-image attachments, pasted text */}
+            {(mentionedFiles.length > 0 || nonImageAttachments.length > 0 || pastedChunks.length > 0) && (
               <div className="flex flex-wrap items-center gap-1 mb-1">
                 {mentionedFiles.map((f) => (
                   <FileMentionPill key={f.path} path={f.path} onRemove={() => handleRemoveMention(f.path)} />
                 ))}
-                {attachments.length > 0 && (
-                  <AttachmentPreview attachments={attachments} onRemove={handleRemoveAttachment} />
+                {nonImageAttachments.length > 0 && (
+                  <AttachmentPreview attachments={nonImageAttachments} onRemove={handleRemoveAttachment} />
                 )}
                 {pastedChunks.map((chunk) => (
                   <span

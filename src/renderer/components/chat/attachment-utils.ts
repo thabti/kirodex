@@ -115,3 +115,32 @@ export const buildAttachmentMessage = (attachments: readonly Attachment[]): stri
   }
   return parts.join('\n')
 }
+
+/**
+ * Replaces inline [Image filename] tags with base64 image data and appends
+ * any remaining non-image attachments. This keeps images in their original
+ * sentence context rather than appending them as a disconnected block.
+ */
+export const buildMessageWithInlineImages = (
+  message: string,
+  attachments: readonly Attachment[],
+): string => {
+  if (attachments.length === 0) return message
+  const usedIds = new Set<string>()
+  let result = message
+  for (const a of attachments) {
+    if (a.type !== 'image' || !a.base64Content) continue
+    const tag = `[Image ${a.name}]`
+    if (result.includes(tag)) {
+      result = result.replaceAll(tag, `<image src=" />`)
+      usedIds.add(a.id)
+    }
+  }
+  // Append non-image attachments and any images without an inline tag
+  const remaining = attachments.filter((a) => !usedIds.has(a.id))
+  if (remaining.length > 0) {
+    const block = buildAttachmentMessage(remaining)
+    result = result ? `${result}\n\n${block}` : block
+  }
+  return result
+}

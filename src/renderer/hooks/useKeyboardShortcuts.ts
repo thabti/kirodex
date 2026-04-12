@@ -101,8 +101,9 @@ export function useKeyboardShortcuts() {
         return
       }
 
-      // ── Cmd+W → Close thread/project (no preventDefault — let native close happen too)
+      // ── Cmd+W → Close thread/project ──────────────────────────
       if (key === 'w' && !e.shiftKey) {
+        e.preventDefault()
         const state = useTaskStore.getState()
         const taskId = state.selectedTaskId
         if (taskId) {
@@ -112,7 +113,6 @@ export function useKeyboardShortcuts() {
         } else if (state.pendingWorkspace) {
           state.setPendingWorkspace(null)
         }
-        // Don't preventDefault — native Cmd+W still works
         return
       }
 

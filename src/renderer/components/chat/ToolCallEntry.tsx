@@ -3,6 +3,7 @@ import {
   IconChevronDown, IconChevronRight, IconCheck, IconLoader2, IconX,
   IconFilePencil, IconTerminal2,
 } from '@tabler/icons-react'
+import { createPatch } from 'diff'
 import type { ToolCall } from '@/types'
 import { cn } from '@/lib/utils'
 import { useDiffStore } from '@/stores/diffStore'
@@ -40,7 +41,18 @@ export const ToolCallEntry = memo(function ToolCallEntry({ toolCall, allToolCall
     if (!taskId) return
     setDiffLoading(true)
     ipc.gitDiffFile(taskId, firstPath).then((diff) => {
-      setFileDiff(diff || '')
+      if (diff) {
+        setFileDiff(diff)
+      } else {
+        // Git diff empty (already committed) — generate from tool call content
+        const diffContent = toolCall.content?.find((c) => c.type === 'diff')
+        if (diffContent && (diffContent.oldText != null || diffContent.newText != null)) {
+          const generated = createPatch(firstPath, diffContent.oldText ?? '', diffContent.newText ?? '')
+          setFileDiff(generated)
+        } else {
+          setFileDiff('')
+        }
+      }
       setDiffLoading(false)
     }).catch(() => {
       setFileDiff('')

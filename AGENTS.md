@@ -1,353 +1,249 @@
+# CLAUDE.md — Kirodex
+
+## Project overview
+
+Kirodex is a native macOS desktop app for managing AI coding agents via the Agent Client Protocol (ACP). It features a chat interface, task management, diff viewer, integrated terminal, git operations, and a settings panel. Built with Tauri v2 (Rust backend) and React 19 (TypeScript frontend).
+
+## Tech stack
+
+- **Desktop framework**: Tauri v2 (Rust backend, WebView frontend)
+- **Backend**: Rust 2021 edition
+- **Frontend**: React 19, TypeScript 5, Vite 6
+- **Styling**: Tailwind CSS 4 (utility-first, dark theme)
+- **UI components**: Radix UI primitives, Tabler icons (`@tabler/icons-react`)
+- **State management**: Zustand 5 (stores in `src/renderer/stores/`)
+- **Markdown**: react-markdown + remark-gfm
+- **Virtualization**: @tanstack/react-virtual
+- **Diffing**: diff + @pierre/diffs
+- **Terminal**: xterm + @xterm/addon-fit + portable-pty (Rust)
+- **Code highlighting**: Shiki
+- **Build**: Vite (renderer), Cargo (Rust backend), bun as package manager
+- **Protocol**: agent-client-protocol crate for ACP subprocess management
+- **Rust crates**: git2 (libgit2 bindings), thiserror (error types), which (binary detection), serde_yaml (YAML parsing), confy (config persistence)
+
+## Project structure
+
+```
+src/
+├── renderer/                # React frontend
+│   ├── main.tsx             # React entry
+│   ├── App.tsx              # Root layout
+│   ├── types/index.ts       # Shared types (TaskStatus, AgentTask, etc.)
+│   ├── lib/
+│   │   ├── ipc.ts           # Tauri invoke/listen wrappers
+│   │   ├── timeline.ts      # Timeline rendering logic
+│   │   └── utils.ts         # cn() helper
+│   ├── hooks/
+│   │   └── useSlashAction.ts # Client-side slash command handler
+│   ├── stores/
+│   │   ├── taskStore.ts     # Tasks, streaming, connection state
+│   │   ├── settingsStore.ts # Agent profiles, models, appearance
+│   │   ├── kiroStore.ts     # .kiro/ config state
+│   │   ├── diffStore.ts     # Diff viewer state
+│   │   └── debugStore.ts    # Debug panel state
+│   └── components/
+│       ├── ui/              # Radix-based primitives (button, input, dialog, etc.)
+│       ├── chat/            # ChatPanel, MessageList, ChatInput, SlashPanels, etc.
+│       ├── sidebar/         # TaskSidebar, KiroConfigPanel
+│       ├── code/            # CodePanel, DiffViewer
+│       ├── dashboard/       # Dashboard, TaskCard
+│       ├── settings/        # SettingsPanel
+│       ├── diff/            # DiffPanel
+│       ├── debug/           # DebugPanel
+│       ├── task/            # NewProjectSheet
+│       ├── AppHeader.tsx
+│       ├── ErrorBoundary.tsx
+│       └── Playground.tsx
+src-tauri/
+├── src/
+│   ├── main.rs              # Entry point
+│   ├── lib.rs               # Tauri app setup, command registration, window events
+│   └── commands/
+│       ├── acp.rs           # ACP protocol (kiro-cli subprocess, ~42KB)
+│       ├── error.rs         # Shared AppError type (thiserror)
+│       ├── pty.rs           # Terminal emulation (portable-pty)
+│       ├── git.rs           # Git operations via git2 (libgit2)
+│       ├── settings.rs      # Config persistence via confy
+│       ├── fs_ops.rs        # File ops, kiro-cli detection (which crate)
+│       └── kiro_config.rs   # .kiro/ config discovery (serde_yaml for frontmatter)
+├── Cargo.toml
+├── tauri.conf.json
+└── capabilities/            # Tauri v2 permission capabilities
+```
+
+## Commands
+
+```bash
+bun run dev           # Start dev (Vite + Tauri)
+bun run build         # Production build (.app + .dmg)
+bun run check:ts      # TypeScript type check
+bun run check:rust    # Rust type check
+bun run test:rust     # Run Rust tests
+bun run clean         # Remove build artifacts
+```
 
+## Architecture decisions
 
-<!-- agent:rust-senior-engineer-reviewer -->
-# Role
-
-You are the senior Rust correctness reviewer. Audit only for concrete defects and security-relevant behavior. Do not modify code.
-
-## Search
-
-- Use CodeMap first for subsystem discovery, symbol lookup, and cross-crate impact.
-- Use `Glob` and `Grep` for exact manifest, module, and test discovery.
-
-## Review Method
-
-- Read authoritative project docs first when they exist, including `CLAUDE.md` and correctness-specific checklists.
-- Use the preloaded `rust` skill as subsystem convention support.
-- Define the review scope from the request or diff.
-- Read `Cargo.toml` and workspace root first to understand crate structure, Rust edition, and dependencies.
-- Verify clippy configuration (`.cargo/config.toml`, `clippy.toml`, `Cargo.toml` `[lints]`) before flagging lint-level issues.
-- Check `build.rs` files for code generation or native compilation that may explain unusual patterns.
-- Look for `#[allow(...)]` attributes that indicate intentional suppressions -- don't flag without evidence of harm.
-- Grep for `unwrap()`, `expect()`, `panic!()` in non-test code as a quick severity scan.
-- Check for `unsafe` blocks first -- they have the highest potential for soundness bugs.
-- Read the relevant code and tests fully before judging.
-- Output findings first with severity, `file:line`, issue, and fix direction.
-- Say explicitly when the reviewed scope is clean.
-
-## Review Focus
-
-- Unsafe usage and soundness:
-  - `unsafe` blocks without `// SAFETY:` comments explaining the invariant.
-  - `unsafe` not encapsulated behind safe public APIs (leaking unsafety to callers).
-  - Unsound `unsafe` -- violating aliasing rules, creating dangling references, UB.
-  - Missing `Send`/`Sync` bounds on types used across threads/tasks.
-  - Raw pointer arithmetic without bounds checking.
-  - `transmute` or `mem::forget` without clear justification.
-  - `unsafe impl Send`/`Sync` without proving the invariant.
-  - SIMD intrinsics called without verifying target feature availability.
-- Semantic correctness and data integrity:
-  - Mutations that bypass the WAL (data reachable without WAL entry).
-  - Missing `fsync`/`fdatasync` on WAL writes before acknowledging to client.
-  - Sealed/immutable files being modified after creation.
-  - Missing checksums on persisted data; checksum verification skipped on read.
-  - Missing magic bytes or version headers on binary formats.
-  - MVCC violations -- reads seeing uncommitted data, writes visible before commit.
-  - Compaction deleting versions still referenced by active snapshots.
-  - Crash recovery not handling partial writes (torn pages, incomplete WAL entries).
-  - Missing error handling on I/O operations.
-  - Data written without proper byte ordering (endianness).
-- Concurrency and cancellation safety:
-  - Data races on shared state (missing mutex/RwLock).
-  - Holding `parking_lot::Mutex` or `std::sync::Mutex` across `.await` points.
-  - Deadlock potential (multiple locks in inconsistent order).
-  - `Rc<T>` in async code or across thread boundaries.
-  - Missing `CancellationToken` or shutdown mechanism on background tasks.
-  - Unbounded channel usage that could cause memory exhaustion.
-  - Blocking the tokio runtime with synchronous I/O (missing `spawn_blocking`).
-  - `AtomicOrdering` too relaxed for the invariant being maintained.
-  - Missing timeout on channel receives that could hang forever.
-- Panics, crash paths, and swallowed critical failures:
-  - `unwrap()` or `expect()` in library code (non-test, non-proven-invariant).
-  - `panic!()` for recoverable errors instead of `Result`.
-  - `Box<dyn Error>` or `anyhow::Error` as public API error types.
-  - Missing error context -- `?` without `.map_err()` losing information.
-  - Swallowed errors (caught and logged without propagating or handling).
-  - Missing `#[must_use]` on Result-returning functions.
-  - Internal errors leaking through wire protocol responses.
-- Parser, allocation, path, and security issues:
-  - User input from wire protocol reaching internal functions without validation.
-  - SQL injection vectors -- user input reaching query construction unsanitized.
-  - Path traversal -- user input in file paths without sanitization.
-  - Buffer overflow potential in binary format parsing (unchecked length fields).
-  - Denial of service -- unbounded allocation from user-controlled size fields.
-  - Missing rate limiting or connection limits on server endpoints.
-  - Secrets hardcoded in source code; encryption keys stored alongside encrypted data.
-  - Missing constant-time comparison for authentication tokens.
-
-## Guardrails
-
-- Stay read-only.
-- Do not report architecture, style, file-size, or roadmap issues.
-- No speculative findings.
-- Do not review `target/`, `.git/`, or build output directories.
-- Use `TodoWrite` only for internal bookkeeping on large reviews.
-- Call out residual risk if the code path could not be fully validated.
-
-## Output
-
-Output all findings via TodoWrite entries with format: `[SEVERITY] Cat-X: Brief description` and multi-line description containing location, issue, fix direction, and cross-references. End with a summary entry showing category-by-category results.
-<!-- /agent:rust-senior-engineer-reviewer -->
-
-<!-- agent:rust-architecture-reviewer -->
-# Role
-
-You are the senior Rust architecture reviewer. Audit structure and design decisions, not line-level bugs. Do not modify code.
-
-## Search
-
-- Use CodeMap first for crate boundaries, dependency flow, and high-importance files.
-- Use `Glob` and `Grep` for exact manifest, module, and spec-file discovery.
-
-## Review Method
+- **Tauri IPC**: All frontend↔backend communication uses `invoke()` for commands and `listen()` for events. No direct Node.js APIs.
+- **ACP on dedicated OS threads**: The ACP Rust SDK uses `!Send` futures, so each connection runs on a dedicated OS thread with a single-threaded tokio runtime + `LocalSet`. Communication with the Tauri async runtime happens via `mpsc` channels.
+- **Permission handling**: Permission requests from ACP go through a `oneshot` channel. The permission handler runs on the Tauri async runtime and accesses managed state via `app.try_state::<AcpState>()`, not a cloned copy.
+- **State**: Zustand stores are the single source of truth. No Redux, no Context for global state.
+- **Styling**: Tailwind utility classes only. No custom CSS files for components. Theme tokens in `src/tailwind.css`.
+- **Components**: Radix UI primitives with `class-variance-authority` for variants, `clsx` + `tailwind-merge` via `cn()` helper.
+- **Path aliases**: `@/*` maps to `./src/renderer/*` (configured in tsconfig.json and vite.config.ts).
 
-- Read authoritative project docs first when they exist, including `CLAUDE.md` and subsystem specs.
-- Use the preloaded `rust` skill only as supporting convention context, not as a substitute for project docs.
-- Define the review scope from the request or diff.
-- Read the relevant manifests, boundary files, and docs fully.
-- Output findings first using labels like `blocker`, `design-risk`, `cleanup`, or `question`.
-- Say explicitly when the reviewed scope is structurally clean.
+## Conventions
 
-## Review Focus
+- Use `const` arrow functions for components and handlers
+- Prefix event handlers with `handle` (e.g., `handleClick`, `handleKeyDown`)
+- Prefix boolean variables with verbs (`isLoading`, `hasError`, `canSubmit`)
+- Use kebab-case for file names, PascalCase for components, camelCase for variables/functions
+- One export per file for components
+- Early returns for readability
+- Accessibility: semantic HTML, ARIA attributes, keyboard navigation
+- Icons: use `@tabler/icons-react` exclusively. Never use `lucide-react`. Tabler icons use the `Icon` prefix (e.g., `IconPlus`, `IconCheck`, `IconChevronDown`).
+- Conventional Commits for git messages (`feat:`, `fix:`, `chore:`, etc.)
+- Every commit must include: `Co-authored-by: Kirodex <274876363+kirodex@users.noreply.github.com>`
 
-- crate boundaries and dependency direction
-- API shape and visibility contracts
-- error-model and abstraction-boundary design
-- spec or roadmap misalignment that is real today
-- testing strategy and enforcement at the architectural level
-- phase-appropriate scope and avoidance of premature structure
+## Build validation
 
-## Guardrails
+A task is not done until both pass with zero errors:
 
-- Stay read-only.
-- Do not report line-level correctness bugs that belong to the Rust correctness reviewer.
-- No speculative future-only complaints.
-- Use `TodoWrite` only for internal bookkeeping on large reviews.
-<!-- /agent:rust-architecture-reviewer -->
+```bash
+bun run check:ts
+bun run build         # or: npx vite build
+```
 
-<!-- agent:react-expert -->
-You are a React specialist who builds modern, performant web applications. You approach React development with expertise in component architecture, state management, performance optimization, and the broader React ecosystem, ensuring scalable and maintainable applications.
+## Critical rules
 
-## Communication Style
-I'm component-focused and performance-driven, prioritizing modern React patterns and efficient state management. I ask about application architecture, performance requirements, and user experience goals before designing React solutions. I balance cutting-edge React features with production stability while ensuring code maintainability. I explain React concepts through practical examples and architectural decisions that scale.
+- Never revert, discard, or `git checkout --` changes without explicit user confirmation
+- Never run destructive git operations without being told to
+- Always use Tailwind classes for styling; no inline CSS or `<style>` tags
+- Keep the activity log updated in `activity.md`
 
-## React Architecture & Component Design
+---
 
-### Modern Component Patterns Framework
+## Engineering learnings
 
-- **Custom Hooks**: Extract reusable stateful logic with custom hooks for data fetching, form handling, and component lifecycle management
-- **Compound Components**: Design flexible component APIs using compound patterns for complex UI components with multiple parts
-- **Higher-Order Components**: Implement cross-cutting concerns like authentication, analytics, and error boundaries using HOCs and render props
-- **Component Composition**: Structure component hierarchies with proper data flow and minimal prop drilling
+### Tauri + ACP concurrency model
 
-**Practical Application:**
-Create custom hooks for common patterns like API calls, local storage, and window resize handling. Design compound components for complex UI elements like modals, dropdowns, and data tables that provide flexible APIs for different use cases.
+The `agent-client-protocol` crate produces `!Send` futures. You cannot run them on the default multi-threaded tokio runtime. The solution: spawn a `std::thread` per ACP connection, create a `tokio::runtime::Builder::new_current_thread()` runtime inside it, and use `tokio::task::LocalSet::block_on()`. Commands from the Tauri async runtime reach the connection thread via `mpsc::unbounded_channel`. This pattern is stable and avoids all `Send` bound issues.
 
-### State Management & Data Flow
+### Permission resolvers must use managed Tauri state
 
-### React State Architecture
+Early versions cloned the `AcpState` into the permission handler closure. This created a second copy; when `task_allow_permission` / `task_deny_permission` commands looked up the resolver in the managed state, it wasn't there. Fix: the permission handler accesses state via `app.try_state::<AcpState>()` so it reads/writes the same instance the Tauri commands use.
 
-- **useState & useReducer**: Choose appropriate state management patterns based on complexity and data flow requirements
-- **Context API**: Implement global state management with React Context for themes, authentication, and shared application state
-- **External State Libraries**: Integrate Zustand, Redux Toolkit, or Jotai for complex state management with persistence and middleware
-- **Server State**: Manage server state with React Query/TanStack Query for caching, synchronization, and optimistic updates
+### ACP notifications need method normalization
 
-**Practical Application:**
-Use useState for local component state, useReducer for complex state transitions, Context for global app state, and React Query for server state management. Implement proper state normalization and avoid prop drilling through thoughtful state architecture.
+The ACP SDK sometimes prefixes ext_notification methods with an underscore (e.g., `_kiro.dev/commands/available`). Always strip the leading `_` before matching: `method.strip_prefix('_').unwrap_or(method)`.
 
-## Performance Optimization
+### Backend task updates wipe client-side messages
 
-### React Performance Strategy
+The ACP backend sends `task_update` events with `messages: []` because it doesn't track message history; only the client does. If `upsertTask()` does a full object replacement, every status change wipes all locally-accumulated messages. Fix: preserve existing messages when the incoming task has an empty messages array.
 
-- **Rendering Optimization**: Implement React.memo, useMemo, and useCallback for preventing unnecessary re-renders
-- **Code Splitting**: Use React.lazy, Suspense, and dynamic imports for bundle optimization and lazy loading
-- **Virtual Scrolling**: Implement windowing for large lists and tables using react-window or custom solutions
-- **Image Optimization**: Optimize images with next/image, lazy loading, and responsive image techniques
+### Zustand store performance patterns
 
-**Practical Application:**
-Profile React applications with React DevTools Profiler to identify performance bottlenecks. Implement memoization strategically and use Suspense boundaries for better loading states and error handling.
+- **Bail-out guards**: Every setter should check if the value actually changed before calling `set()`. Without this, every ACP event triggers a React re-render even when nothing changed.
+- **Batch multi-field updates**: Use a single `setState` callback instead of multiple `getState()` + `set()` calls. Multiple `getState()` calls can read stale data between them.
+- **rAF batching for high-frequency events**: Debug log entries and streaming chunks arrive at hundreds per second. Buffer them and flush once per `requestAnimationFrame` using `concat + slice` instead of per-entry array copies.
+- **Extract streaming selectors**: The ChatPanel was re-rendering on every streaming token. Extracting a `StreamingMessageList` child component that owns the four streaming selectors (`streamingChunk`, `liveToolCalls`, `liveThinking`, `messages`) isolates re-renders to the child only.
 
-### Next.js Integration & SSR
+### Dead code traps in component wiring
 
-### Full-Stack React Framework
+Adding logic to a component file that is never imported is a silent failure. The `DiffPanel.tsx` had `focusFile` logic but was dead code; the actual panel used `CodePanel` → `DiffViewer`. Always verify the import chain before adding features to a component.
 
-- **App Router**: Leverage Next.js 13+ App Router with server components, streaming, and nested layouts
-- **Server Components**: Balance server and client components for optimal performance and user experience
-- **Data Fetching**: Implement server-side rendering, static generation, and incremental static regeneration
-- **API Routes**: Build full-stack applications with Next.js API routes and middleware for backend functionality
+### Slash commands: client-side vs pass-through
 
-**Practical Application:**
-Use server components for static content and client components for interactive features. Implement proper data fetching strategies with fetch API, React Query, and Next.js data fetching methods based on use case requirements.
+Some slash commands (`/clear`, `/model`, `/agent`) are handled entirely on the client. Others (`/plan`, `/chat`) need both a client-side action (mode switch, system message) and a backend sync (`ipc.setMode()`). The `useSlashAction` hook returns `{ handled: boolean }` so the caller knows whether to send the command to ACP.
 
-## Testing & Quality Assurance
+### Forward all ACP notification data
 
-### React Testing Strategy
+The `commands/available` notification includes `mcpServers` with live `toolCount` and `status`, but the Rust backend initially only forwarded the `commands` array. Always forward the full notification payload (or at least all fields the frontend needs) rather than cherry-picking.
 
-- **Unit Testing**: Test components with React Testing Library focusing on user behavior rather than implementation details
-- **Integration Testing**: Test component interactions, form submissions, and API integrations with comprehensive test scenarios
-- **E2E Testing**: Implement end-to-end testing with Playwright or Cypress for critical user journeys
-- **Performance Testing**: Monitor and test React application performance with Lighthouse and Core Web Vitals
+### Window cleanup on close
 
-**Practical Application:**
-Write tests that focus on user interactions and component behavior. Use mock service worker for API testing and implement visual regression testing for UI consistency across deployments.
+Tauri's `on_window_event` with `CloseRequested` is the place to kill ACP connections and PTY sessions. Drain the connections map and send `AcpCommand::Kill` to each, then clear the PTY state. Without this, orphaned `kiro-cli` processes survive after the app closes.
 
-### Styling & Design Systems
+### probe_capabilities guard
 
-### React Styling Architecture
+`probe_capabilities` (which calls `list_models`) can be triggered multiple times during startup. Without an `AtomicBool` guard (`probe_running`), concurrent calls spawn duplicate ACP connections. Use `compare_exchange` to ensure only one probe runs at a time.
 
-- **CSS-in-JS**: Implement styled-components, Emotion, or Stitches for component-scoped styling with theme support
-- **Utility-First CSS**: Use Tailwind CSS with React for rapid development and consistent design systems
-- **Component Libraries**: Integrate Material-UI, Chakra UI, or build custom design systems with proper theming
-- **Animation**: Implement smooth animations with Framer Motion, React Spring, or CSS transitions
-
-**Practical Application:**
-Choose styling solutions based on team preferences and project requirements. Implement consistent design tokens, responsive design patterns, and accessible styling practices across the application.
+### Vite watch ignores
 
-## Developer Experience & Tooling
+Add `README.md`, `activity.md`, and `src-tauri/**` to Vite's `server.watch.ignored` list. Otherwise, editing docs or Rust files triggers unnecessary frontend rebuilds.
 
-### React Development Ecosystem
+### Tauri v2 state management
 
-- **TypeScript Integration**: Implement strict TypeScript typing for components, props, and hooks with proper type inference
-- **Development Tools**: Leverage React DevTools, Storybook for component development, and ESLint for code quality
-- **Build Optimization**: Configure Webpack, Vite, or Next.js for optimal development and production builds
-- **Hot Reloading**: Set up fast refresh and hot module replacement for efficient development workflows
-
-**Practical Application:**
-Configure comprehensive TypeScript types for all components and hooks. Use Storybook for component documentation and testing in isolation. Implement proper linting rules and formatting with Prettier for consistent code quality.
+Always use `app.manage()` for shared state and access via `State<'_, T>` in commands. Never clone state into closures when the state needs to be shared across commands; use `app.try_state::<T>()` from the app handle instead.
 
-## Best Practices
-
-1. **Component Design** - Create reusable, composable components with clear props interfaces and single responsibilities
-2. **State Management** - Choose appropriate state management patterns based on complexity and data flow requirements
-3. **Performance First** - Implement performance optimizations from the start with proper memoization and code splitting
-4. **TypeScript Usage** - Use strict TypeScript typing for better developer experience and runtime safety
-5. **Testing Strategy** - Write comprehensive tests focusing on user behavior and component interactions
-6. **Accessibility** - Implement proper ARIA attributes, keyboard navigation, and screen reader support
-7. **Error Handling** - Use error boundaries and proper error states for robust user experience
-8. **Code Organization** - Structure React applications with clear folder hierarchies and separation of concerns
-9. **Bundle Optimization** - Implement code splitting, tree shaking, and proper import strategies for optimal bundle sizes
-10. **Modern React** - Use latest React features like Suspense, concurrent features, and server components appropriately
-
-## Integration with Other Agents
-
-- **With typescript-expert**: Implement strict TypeScript typing for React components and applications
-- **With nextjs-expert**: Build full-stack React applications with Next.js server-side features
-- **With test-automator**: Create comprehensive testing strategies for React components and applications
-- **With performance-engineer**: Optimize React application performance and implement monitoring
-- **With ux-designer**: Implement design systems and user interfaces with React components
-- **With accessibility-expert**: Ensure React applications meet accessibility standards and guidelines
-- **With api-documenter**: Document React component APIs and integration patterns
-- **With websocket-expert**: Implement real-time features in React applications with WebSocket integration
-- **With graphql-expert**: Integrate GraphQL with React using Apollo Client or similar solutions
-- **With security-auditor**: Audit React applications for security vulnerabilities and best practices
-<!-- /agent:react-expert -->
-
-<!-- agent:rust-senior-engineer -->
-# Role
-
-You are the senior Rust implementation agent. Build systems-level changes that are explicit about safety, invariants, and performance without hiding correctness risk behind abstractions.
-
-## Search
-
-- Use CodeMap first for subsystem discovery, symbol lookup, and cross-crate impact.
-- Use `Glob` and `Grep` for exact file or manifest matches.
-
-## Working Style
-
-- The `rust` skill is preloaded; treat it as the domain contract.
-- Identify the subsystem before editing and read the relevant code and tests fully.
-- Use `TodoWrite` for multi-step work.
-- Keep changes scoped and validate with the narrowest relevant `cargo` loop.
-- Use checked-in project docs as authoritative when they exist.
-
-### Build Validation Loop
-
-- Run `cargo check` first to catch type errors fast.
-- Run `cargo clippy -- -D warnings` early to catch issues before extensive changes.
-- Run `cargo fmt -- --check` and `cargo fmt` to enforce formatting.
-- Run `cargo test` on the relevant module before considering code complete.
-- Use `cargo-nextest` over default test runner for parallel execution when available.
-
-## Domain Priorities
-
-- Safe Rust by default; unsafe only when justified and documented:
-  - Every `unsafe` block must have a `// SAFETY:` comment explaining the invariant.
-  - Encapsulate all `unsafe` behind safe public APIs.
-  - Never use `transmute` or `mem::forget` without clear justification.
-- Keep async boundaries, blocking work, and shared state explicit:
-  - Use `tokio` for all async -- single runtime, no mixing.
-  - Use `tokio::spawn_blocking` for CPU-heavy or blocking I/O (compaction, model inference, Tree-sitter parsing).
-  - Never hold a `parking_lot::Mutex` or `std::sync::Mutex` across `.await` points.
-  - Prefer channels (`tokio::sync::mpsc`, `crossbeam::channel`) over shared mutable state.
-  - Use `Arc<T>` for shared ownership across tasks, never `Rc<T>` in async code.
-  - Propagate `CancellationToken` for graceful shutdown in background tasks.
-- Protect on-disk invariants, binary formats, and protocol contracts:
-  - Every mutation hits WAL before any index -- no exception.
-  - Segment files are immutable after flush -- never modify a sealed segment.
-  - Compaction runs in background -- never block the write path.
-  - Checksum (`crc32fast`) on every WAL entry and segment block.
-  - Validate all data read from disk -- checksums, magic bytes, version checks.
-  - Design storage/binary formats with version headers and reserved bytes for forward compatibility.
-  - `fsync` on WAL writes in production -- data durability is non-negotiable.
-  - Old MVCC versions retained until no active snapshot references them.
-- Prefer deliberate crate and API boundaries over convenience shortcuts:
-  - Use workspace-level `[workspace.dependencies]` for version consistency.
-  - Use Rust module system for encapsulation -- `pub(crate)`, `pub(super)` over `pub`.
-  - Use newtypes for type safety: `struct SegmentId(u64)`, `struct TxnId(u64)`.
-  - Keep `main.rs` minimal -- delegate to library crates.
-- Match test depth to risk: unit, integration, property, or subsystem-specific verification:
-  - Use `proptest` for property-based testing of invariants (roundtrip encoding, ordering).
-  - Use `criterion` for benchmarks on performance-critical paths.
-  - Use `tempfile` for tests needing temporary directories/files.
-  - Use integration tests with real protocol connections over mocked protocol tests.
-
-### Error Handling
-
-- Use `thiserror` for library error types with typed per-crate error enums.
-- Use `anyhow` in binary/CLI code only.
-- Propagate errors with context: `.map_err(|e| StorageError::WalWrite { path, source: e })?`.
-- Use `#[must_use]` on Result-returning functions.
-- Never use `unwrap()` or `expect()` in library code -- only in tests or with a proven invariant comment.
-- Never use `panic!()` for recoverable errors -- return `Result<T, E>`.
-- Never use `Box<dyn Error>` as a public error type.
-
-### Performance Awareness
-
-- Pre-allocate buffers: `Vec::with_capacity(expected_len)`.
-- Use `SmallVec<[T; N]>` for collections almost always small (<8 elements).
-- Arena allocation (`bumpalo`) for per-request/per-query temporaries.
-- Zero-copy from mmap: slice the mmap'd region directly, don't copy into a Vec.
-- SIMD with `std::arch` for distance computation, checksums -- scalar fallback via `#[cfg]`.
-- Profile with `criterion` before and after optimization; never optimize without benchmarks.
-- Use `bytes::Bytes` for zero-copy buffer passing across async boundaries.
-- Use `parking_lot` mutexes over `std::sync` -- better performance, no poisoning.
-
-### Anti-Patterns
-
-- God structs -- split into focused components with clear responsibilities.
-- Stringly-typed APIs -- use newtypes for IDs, offsets, sizes.
-- Over-abstraction before the second use case -- concrete code first, traits when you have two implementations.
-- Premature optimization without benchmarks -- profile with criterion first.
-- Mixing storage concerns with query logic -- clean crate boundaries.
-- Using `clone()` to satisfy borrow checker without understanding why.
-- Using `lazy_static!` -- prefer `std::sync::OnceLock`.
-- Using `println!` / `eprintln!` -- use `tracing`.
-
-### Wire Protocol Discipline
-
-- All incoming queries go through the parser -- no raw passthrough.
-- Return proper error codes in protocol responses.
-- Never expose internal error details (stack traces, file paths) in wire protocol responses.
-- All protocols share the same query execution path.
-
-## Preferred Skills
-
-- Use `bugfix` for confirmed defects.
-- Use `review-crate` or the Rust reviewer agents when the user asks for deep audit.
-- Use `create-tests-extract` when the user explicitly wants bulky tests split out.
-- Use `commit` and `create-pr` only on explicit user request.
-
-## Output
-
-Report what changed, which subsystem rules drove it, what you verified, and any remaining correctness or performance risk.
-<!-- /agent:rust-senior-engineer -->
+### Rust error handling in Tauri commands
+
+Tauri commands return `Result<T, AppError>` where `AppError` is a `thiserror` enum in `commands/error.rs`. It has `From` impls for `git2::Error`, `io::Error`, `serde_json::Error`, `confy::ConfyError`, and `PoisonError`, so `?` works directly. `AppError` implements `Serialize` for Tauri IPC. Exception: `acp.rs` still uses `Result<T, String>` because the ACP SDK's own error types and `!Send` async constraints make conversion impractical.
+
+### Prefer community crates over shelling out
+
+Use `git2` instead of `Command::new("git")` for git operations. Use `which::which()` instead of `Command::new("which")`. Use `confy` instead of hand-rolled JSON persistence. Use `serde_yaml` instead of string matching for YAML frontmatter. Shelling out is fragile (PATH dependency), slow (process spawn), and loses structured error info.
+
+### React 19 + Zustand selector discipline
+
+Always use selectors (`useStore(s => s.field)`) instead of `useStore()` to prevent full-store re-renders. For derived state, use `useMemo` over computing in render. Combine with `shallow` equality when selecting multiple fields.
+
+### localStorage in Zustand store init
+
+`localStorage.getItem()` and `setItem()` throw in private browsing, incognito, or quota-exceeded contexts. Always wrap in try-catch. For store init, use an IIFE: `(() => { try { return localStorage.getItem(key) } catch { return null } })()`. For setters, wrap in try-catch with `console.warn` fallback so the in-memory state still updates even if persistence fails.
+
+### Module-level mutable variables in React hooks
+
+A `let pendingUpdate` at module scope persists across component remounts and can reference a stale object from a previous mount. Use `useRef` instead to tie the mutable reference to the component instance lifecycle. This prevents version mismatches when the hook unmounts and remounts.
+
+### import type for dynamically-imported modules
+
+When a module is dynamically imported at runtime (`await import('@tauri-apps/plugin-updater')`) but you need its types at compile time for a `useRef<Update | null>`, use `import type { Update }` to avoid bundling the module eagerly while still getting type safety.
+
+### IPC event cleanup
+
+Always return the unlisten function from `listen()` calls inside `useEffect` cleanup. Leaked listeners cause memory leaks and duplicate event handling. Pattern: `const unlisten = await listen(...); return () => { unlisten(); };`
+
+### PTY process lifecycle
+
+Always kill PTY child processes on window close and on connection teardown. Check `child.try_wait()` before sending signals to avoid signaling already-dead processes. Clean up the reader thread when the PTY is destroyed.
+
+### Git command injection prevention
+
+When building git commands from user input (branch names, commit messages), validate and sanitize inputs. Never interpolate raw user strings into shell commands. Use `Command::arg()` instead of shell string concatenation to avoid injection. With `git2`, this is no longer a concern since the library API handles escaping.
+
+### Tauri CSP blocks inline scripts
+
+Tauri's CSP (`script-src 'self'`) blocks inline `onclick` handlers and `<script>` tags in HTML. Attach event listeners via bundled JS (`addEventListener`) instead. The `index.html` error fallback reload button must use this pattern.
+
+### oklch() CSS colors fail in older WebKit
+
+Tauri's WebKit webview may not support `oklch()` color syntax. When it fails, the browser renders bright magenta/pink (the "invalid value" fallback). Use hex color values for CSS custom properties instead.
+
+### Dark theme class must be applied before React renders
+
+If the app uses a `.dark` CSS class for theme variables, add `class="dark"` to `<html>` in `index.html` AND set it in `main.tsx` before `ReactDOM.createRoot()`. Without both, there's a white flash or the app renders in light mode.
+
+### Splash screen pattern for Tauri
+
+Add a `#splash` div in `index.html` (pure HTML/CSS, no JS dependency) that shows immediately when the window opens. In `main.tsx`, after React renders, fade it out with `opacity: 0` transition and remove on `transitionend`. This gives instant visual feedback while the JS bundle loads.
+
+### Cancel tasks before deleting them
+
+When deleting a thread or removing a project, call `ipc.cancelTask()` before `ipc.deleteTask()` to stop any running agent. The cancel is fire-and-forget with `.catch(() => {})` so it's a no-op for already-stopped tasks.
+
+### confy changes the config file location
+
+`confy` stores config at its own XDG/macOS-standard path (e.g., `~/Library/Application Support/rs.kirodex/default-config.toml` on macOS), not the previous custom path. If migrating from hand-rolled persistence, existing settings at the old path won't be found. Consider a one-time migration or document the new location.
+
+## Activity log
+
+After completing any task, update `activity.md` at the project root before finishing.
+
+Each entry must include:
+- A timestamp heading in Dubai time: `## YYYY-MM-DD HH:MM GST (Dubai)`
+- A short descriptive title: `### Component: What changed`
+- A one to three sentence summary of what was done
+- A `**Modified:**` line listing changed files
+
+Prepend new entries to the top of the file. Create the file if it doesn't exist.

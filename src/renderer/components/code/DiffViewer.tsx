@@ -13,14 +13,14 @@ import { getPreferredEditor } from '@/components/OpenInEditorGroup'
 const UNSAFE_CSS = `
 [data-diffs-header], [data-diff], [data-file] {
   --diffs-bg: var(--card) !important;
-  --diffs-bg-addition: color-mix(in srgb, var(--background) 92%, #0dbe4e) !important;
-  --diffs-bg-deletion: color-mix(in srgb, var(--background) 92%, #ff2e3f) !important;
-  --diffs-bg-addition-emphasis: color-mix(in srgb, var(--background) 82%, #0dbe4e) !important;
-  --diffs-bg-deletion-emphasis: color-mix(in srgb, var(--background) 82%, #ff2e3f) !important;
-  --diffs-bg-addition-number: color-mix(in srgb, var(--background) 88%, #0dbe4e) !important;
-  --diffs-bg-deletion-number: color-mix(in srgb, var(--background) 88%, #ff2e3f) !important;
-  --diffs-bg-addition-hover: color-mix(in srgb, var(--background) 86%, #0dbe4e) !important;
-  --diffs-bg-deletion-hover: color-mix(in srgb, var(--background) 86%, #ff2e3f) !important;
+  --diffs-bg-addition: color-mix(in srgb, var(--background) 97%, #0dbe4e) !important;
+  --diffs-bg-deletion: color-mix(in srgb, var(--background) 97%, #ff2e3f) !important;
+  --diffs-bg-addition-emphasis: color-mix(in srgb, var(--background) 92%, #0dbe4e) !important;
+  --diffs-bg-deletion-emphasis: color-mix(in srgb, var(--background) 92%, #ff2e3f) !important;
+  --diffs-bg-addition-number: color-mix(in srgb, var(--background) 95%, #0dbe4e) !important;
+  --diffs-bg-deletion-number: color-mix(in srgb, var(--background) 95%, #ff2e3f) !important;
+  --diffs-bg-addition-hover: color-mix(in srgb, var(--background) 93%, #0dbe4e) !important;
+  --diffs-bg-deletion-hover: color-mix(in srgb, var(--background) 93%, #ff2e3f) !important;
   --diffs-bg-buffer-override: var(--background) !important;
   --diffs-bg-hover-override: var(--accent) !important;
   --diffs-bg-context-override: var(--card) !important;

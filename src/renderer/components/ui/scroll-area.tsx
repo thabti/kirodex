@@ -42,7 +42,7 @@ const ScrollBar = forwardRef<
     {...props}
   >
     <ScrollAreaPrimitive.ScrollAreaThumb
-      className="relative flex-1 rounded-full bg-foreground/20"
+      className="relative flex-1 rounded-full bg-border hover:bg-foreground/50 transition-colors"
       data-slot="scroll-area-thumb"
     />
   </ScrollAreaPrimitive.ScrollAreaScrollbar>

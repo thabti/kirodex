@@ -95,7 +95,7 @@ jobs:
           releaseDraft: false
           prerelease: false
           includeUpdaterJson: true
-          args: ${{ matrix.args }}
+          args: --config src-tauri/tauri.ci.conf.json ${{ matrix.args }}
 
   # ── Update Homebrew tap ──────────────────────────────────────────
   homebrew:

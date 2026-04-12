@@ -7,6 +7,7 @@ export interface SidebarTask {
   readonly name: string
   readonly workspace: string
   readonly createdAt: string
+  readonly lastActivityAt: string
   readonly status: string
   readonly isArchived?: boolean
   readonly isDraft?: boolean
@@ -24,8 +25,8 @@ function sortTasks(tasks: readonly SidebarTask[], sort: SortKey): SidebarTask[] 
   return [...tasks].sort((a, b) => {
     if (sort === 'name-asc') return a.name.localeCompare(b.name)
     if (sort === 'name-desc') return b.name.localeCompare(a.name)
-    if (sort === 'oldest') return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    if (sort === 'oldest') return new Date(a.lastActivityAt).getTime() - new Date(b.lastActivityAt).getTime()
+    return new Date(b.lastActivityAt).getTime() - new Date(a.lastActivityAt).getTime()
   })
 }
 
@@ -48,12 +49,15 @@ export function useSidebarTasks(sort: SortKey): readonly SidebarProject[] {
     const next = new Map<string, SidebarTask>()
     let changed = prev.size !== Object.keys(tasks).length
     for (const t of Object.values(tasks)) {
+      const msgs = t.messages
+      const lastMsg = msgs.length > 0 ? msgs[msgs.length - 1].timestamp : ''
+      const lastActivityAt = lastMsg || t.createdAt
       const p = prev.get(t.id)
-      if (p && p.name === t.name && p.status === t.status && p.createdAt === t.createdAt && p.workspace === t.workspace && p.isArchived === t.isArchived && !p.isDraft) {
+      if (p && p.name === t.name && p.status === t.status && p.createdAt === t.createdAt && p.workspace === t.workspace && p.isArchived === t.isArchived && p.lastActivityAt === lastActivityAt && !p.isDraft) {
         next.set(t.id, p)
       } else {
         changed = true
-        next.set(t.id, { id: t.id, name: t.name, workspace: t.workspace, createdAt: t.createdAt, status: t.status, isArchived: t.isArchived })
+        next.set(t.id, { id: t.id, name: t.name, workspace: t.workspace, createdAt: t.createdAt, lastActivityAt, status: t.status, isArchived: t.isArchived })
       }
     }
     if (!changed) return prev
@@ -83,6 +87,7 @@ export function useSidebarTasks(sort: SortKey): readonly SidebarProject[] {
         name: content.trim(),
         workspace: ws,
         createdAt: new Date(0).toISOString(),
+        lastActivityAt: new Date(0).toISOString(),
         status: 'draft',
         isDraft: true,
       }
@@ -117,8 +122,8 @@ export function useSidebarTasks(sort: SortKey): readonly SidebarProject[] {
     // Sort projects by the same key (using the most recent / oldest thread as proxy)
     if (sort === 'recent' || sort === 'oldest') {
       result.sort((a, b) => {
-        const aTime = a.tasks.length > 0 ? new Date(a.tasks[0].createdAt).getTime() : 0
-        const bTime = b.tasks.length > 0 ? new Date(b.tasks[0].createdAt).getTime() : 0
+        const aTime = a.tasks.length > 0 ? new Date(a.tasks[0].lastActivityAt).getTime() : 0
+        const bTime = b.tasks.length > 0 ? new Date(b.tasks[0].lastActivityAt).getTime() : 0
         return sort === 'recent' ? bTime - aTime : aTime - bTime
       })
     } else if (sort === 'name-asc') {

@@ -51,10 +51,11 @@ async function sendMessageDirect(msg: string): Promise<void> {
   state.clearTurn(task.id)
 
   if (isDraft) {
-    const { settings } = useSettingsStore.getState()
+    const { settings, currentModeId } = useSettingsStore.getState()
     const projectPrefs = task.workspace ? settings.projectPrefs?.[task.workspace] : undefined
     const autoApprove = projectPrefs?.autoApprove !== undefined ? projectPrefs.autoApprove : settings.autoApprove
-    const created = await ipc.createTask({ name: task.name, workspace: task.workspace, prompt: msg, autoApprove })
+    const modeId = currentModeId && currentModeId !== 'kiro_default' ? currentModeId : undefined
+    const created = await ipc.createTask({ name: task.name, workspace: task.workspace, prompt: msg, autoApprove, modeId })
     const draft = useTaskStore.getState().tasks[task.id]
     const messages = draft?.messages.length ? draft.messages : [userMsg]
     state.upsertTask({ ...created, messages })

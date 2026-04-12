@@ -80,6 +80,19 @@ export const useSlashAction = (): SlashActionResult => {
         switchMode('kiro_default', 'Chat')
         setPanel(null)
         return true
+      case 'close':
+      case 'exit': {
+        const { selectedTaskId, removeTask, pendingWorkspace, setPendingWorkspace } = useTaskStore.getState()
+        if (selectedTaskId) {
+          void ipc.cancelTask(selectedTaskId).catch(() => {})
+          removeTask(selectedTaskId)
+          void ipc.deleteTask(selectedTaskId)
+        } else if (pendingWorkspace) {
+          setPendingWorkspace(null)
+        }
+        setPanel(null)
+        return true
+      }
       default:
         setPanel(null)
         return false

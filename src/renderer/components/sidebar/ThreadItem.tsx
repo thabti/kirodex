@@ -137,7 +137,7 @@ export const ThreadItem = memo(function ThreadItem({ task, isActive, onSelect, o
           </span>
         ) : (
           <span className="shrink-0 text-[9px] tabular-nums text-muted-foreground/40 group-hover/thread:hidden">
-            {relativeTime(task.createdAt)}
+            {relativeTime(task.lastActivityAt)}
           </span>
         )}
       </div>
