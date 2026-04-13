@@ -1,5 +1,5 @@
 import { memo, useState, useRef, useEffect, useCallback } from 'react'
-import { IconFolder, IconFolderOpen, IconEdit, IconTrash, IconPencil, IconArchive, IconMessagePlus } from '@tabler/icons-react'
+import { IconChevronRight, IconChevronDown, IconEdit, IconTrash, IconPencil, IconArchive, IconMessagePlus, IconFolderOpen } from '@tabler/icons-react'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { ipc } from '@/lib/ipc'
@@ -80,14 +80,14 @@ export const ProjectItem = memo(function ProjectItem({
           onClick={() => setExpanded((v) => !v)}
           onContextMenu={(e) => { e.preventDefault(); setCtxMenu({ x: e.clientX, y: e.clientY }) }}
           className={cn(
-            'peer/menu-button flex w-full h-7 cursor-pointer items-center gap-1.5 overflow-hidden rounded-lg px-1.5 py-1.5 text-xs text-left',
+            'peer/menu-button flex w-full h-6 cursor-pointer items-center gap-1 overflow-hidden rounded-lg px-1.5 py-1 text-[11px] text-left',
             'outline-none focus-visible:ring-2 focus-visible:ring-ring',
             'hover:bg-accent hover:text-foreground transition-colors',
           )}
         >
           {expanded
-            ? <IconFolderOpen className="size-3.5 shrink-0 text-muted-foreground/70" aria-hidden />
-            : <IconFolder className="size-3.5 shrink-0 text-muted-foreground/70" aria-hidden />
+            ? <IconChevronDown className="size-3 shrink-0 text-muted-foreground/50" aria-hidden />
+            : <IconChevronRight className="size-3 shrink-0 text-muted-foreground/50" aria-hidden />
           }
           {editing ? (
             <input
@@ -97,10 +97,10 @@ export const ProjectItem = memo(function ProjectItem({
               onBlur={commitRename}
               onKeyDown={(e) => { if (e.key === 'Enter') commitRename(); if (e.key === 'Escape') setEditing(false) }}
               onClick={(e) => e.stopPropagation()}
-              className="flex-1 min-w-0 truncate bg-transparent text-xs font-medium text-foreground outline-none"
+              className="flex-1 min-w-0 truncate bg-transparent text-[11px] font-normal text-foreground outline-none"
             />
           ) : (
-            <span className="flex-1 truncate text-xs font-medium text-foreground/90">{name}</span>
+            <span className="flex-1 truncate text-[11px] font-normal text-foreground/70">{name}</span>
           )}
         </button>
 
@@ -110,7 +110,7 @@ export const ProjectItem = memo(function ProjectItem({
             'pointer-events-none absolute inset-y-0 right-0 z-10 flex w-16 items-center justify-end gap-0.5 pr-1 transition-opacity',
             hovered ? 'opacity-100' : 'opacity-0',
           )}
-          style={{ background: 'linear-gradient(to right, transparent 0%, var(--sidebar-bg, var(--card)) 35%)' }}
+          style={{ background: 'linear-gradient(to right, transparent 0%, var(--sidebar) 35%)' }}
         >
           <Tooltip>
             <TooltipTrigger asChild>
@@ -170,7 +170,7 @@ export const ProjectItem = memo(function ProjectItem({
       )}
 
       {expanded && tasks.length > 0 && (
-        <ul className="flex min-w-0 flex-col overflow-hidden border-l mx-1 my-0 gap-0.5 px-1.5 py-0" style={{ borderColor: 'var(--border)' }}>
+        <ul className="flex min-w-0 flex-col overflow-hidden border-l mx-1 my-0 gap-0 px-1.5 py-0" style={{ borderColor: 'var(--border)' }}>
           {tasks.map((task) => (
             <ThreadItem
               key={task.id}

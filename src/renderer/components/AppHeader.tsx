@@ -81,17 +81,9 @@ const AppHeaderInner = memo(function AppHeaderInner({ sidePanelOpen, onToggleSid
   const hasStats = diffStats.additions > 0 || diffStats.deletions > 0
 
   return (
-    <header data-testid="app-header" data-tauri-drag-region onMouseDown={handleHeaderMouseDown} className="flex h-[44px] shrink-0 items-center gap-3 border-b border-border bg-card px-4 pl-[90px] select-none [-webkit-user-select:none]">
+    <header data-testid="app-header" data-tauri-drag-region onMouseDown={handleHeaderMouseDown} className="flex h-[38px] shrink-0 items-center gap-3 border-b border-border bg-card px-4 pl-[76px] select-none [-webkit-user-select:none]">
       {/* Breadcrumb left */}
       <nav data-testid="app-header-breadcrumb" data-tauri-drag-region className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
-        {/* Logo / app name */}
-        <span data-tauri-drag-region className="shrink-0 text-sm font-medium tracking-tight text-muted-foreground">
-          Kirodex
-        </span>
-        <span data-tauri-drag-region className="shrink-0 rounded-full bg-muted/50 px-1.5 py-0.5 text-[8px] font-medium uppercase tracking-[0.18em] text-muted-foreground/50">
-          Beta
-        </span>
-
         {/* Toggle sidebar */}
         <Tooltip>
           <TooltipTrigger asChild>
@@ -334,9 +326,7 @@ const UserMenu = memo(function UserMenu() {
 })
 
 const HeaderFallback = () => (
-  <header data-tauri-drag-region className="drag-region flex h-[44px] shrink-0 items-center gap-3 border-b border-border bg-card px-4 pl-[76px]">
-    <span className="text-sm font-medium tracking-tight text-muted-foreground">Kirodex</span>
-  </header>
+  <header data-tauri-drag-region className="drag-region flex h-[38px] shrink-0 items-center gap-3 border-b border-border bg-card px-4 pl-[76px]" />
 )
 
 export function AppHeader(props: AppHeaderProps) {

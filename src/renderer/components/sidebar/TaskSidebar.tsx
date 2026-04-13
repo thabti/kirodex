@@ -151,7 +151,7 @@ export const TaskSidebar = memo(function TaskSidebar({ width, onResize, position
   })
 
   return (
-    <div data-testid="task-sidebar" onContextMenu={handleContextMenu} className={cn('relative flex h-full min-h-0 shrink-0 flex-col overflow-hidden bg-card text-foreground', isRight ? 'border-l pr-1 order-last' : 'border-r pl-1')} style={{ width }}>
+    <div data-testid="task-sidebar" onContextMenu={handleContextMenu} className={cn('relative flex h-full min-h-0 shrink-0 flex-col overflow-hidden bg-sidebar text-foreground', isRight ? 'border-l pr-1 order-last' : 'border-r pl-1')} style={{ width }}>
       {ctxMenu && (
         <>
           <div className="fixed inset-0 z-[199]" onClick={() => setCtxMenu(null)} onContextMenu={(e) => { e.preventDefault(); setCtxMenu(null) }} />
@@ -189,7 +189,7 @@ export const TaskSidebar = memo(function TaskSidebar({ width, onResize, position
       <ScrollArea className="min-h-0 flex-1 overflow-hidden px-2">
         <div className="min-w-0 pb-2">
           <div className="relative flex min-w-0 flex-col">
-            <ul className="flex min-w-0 flex-col gap-1">
+            <ul className="flex min-w-0 flex-col gap-0.5">
               {projectList.length === 0 && (
                 <p className="px-3 py-6 text-center text-[11px] text-muted-foreground">No projects yet — click + to import a folder</p>
               )}

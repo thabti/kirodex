@@ -98,7 +98,7 @@ export const ThreadItem = memo(function ThreadItem({ task, isActive, onSelect, o
         onContextMenu={handleContextMenu}
         onKeyDown={(e) => e.key === 'Enter' && onSelect()}
         className={cn(
-          'flex min-w-0 h-7 w-full cursor-pointer items-center gap-1.5 overflow-hidden rounded-lg px-2 pr-1 text-xs select-none',
+          'flex min-w-0 h-6 w-full cursor-pointer items-center gap-1.5 overflow-hidden rounded-lg px-2 pr-1 text-xs select-none',
           'outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring transition-colors',
           isActive
             ? 'bg-accent/85 dark:bg-accent/55 text-foreground font-medium hover:bg-accent dark:hover:bg-accent/70'
