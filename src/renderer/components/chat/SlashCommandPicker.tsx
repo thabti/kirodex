@@ -8,7 +8,7 @@ const displayName = (name: string): string => name.replace(/^\/+/, '')
 // ── Kiro-accurate descriptions (fallback when ACP description is generic) ──
 const COMMAND_DESCRIPTIONS: Record<string, string> = {
   agent: 'Switch between agents or list available ones',
-  chat: 'Save, load, or manage chat sessions',
+  chat: 'Pass through to backend chat command',
   clear: 'Clear the current conversation',
   code: 'Initialize or manage code intelligence workspace',
   compact: 'Summarize conversation to free up context',
@@ -17,7 +17,7 @@ const COMMAND_DESCRIPTIONS: Record<string, string> = {
   help: 'Get help with Kiro CLI features and commands',
   knowledge: 'Add, search, or manage your knowledge base',
   model: 'Switch the active AI model',
-  plan: 'Start the planning agent to design before building',
+  plan: 'Toggle plan mode on or off',
   prompts: 'Manage reusable prompt templates',
   settings: 'Open application settings',
   tools: 'View or configure available tools',
