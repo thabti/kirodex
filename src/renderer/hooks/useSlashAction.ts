@@ -47,7 +47,7 @@ export const useSlashAction = (): SlashActionResult => {
     // Track every recognized slash command. The switch below rejects unknown
     // names by returning false, so we gate the track call on that path via
     // the `default` case.
-    const KNOWN = new Set(['clear', 'model', 'agent', 'settings', 'upload', 'plan', 'chat', 'close', 'exit'])
+    const KNOWN = new Set(['clear', 'model', 'agent', 'settings', 'upload', 'plan', 'close', 'exit'])
     if (KNOWN.has(name)) {
       track('feature_used', { feature: 'slash_command', detail: name })
     }
