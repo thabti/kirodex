@@ -14,11 +14,38 @@ permissions:
   contents: write
 
 jobs:
+  # ── Extract release notes from annotated tag ─────────────────────
+  release-notes:
+    runs-on: ubuntu-22.04
+    outputs:
+      notes: ${{ steps.notes.outputs.notes }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Extract tag annotation
+        id: notes
+        run: |
+          # Get the tag message body (skip the first line which is the tag name)
+          NOTES=$(git tag -l --format='%(contents:body)' "${{ github.ref_name }}" | sed '/^$/d')
+          if [ -z "$NOTES" ]; then
+            NOTES="Maintenance release."
+          fi
+          # Use EOF delimiter for multiline output
+          {
+            echo "notes<<EOF"
+            echo "$NOTES"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
   # ── Build for all platforms ──────────────────────────────────────
   # tauri-action reads the version from tauri.conf.json automatically.
   # The `bun run release` script ensures Cargo.toml, tauri.conf.json,
   # and package.json are all in sync before tagging.
   build:
+    needs: release-notes
     permissions:
       contents: write
     strategy:
@@ -82,6 +109,10 @@ jobs:
           tagName: ${{ github.ref_name }}
           releaseName: 'Kirodex ${{ github.ref_name }}'
           releaseBody: |
+            ${{ needs.release-notes.outputs.notes }}
+
+            ---
+
             ### Download
 
             | Platform | File |
