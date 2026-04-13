@@ -122,6 +122,10 @@ export interface AppSettings {
   projectPrefs?: Record<string, ProjectPrefs>
   hasOnboarded?: boolean
   sidebarPosition?: SidebarPosition
+  /** Opt-in flag for anonymous product analytics. Default: false. */
+  analyticsEnabled?: boolean
+  /** Random UUID generated on first opt-in, cleared on opt-out. */
+  analyticsAnonId?: string | null
 }
 
 export interface ProjectFile {

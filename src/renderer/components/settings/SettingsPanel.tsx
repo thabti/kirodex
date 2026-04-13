@@ -645,6 +645,22 @@ export const SettingsPanel = () => {
               {section === 'advanced' && (
                 <>
                   <div>
+                    <SectionLabel title="Privacy" />
+                    <SettingsCard>
+                      <SettingRow
+                        label="Share anonymous usage data"
+                        description="Feature usage and app version only. No prompts, code, file paths, branch names, or commit messages are ever sent."
+                      >
+                        <Switch
+                          checked={draft.analyticsEnabled ?? false}
+                          onCheckedChange={(checked) => updateDraft({ analyticsEnabled: checked })}
+                          aria-label="Toggle anonymous analytics"
+                        />
+                      </SettingRow>
+                    </SettingsCard>
+                  </div>
+
+                  <div>
                     <SectionLabel title="Git" />
                     <SettingsCard>
                       <SettingRow label="Co-authored-by Kirodex" description="Append trailer to every commit">

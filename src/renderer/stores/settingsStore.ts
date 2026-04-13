@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type { AppSettings, ProjectPrefs } from '@/types'
 import { ipc } from '@/lib/ipc'
+import { track } from '@/lib/analytics'
 
 export interface ModelOption {
   modelId: string
@@ -82,8 +83,20 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
   },
 
   saveSettings: async (settings) => {
+    const prev = get().settings
     await ipc.saveSettings(settings)
     set({ settings })
+    // Emit a settings_changed event per key that actually changed. We only
+    // send the key name, never the value — e.g. the default model id is a
+    // user-chosen string we don't need in analytics.
+    const keys: Array<keyof AppSettings> = [
+      'kiroBin', 'defaultModel', 'autoApprove', 'respectGitignore',
+      'coAuthor', 'coAuthorJsonReport', 'notifications', 'fontSize',
+      'sidebarPosition', 'analyticsEnabled',
+    ]
+    for (const k of keys) {
+      if (prev[k] !== settings[k]) track('settings_changed', { key: String(k) })
+    }
   },
 
   fetchModels: async (kiroBin?: string) => {
@@ -129,6 +142,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
       settings: updated,
       ...(patch.modelId !== undefined ? { currentModelId: patch.modelId } : {}),
     })
+    if (patch.modelId !== undefined) track('feature_used', { feature: 'model_switch' })
     ipc.saveSettings(updated).catch(() => {})
   },
 

@@ -7,6 +7,7 @@ import { useDebugStore } from './debugStore'
 import { useSettingsStore } from './settingsStore'
 import { useDiffStore } from './diffStore'
 import { useKiroStore } from './kiroStore'
+import { track } from '@/lib/analytics'
 
 interface TaskStore {
   tasks: Record<string, AgentTask>
@@ -164,18 +165,21 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
         return state
       }
       const merged = { ...task, messages }
-      const activity: ActivityEntry[] =
-        !prev || prev.status !== task.status
-          ? [
-              {
-                taskId: task.id,
-                taskName: task.name,
-                status: task.status,
-                timestamp: new Date().toISOString(),
-              },
-              ...state.activityFeed,
-            ].slice(0, 20)
-          : state.activityFeed
+      const statusChanged = !prev || prev.status !== task.status
+      if (statusChanged && (task.status === 'completed' || task.status === 'error' || task.status === 'cancelled')) {
+        track('task_completed', { status: task.status })
+      }
+      const activity: ActivityEntry[] = statusChanged
+        ? [
+            {
+              taskId: task.id,
+              taskName: task.name,
+              status: task.status,
+              timestamp: new Date().toISOString(),
+            },
+            ...state.activityFeed,
+          ].slice(0, 20)
+        : state.activityFeed
       return {
         tasks: { ...state.tasks, [task.id]: merged },
         activityFeed: activity,
@@ -326,6 +330,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
         ...state.activityFeed,
       ].slice(0, 20),
     }))
+    track('task_created', { has_prompt: false })
     return id
   },
 

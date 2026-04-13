@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useTaskStore } from '@/stores/taskStore'
 import { ipc } from '@/lib/ipc'
+import { track } from '@/lib/analytics'
 
 export type SlashPanel = 'model' | 'agent' | null
 
@@ -29,6 +30,7 @@ const addSystemMessage = (text: string): void => {
 const switchMode = (modeId: string, label: string): void => {
   useSettingsStore.setState({ currentModeId: modeId })
   addSystemMessage(`Switched to ${label} mode`)
+  track('feature_used', { feature: 'mode_switch', detail: modeId })
   const taskId = useTaskStore.getState().selectedTaskId
   if (taskId) {
     ipc.setMode(taskId, modeId).catch(() => {
@@ -42,6 +44,13 @@ export const useSlashAction = (): SlashActionResult => {
 
   const execute = useCallback((commandName: string): boolean => {
     const name = bare(commandName)
+    // Track every recognized slash command. The switch below rejects unknown
+    // names by returning false, so we gate the track call on that path via
+    // the `default` case.
+    const KNOWN = new Set(['clear', 'model', 'agent', 'settings', 'upload', 'plan', 'chat', 'close', 'exit'])
+    if (KNOWN.has(name)) {
+      track('feature_used', { feature: 'slash_command', detail: name })
+    }
     switch (name) {
       case 'clear': {
         const { selectedTaskId, tasks, clearTurn } = useTaskStore.getState()

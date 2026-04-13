@@ -72,6 +72,11 @@ jobs:
           APPLE_TEAM_ID: ${{ secrets.TEAM_ID }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          # PostHog — compiled into the Vite bundle. Leave these unset in dev
+          # and the analytics wrapper no-ops. Add the keys as repository
+          # secrets before the first release that ships analytics.
+          VITE_POSTHOG_API_KEY: ${{ secrets.VITE_POSTHOG_API_KEY }}
+          VITE_POSTHOG_HOST: ${{ secrets.VITE_POSTHOG_HOST }}
         with:
           # Use the git tag directly — tauri-action creates the release at this tag
           tagName: ${{ github.ref_name }}
