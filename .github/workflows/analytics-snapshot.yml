@@ -1,0 +1,92 @@
+name: Analytics snapshot
+
+# Daily snapshot of distribution metrics that live outside our product telemetry:
+#
+#  1. GitHub Releases download counts per asset (works today, no setup)
+#  2. Homebrew cask install counts via formulae.brew.sh (only available once
+#     Kirodex is accepted into homebrew/homebrew-cask; third-party taps are
+#     not aggregated)
+#
+# Output is committed to the `analytics-data` branch as CSV so we keep a
+# historical series and can graph download/install curves over time.
+
+on:
+  schedule:
+    - cron: '17 6 * * *'  # daily at 06:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: analytics-snapshot
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      # actions/checkout installs a masked HTTP extraheader credential helper,
+      # so subsequent `git push` calls authenticate automatically without the
+      # token ever appearing on a command line or in any log.
+      - name: Checkout default branch
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: true
+
+      - name: Switch to analytics-data branch (create if missing)
+        run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          if git ls-remote --exit-code --heads origin analytics-data >/dev/null 2>&1; then
+            git fetch origin analytics-data
+            git checkout analytics-data
+          else
+            git checkout --orphan analytics-data
+            git rm -rf . >/dev/null 2>&1 || true
+            echo "# Analytics snapshots" > README.md
+            git add README.md
+            git commit -m "chore: initialize analytics-data branch"
+            git push -u origin analytics-data
+          fi
+          mkdir -p data
+
+      - name: Snapshot GitHub release downloads
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          STAMP=$(date -u +%Y-%m-%d)
+          OUT="data/github-releases-${STAMP}.csv"
+          echo "snapshot_date,tag,published_at,asset,download_count,size" > "$OUT"
+          gh api "repos/${REPO}/releases" --paginate \
+            --jq '.[] | {tag: .tag_name, published_at: .published_at, assets: .assets} | .assets[] as $a | [.tag, .published_at, $a.name, $a.download_count, $a.size] | @csv' \
+            | while IFS= read -r row; do
+                echo "${STAMP},${row}" >> "$OUT"
+              done
+          echo "Wrote $(wc -l < "$OUT") rows to $OUT"
+
+      - name: Snapshot Homebrew cask installs (if published to homebrew-cask)
+        run: |
+          STAMP=$(date -u +%Y-%m-%d)
+          OUT="data/homebrew-cask-${STAMP}.csv"
+          echo "snapshot_date,window,cask,count" > "$OUT"
+          for WINDOW in 30d 90d 365d; do
+            URL="https://formulae.brew.sh/api/analytics/cask-install/${WINDOW}.json"
+            COUNT=$(curl -fsSL "$URL" | jq -r '.formulae["kirodex"][0].count // empty')
+            if [ -n "$COUNT" ]; then
+              echo "${STAMP},${WINDOW},kirodex,${COUNT}" >> "$OUT"
+            else
+              echo "kirodex not yet in homebrew-cask analytics for ${WINDOW}; skipping"
+            fi
+          done
+
+      - name: Commit snapshot
+        run: |
+          git add data/
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "chore(analytics): snapshot $(date -u +%Y-%m-%d)"
+            git push origin analytics-data
+          fi

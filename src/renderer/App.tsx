@@ -30,6 +30,14 @@ import { useDiffStore } from "@/stores/diffStore";
 import { useKiroStore, initKiroListeners } from "@/stores/kiroStore";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useUpdateChecker } from "@/hooks/useUpdateChecker";
+import { getVersion } from "@tauri-apps/api/app";
+import {
+  initAnalytics,
+  resetAnalytics,
+  makeAnonId,
+  readLastVersion,
+  writeLastVersion,
+} from "@/lib/analytics";
 import { useShallow } from "zustand/react/shallow";
 import { cn } from "@/lib/utils";
 import { IconStack2, IconPlus, IconFolderOpen } from "@tabler/icons-react";
@@ -181,6 +189,8 @@ export function App() {
   const debugOpen = useDebugStore((s) => s.isOpen);
   const settingsLoaded = useSettingsStore((s) => s.isLoaded);
   const hasOnboarded = useSettingsStore((s) => s.settings.hasOnboarded);
+  const analyticsEnabled = useSettingsStore((s) => s.settings.analyticsEnabled ?? false);
+  const analyticsAnonId = useSettingsStore((s) => s.settings.analyticsAnonId ?? null);
   const fontSize = useSettingsStore((s) => s.settings.fontSize);
   const sidebarPosition = useSettingsStore((s) => s.settings.sidebarPosition ?? 'left');
   const isRightSidebar = sidebarPosition === 'right';
@@ -228,6 +238,34 @@ export function App() {
       cleanupKiro();
     };
   }, []);
+
+  // Wire PostHog once settings are loaded; re-run on opt-in/opt-out toggles.
+  useEffect(() => {
+    if (!settingsLoaded) return;
+    if (!analyticsEnabled) {
+      resetAnalytics();
+      return;
+    }
+
+    const { settings, saveSettings } = useSettingsStore.getState();
+    let distinctId = analyticsAnonId;
+    // Lazily mint an anonymous id on first opt-in and persist it.
+    if (!distinctId) {
+      distinctId = makeAnonId();
+      saveSettings({ ...settings, analyticsAnonId: distinctId }).catch(() => {});
+    }
+
+    const previousVersion = readLastVersion();
+    initAnalytics({
+      enabled: true,
+      distinctId,
+      previousVersion,
+    }).then((ok) => {
+      if (ok) {
+        getVersion().then((v) => writeLastVersion(v)).catch(() => {});
+      }
+    });
+  }, [settingsLoaded, analyticsEnabled, analyticsAnonId]);
 
   // ⌘B keyboard shortcut to toggle sidebar
   useEffect(() => {

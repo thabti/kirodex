@@ -51,6 +51,14 @@ pub struct AppSettings {
     pub project_prefs: Option<std::collections::HashMap<String, ProjectPrefs>>,
     #[serde(default)]
     pub has_onboarded: bool,
+    /// Opt-in flag for anonymous product analytics. Defaults to false; the user
+    /// must turn it on via Settings → Advanced.
+    #[serde(default)]
+    pub analytics_enabled: bool,
+    /// Random UUID created on first opt-in and cleared on opt-out. Used as the
+    /// PostHog `distinct_id` — never tied to OS identity, email, or machine ID.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub analytics_anon_id: Option<String>,
 }
 
 fn default_kiro_bin() -> String { "kiro-cli".to_string() }
@@ -72,6 +80,8 @@ impl Default for AppSettings {
             sound_notifications: true,
             project_prefs: None,
             has_onboarded: false,
+            analytics_enabled: false,
+            analytics_anon_id: None,
         }
     }
 }
@@ -129,6 +139,8 @@ mod tests {
         assert!(!s.has_onboarded);
         assert!(s.agent_profiles.is_empty());
         assert!(s.project_prefs.is_none());
+        assert!(!s.analytics_enabled);
+        assert!(s.analytics_anon_id.is_none());
     }
 
     #[test]
