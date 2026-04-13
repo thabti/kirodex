@@ -81,14 +81,16 @@ export const useSlashAction = (): SlashActionResult => {
         document.dispatchEvent(new CustomEvent('slash-upload'))
         setPanel(null)
         return true
-      case 'plan':
-        switchMode('kiro_planner', 'Plan')
+      case 'plan': {
+        const current = useSettingsStore.getState().currentModeId
+        if (current === 'kiro_planner') {
+          switchMode('kiro_default', 'Default')
+        } else {
+          switchMode('kiro_planner', 'Plan')
+        }
         setPanel(null)
         return true
-      case 'chat':
-        switchMode('kiro_default', 'Chat')
-        setPanel(null)
-        return true
+      }
       case 'close':
       case 'exit': {
         const { selectedTaskId, removeTask, pendingWorkspace, setPendingWorkspace } = useTaskStore.getState()

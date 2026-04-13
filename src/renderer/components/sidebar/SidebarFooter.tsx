@@ -1,5 +1,6 @@
 import { memo, useState, useCallback } from 'react'
 import { IconSettings, IconBug } from '@tabler/icons-react'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useTaskStore } from '@/stores/taskStore'
 import { useDebugStore } from '@/stores/debugStore'
@@ -43,16 +44,26 @@ export const SidebarFooter = memo(function SidebarFooter() {
     <>
       <KiroConfigFooter />
       <div className="flex shrink-0 flex-col gap-1 px-2 pb-4 pt-1.5">
-        <button type="button" onClick={() => useDebugStore.getState().toggleOpen()}
-          className="flex w-full h-6 cursor-pointer items-center gap-2 overflow-hidden rounded-lg px-2 text-xs text-muted-foreground/70 hover:bg-accent hover:text-foreground transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring">
-          <IconBug className="size-3.5" aria-hidden />
-          <span className="text-xs">Debug</span>
-        </button>
-        <button type="button" onClick={() => setSettingsOpen(true)}
-          className="flex w-full h-6 cursor-pointer items-center gap-2 overflow-hidden rounded-lg px-2 text-xs text-muted-foreground/70 hover:bg-accent hover:text-foreground transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring">
-          <IconSettings className="size-3.5" aria-hidden />
-          <span className="text-xs">Settings</span>
-        </button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button type="button" onClick={() => useDebugStore.getState().toggleOpen()}
+              className="flex w-full h-6 cursor-pointer items-center gap-2 overflow-hidden rounded-lg px-2 text-xs text-muted-foreground/70 hover:bg-accent hover:text-foreground transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring">
+              <IconBug className="size-3.5" aria-hidden />
+              <span className="text-xs">Debug</span>
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="top">Toggle debug panel</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button type="button" onClick={() => setSettingsOpen(true)}
+              className="flex w-full h-6 cursor-pointer items-center gap-2 overflow-hidden rounded-lg px-2 text-xs text-muted-foreground/70 hover:bg-accent hover:text-foreground transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring">
+              <IconSettings className="size-3.5" aria-hidden />
+              <span className="text-xs">Settings</span>
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="top">Open settings</TooltipContent>
+        </Tooltip>
       </div>
     </>
   )

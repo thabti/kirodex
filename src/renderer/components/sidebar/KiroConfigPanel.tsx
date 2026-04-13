@@ -399,7 +399,7 @@ export const KiroConfigPanel = memo(function KiroConfigPanel({
                   <IconSearch className="size-3.5" aria-hidden />
                 </button>
               </TooltipTrigger>
-              <TooltipContent side="right">Filter</TooltipContent>
+              <TooltipContent side="top">Filter</TooltipContent>
             </Tooltip>
           )}
         </div>

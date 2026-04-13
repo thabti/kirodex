@@ -113,14 +113,19 @@ const DebugRow = memo(function DebugRow({
         </button>
 
         {/* Copy row */}
-        <button
-          type="button"
-          onClick={handleCopy}
-          title="Copy entry"
-          className="flex size-4 shrink-0 items-center justify-center rounded text-muted-foreground/0 transition-colors group-hover/row:text-muted-foreground/40 hover:!text-foreground"
-        >
-          {copied ? <IconCheck className="size-2.5" /> : <IconCopy className="size-2.5" />}
-        </button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              onClick={handleCopy}
+              aria-label="Copy entry"
+              className="flex size-4 shrink-0 items-center justify-center rounded text-muted-foreground/0 transition-colors group-hover/row:text-muted-foreground/40 hover:!text-foreground"
+            >
+              {copied ? <IconCheck className="size-2.5" /> : <IconCopy className="size-2.5" />}
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="left">{copied ? 'Copied!' : 'Copy entry'}</TooltipContent>
+        </Tooltip>
       </div>
 
       {expanded && (

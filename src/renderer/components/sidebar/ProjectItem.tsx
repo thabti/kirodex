@@ -123,7 +123,7 @@ export const ProjectItem = memo(function ProjectItem({
                 <IconEdit className="size-3.5" />
               </button>
             </TooltipTrigger>
-            <TooltipContent side="right">New thread</TooltipContent>
+            <TooltipContent side="top">New thread</TooltipContent>
           </Tooltip>
 
           <Tooltip>
@@ -137,7 +137,7 @@ export const ProjectItem = memo(function ProjectItem({
                 <IconTrash className="size-3" />
               </button>
             </TooltipTrigger>
-            <TooltipContent side="right">Remove project</TooltipContent>
+            <TooltipContent side="top">Remove project</TooltipContent>
           </Tooltip>
         </div>
       </div>

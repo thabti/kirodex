@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { IconGitCommit, IconChevronDown, IconArrowUp, IconArrowDown, IconRefresh, IconLoader2 } from '@tabler/icons-react'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { toast } from 'sonner'
 import { ipc } from '@/lib/ipc'
 import { cn } from '@/lib/utils'
@@ -75,11 +76,16 @@ export function GitActionsGroup({ workspace }: { workspace: string }) {
   return (
     <div ref={ref} data-testid="git-actions-group" className="relative">
       {/* Chevron — sits flush against the diff stats button on the left */}
-      <button type="button" aria-label="Git options" data-testid="git-options-button"
-        onClick={() => { setMenuOpen((v) => !v); setShowCommitInput(false) }}
-        className="inline-flex h-6 w-5 items-center justify-center rounded-r-md border border-l-0 border-input bg-popover text-muted-foreground shadow-xs/5 transition-colors hover:bg-accent/50 hover:text-foreground dark:bg-input/32">
-        <IconChevronDown className={cn('size-3 transition-transform', menuOpen && 'rotate-180')} aria-hidden />
-      </button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button type="button" aria-label="Git options" data-testid="git-options-button"
+            onClick={() => { setMenuOpen((v) => !v); setShowCommitInput(false) }}
+            className="inline-flex h-6 w-5 items-center justify-center rounded-r-md border border-l-0 border-input bg-popover text-muted-foreground shadow-xs/5 transition-colors hover:bg-accent/50 hover:text-foreground dark:bg-input/32">
+            <IconChevronDown className={cn('size-3 transition-transform', menuOpen && 'rotate-180')} aria-hidden />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">Git actions</TooltipContent>
+      </Tooltip>
 
       {/* Dropdown menu */}
       {menuOpen && (
