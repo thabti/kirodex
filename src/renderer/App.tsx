@@ -178,6 +178,15 @@ function UpdateNotifier() {
   return null;
 }
 
+/** Navigate to a task from a clicked notification, then clear the pending marker. */
+const navigateToNotifiedTask = (taskId: string): void => {
+  const store = useTaskStore.getState()
+  if (!store.tasks[taskId]) return
+  store.setSelectedTask(taskId)
+  store.setView('chat')
+  useTaskStore.setState({ lastNotifiedTaskId: null })
+}
+
 export function App() {
   const { view, selectedTaskId, pendingWorkspace } = useTaskStore(
     useShallow((s) => ({
@@ -226,14 +235,26 @@ export function App() {
     // Pre-warm ACP to get models/modes before user creates a thread
     ipc.probeCapabilities().catch(() => {});
     // Request notification permission so end_turn alerts work
-    import("@tauri-apps/plugin-notification").then(({ isPermissionGranted, requestPermission }) => {
+    import("@tauri-apps/plugin-notification").then(({ isPermissionGranted, requestPermission, onAction }) => {
       isPermissionGranted().then((granted) => {
         if (!granted) requestPermission();
       });
+      // Navigate to the task when user clicks a notification
+      onAction((notification) => {
+        const tid = (notification as { extra?: Record<string, unknown> }).extra?.taskId as string | undefined;
+        if (tid) navigateToNotifiedTask(tid);
+      }).catch(() => {});
     }).catch(() => {});
+    // Fallback: navigate on window focus if a notification was pending
+    const handleWindowFocus = () => {
+      const tid = useTaskStore.getState().lastNotifiedTaskId;
+      if (tid) navigateToNotifiedTask(tid);
+    };
+    window.addEventListener("focus", handleWindowFocus);
     const cleanupTask = initTaskListeners();
     const cleanupKiro = initKiroListeners();
     return () => {
+      window.removeEventListener("focus", handleWindowFocus);
       cleanupTask();
       cleanupKiro();
     };

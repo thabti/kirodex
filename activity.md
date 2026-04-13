@@ -1,3 +1,51 @@
+## 2026-04-14 01:41 GST (Dubai)
+
+### Notifications: Click-to-navigate to correct project and thread
+
+Clicking a desktop notification now navigates to the correct thread. Added `lastNotifiedTaskId` to the task store, included `extra: { taskId }` in the notification payload, and wired up both an `onAction` listener and a window `focus` fallback in App.tsx. Also removed the duplicate Rust-side notification (the frontend one is conditional on `!document.hasFocus()` and includes the actual message content).
+
+**Modified:** `src/renderer/stores/taskStore.ts`, `src/renderer/App.tsx`, `src-tauri/src/commands/acp.rs`
+
+## 2026-04-14 01:41 GST (Dubai)
+
+### Chat: ChatInput UX improvements batch
+
+Seven UX improvements to ChatInput: (1) tooltips with keyboard shortcut hints on send (⏎) and pause (Esc) buttons, (2) Shift+Enter hint in placeholder text, (3) disabled state shows reason in placeholder with cursor-not-allowed + opacity, (4) Cmd+L global shortcut to focus the chat input with kbd hint in footer, (5) amber dot queue indicator on send button when messages are queued, (6) DragOverlay fade transition via visible prop instead of conditional render, (7) scroll shadow gradient at top of textarea when content overflows.
+
+**Modified:** `src/renderer/components/chat/ChatInput.tsx`, `src/renderer/components/chat/ChatPanel.tsx`, `src/renderer/components/chat/DragOverlay.tsx`, `src/renderer/components/chat/DragOverlay.test.tsx`
+
+## 2026-04-14 01:41 GST (Dubai)
+
+### TaskStore: Add refusal error message and applyTurnEnd tests
+
+Extracted turn_end state logic into exported `applyTurnEnd` function. When `stopReason` is `"refusal"`, a system error message is appended and task status is set to `error`. Added 8 unit tests covering refusal/normal paths, tool call finalization, and streaming state cleanup.
+
+**Modified:** `src/renderer/stores/taskStore.ts`, `src/renderer/stores/taskStore.test.ts`
+
+## 2026-04-14 01:28 GST (Dubai)
+
+### ACP: Fix plan mode stuck state when subagent ends with refusal
+
+When a subagent session ended with refusal, its tool calls were left with no terminal status in the parent's liveToolCalls. The turn_end handler moved them into the message history with undefined/in_progress status, causing perpetual spinners. Fixed by finalizing all incomplete tool calls on turn_end (marking as completed or failed based on stopReason). Also forwarded `kiro.dev/subagent/list_update` notifications to the frontend and included `stopReason` in the turn_end event.
+
+**Modified:** `src-tauri/src/commands/acp.rs`, `src/renderer/stores/taskStore.ts`, `src/renderer/lib/ipc.ts`
+
+## 2026-04-14 01:29 GST (Dubai)
+
+### Chat: Auto-focus ChatInput on new thread creation
+
+Added `autoFocus` prop to `ChatInput` that triggers a `useEffect` to focus the textarea on mount. `PendingChat` passes `autoFocus` so the cursor lands in the input when a new thread is created.
+
+**Modified:** `src/renderer/components/chat/ChatInput.tsx`, `src/renderer/components/chat/PendingChat.tsx`
+
+## 2026-04-13 16:28 GST (Dubai)
+
+### Release: Auto-generate grouped release notes from commits
+
+Added `scripts/generate-notes.sh` that collects commits since the last tag, groups them by conventional commit type (Features, Bug fixes, Styling, etc.), and outputs formatted markdown. Updated `scripts/release.sh` to call it, prepend notes to `CHANGELOG.md`, commit with co-author trailer, and create annotated tags with the notes as the tag message. Updated `.github/workflows/release.yml` with a `release-notes` job that extracts the tag annotation and injects it into the GitHub release body above the download table.
+
+**Modified:** `scripts/generate-notes.sh`, `scripts/release.sh`, `.github/workflows/release.yml`
+
 ## 2026-04-13 14:58 GST (Dubai)
 
 ### Chat: Improve scroll-to-bottom button hover UX
