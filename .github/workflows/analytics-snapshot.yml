@@ -26,31 +26,30 @@ jobs:
   snapshot:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      # actions/checkout installs a masked HTTP extraheader credential helper,
+      # so subsequent `git push` calls authenticate automatically without the
+      # token ever appearing on a command line or in any log.
+      - name: Checkout default branch
+        uses: actions/checkout@v6
         with:
-          ref: analytics-data
-          fetch-depth: 1
-          # If the branch doesn't exist yet the checkout fails — fall through
-          # to the fresh-branch step below.
-        continue-on-error: true
-        id: checkout_data
+          persist-credentials: true
 
-      - name: Initialize analytics-data branch if missing
-        if: steps.checkout_data.outcome == 'failure'
+      - name: Switch to analytics-data branch (create if missing)
         run: |
-          git init
-          git remote add origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
-          git checkout --orphan analytics-data
+          if git ls-remote --exit-code --heads origin analytics-data >/dev/null 2>&1; then
+            git fetch origin analytics-data
+            git checkout analytics-data
+          else
+            git checkout --orphan analytics-data
+            git rm -rf . >/dev/null 2>&1 || true
+            echo "# Analytics snapshots" > README.md
+            git add README.md
+            git commit -m "chore: initialize analytics-data branch"
+            git push -u origin analytics-data
+          fi
           mkdir -p data
-          echo "# Analytics snapshots" > README.md
-          git add README.md
-          git commit -m "chore: initialize analytics-data branch"
-          git push -u origin analytics-data
-
-      - name: Ensure data dir
-        run: mkdir -p data
 
       - name: Snapshot GitHub release downloads
         env:
@@ -84,8 +83,6 @@ jobs:
 
       - name: Commit snapshot
         run: |
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git config user.name "github-actions[bot]"
           git add data/
           if git diff --cached --quiet; then
             echo "No changes to commit."
