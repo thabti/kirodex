@@ -3,9 +3,10 @@
  * on/off gate, a single list of super-properties, and a single place where we
  * strip accidental PII.
  *
- * Hard-disabled unless BOTH:
- *   1. `import.meta.env.VITE_POSTHOG_API_KEY` is set at build time
- *   2. The user has opted in via Settings → Advanced (`analyticsEnabled`)
+ * Hard-disabled unless ALL of:
+ *   1. This is a production build (`import.meta.env.PROD`) — dev never reports
+ *   2. `import.meta.env.VITE_POSTHOG_API_KEY` is set at build time
+ *   3. The user has opted in via Settings → Advanced (`analyticsEnabled`)
  *
  * Nothing sensitive leaves the machine — we track enumerations only
  * (e.g. `git_op: "commit"`), never prompts, file contents, paths, branch names,
@@ -18,6 +19,7 @@ import { getVersion } from '@tauri-apps/api/app'
 const POSTHOG_KEY = import.meta.env.VITE_POSTHOG_API_KEY as string | undefined
 const POSTHOG_HOST = (import.meta.env.VITE_POSTHOG_HOST as string | undefined) ?? 'https://us.i.posthog.com'
 const DEV = import.meta.env.DEV
+const PROD = import.meta.env.PROD
 
 type FeatureName =
   | 'slash_command'
@@ -60,6 +62,9 @@ const safe = <T>(fn: () => T): T | undefined => {
 
 const hasKey = (): boolean => !!POSTHOG_KEY && POSTHOG_KEY.length > 0
 
+/** Production-only gate — dev builds never report, even with a key set. */
+const isEligibleBuild = (): boolean => PROD && !DEV
+
 const detectPlatform = (): string => {
   const ua = typeof navigator !== 'undefined' ? navigator.userAgent : ''
   if (/Mac/.test(ua)) return 'darwin'
@@ -86,8 +91,12 @@ export const initAnalytics = async (
     previousVersion?: string | null
   },
 ): Promise<boolean> => {
+  if (!isEligibleBuild()) {
+    if (DEV) console.info('[analytics] disabled: dev build')
+    return false
+  }
   if (!opts.enabled || !hasKey()) {
-    if (DEV && !hasKey()) console.info('[analytics] disabled: no VITE_POSTHOG_API_KEY')
+    if (!hasKey()) console.info('[analytics] disabled: no VITE_POSTHOG_API_KEY')
     return false
   }
   if (ready) return true
@@ -97,7 +106,7 @@ export const initAnalytics = async (
     app_version: appVersion,
     platform: detectPlatform(),
     arch: detectArch(),
-    channel: DEV ? 'dev' : 'release',
+    channel: 'release',
   }
 
   try {
