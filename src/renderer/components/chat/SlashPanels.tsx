@@ -168,7 +168,7 @@ const AgentListPanel = memo(function AgentListPanel({ onDismiss }: { onDismiss: 
     <PanelShell onDismiss={onDismiss}>
       {/* Search input */}
       {hasSearch && (
-        <div className="px-3 pt-2 pb-1">
+        <div className="px-3 pb-1">
           <input
             type="text"
             value={query}
@@ -285,15 +285,17 @@ function PanelShell({ children, onDismiss }: { children: React.ReactNode; onDism
   return (
     <div className="absolute bottom-full left-0 right-0 z-[300] mb-2 overflow-hidden rounded-xl border border-border bg-popover shadow-xl">
       {onDismiss && (
-        <button
-          type="button"
-          aria-label="Close panel"
-          tabIndex={0}
-          onMouseDown={(e) => { e.preventDefault(); onDismiss() }}
-          className="absolute right-2 top-2 z-10 flex size-5 items-center justify-center rounded-md text-muted-foreground/50 transition-colors hover:bg-accent/50 hover:text-foreground"
-        >
-          <IconX className="size-3" />
-        </button>
+        <div className="flex items-center justify-end px-2 pt-1.5">
+          <button
+            type="button"
+            aria-label="Close panel"
+            tabIndex={0}
+            onMouseDown={(e) => { e.preventDefault(); onDismiss() }}
+            className="flex size-6 items-center justify-center rounded-md text-muted-foreground/70 transition-colors hover:bg-accent hover:text-foreground"
+          >
+            <IconX className="size-3.5" />
+          </button>
+        </div>
       )}
       {children}
     </div>

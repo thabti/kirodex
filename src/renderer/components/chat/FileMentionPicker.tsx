@@ -365,15 +365,17 @@ export const FileMentionPicker = memo(function FileMentionPicker({
       role="listbox"
       aria-label="File mentions"
     >
-      <button
-        type="button"
-        aria-label="Close panel"
-        tabIndex={0}
-        onMouseDown={(e) => { e.preventDefault(); onDismiss() }}
-        className="absolute right-2 top-2 z-10 flex size-5 items-center justify-center rounded-md text-muted-foreground/50 transition-colors hover:bg-accent/50 hover:text-foreground"
-      >
-        <IconX className="size-3" />
-      </button>
+      <div className="flex items-center justify-end px-2 pt-1.5">
+        <button
+          type="button"
+          aria-label="Close panel"
+          tabIndex={0}
+          onMouseDown={(e) => { e.preventDefault(); onDismiss() }}
+          className="flex size-6 items-center justify-center rounded-md text-muted-foreground/70 transition-colors hover:bg-accent hover:text-foreground"
+        >
+          <IconX className="size-3.5" />
+        </button>
+      </div>
       <ul ref={listRef} className="max-h-[280px] overflow-y-auto py-1">
         {kiroItems.map((item, i) => {
           const isActive = i === activeIndex % totalItems

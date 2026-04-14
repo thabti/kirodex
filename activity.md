@@ -1,5 +1,13 @@
 # Activity Log
 
+## 2026-04-14 21:10 GST (Dubai)
+
+### SlashPanels & FileMentionPicker: Improve X close button UX
+
+Replaced the absolute-positioned floating X close button with a proper flex header row in both `PanelShell` (SlashPanels) and `FileMentionPicker`. Increased hit target from `size-5` to `size-6`, icon from `size-3` to `size-3.5`, improved contrast from `text-muted-foreground/50` to `/70`, and changed hover background from `accent/50` to `accent`. The button no longer overlaps panel content.
+
+**Modified:** `src/renderer/components/chat/SlashPanels.tsx`, `src/renderer/components/chat/FileMentionPicker.tsx`
+
 ## 2026-04-14 21:00 GST (Dubai)
 
 ### FileMentionPicker: Add X close button and wire onDismiss
