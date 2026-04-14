@@ -61,15 +61,17 @@ pub fn open_in_editor(path: String, editor: String) -> Result<(), AppError> {
     // Terminal editors: cd to the path and open the editor
     const TERMINAL_EDITORS: &[&str] = &["vim", "vi", "nvim", "nano", "emacs"];
     if TERMINAL_EDITORS.iter().any(|&e| editor == e) {
-        let escaped = path.replace('\\', "\\\\").replace('\'', "'\\''").replace('"', "\\\"");
         #[cfg(target_os = "macos")]
-        std::process::Command::new("osascript")
-            .arg("-e")
-            .arg(format!(
-                "tell application \"Terminal\"\n  activate\n  do script \"cd '{escaped}'\"\nend tell"
-            ))
-            .output()
-            .map_err(|e| AppError::Other(format!("Failed to open Terminal: {e}")))?;
+        {
+            let escaped = path.replace('\\', "\\\\").replace('\'', "'\\''").replace('"', "\\\"");
+            std::process::Command::new("osascript")
+                .arg("-e")
+                .arg(format!(
+                    "tell application \"Terminal\"\n  activate\n  do script \"cd '{escaped}'\"\nend tell"
+                ))
+                .output()
+                .map_err(|e| AppError::Other(format!("Failed to open Terminal: {e}")))?;
+        }
         #[cfg(not(target_os = "macos"))]
         std::process::Command::new("xterm")
             .arg("-e").arg("sh").arg("-c")

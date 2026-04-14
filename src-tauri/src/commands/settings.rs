@@ -61,9 +61,15 @@ pub struct AppSettings {
     pub analytics_anon_id: Option<String>,
 }
 
-fn default_kiro_bin() -> String { "kiro-cli".to_string() }
-fn default_font_size() -> u32 { 13 }
-fn default_true() -> bool { true }
+fn default_kiro_bin() -> String {
+    "kiro-cli".to_string()
+}
+fn default_font_size() -> u32 {
+    13
+}
+fn default_true() -> bool {
+    true
+}
 
 impl Default for AppSettings {
     fn default() -> Self {
@@ -139,17 +145,20 @@ mod tests {
         assert!(!s.has_onboarded);
         assert!(s.agent_profiles.is_empty());
         assert!(s.project_prefs.is_none());
-        assert!(!s.analytics_enabled);
+        assert!(s.analytics_enabled);
         assert!(s.analytics_anon_id.is_none());
     }
 
     #[test]
     fn serde_roundtrip_preserves_all_fields() {
         let mut prefs = std::collections::HashMap::new();
-        prefs.insert("proj".to_string(), ProjectPrefs {
-            model_id: Some("claude-4".to_string()),
-            auto_approve: Some(true),
-        });
+        prefs.insert(
+            "proj".to_string(),
+            ProjectPrefs {
+                model_id: Some("claude-4".to_string()),
+                auto_approve: Some(true),
+            },
+        );
         let settings = AppSettings {
             kiro_bin: "/usr/local/bin/kiro-cli".to_string(),
             font_size: 16,

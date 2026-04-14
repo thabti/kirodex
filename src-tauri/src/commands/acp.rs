@@ -728,7 +728,7 @@ pub fn task_create(
     // message history to diverge between the connection thread's copy and the
     // real managed state.
 
-    let is_plan_mode = params.mode_id.as_deref() == Some("kiro_planner");
+    let _is_plan_mode = params.mode_id.as_deref() == Some("kiro_planner");
 
     let handle = spawn_connection(
         id.clone(),

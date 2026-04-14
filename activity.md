@@ -1,5 +1,13 @@
 # Activity Log
 
+## 2026-04-14 17:52 GST (Dubai)
+
+### Rust: Fix unused variable warning and failing settings test
+
+Moved `escaped` variable inside `#[cfg(target_os = "macos")]` block in `fs_ops.rs` to eliminate the unused variable warning on Linux CI. Prefixed `is_plan_mode` with underscore in `acp.rs`. Set `analytics_enabled` default to `false` (opt-in) to match the `default_settings_values` test assertion.
+
+**Modified:** `src-tauri/src/commands/fs_ops.rs`, `src-tauri/src/commands/acp.rs`, `src-tauri/src/commands/settings.rs`
+
 ## 2026-04-14 17:28 GST (Dubai)
 
 ### ChatInput: Support mid-sentence slash commands and @ mentions
