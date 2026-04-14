@@ -15,9 +15,8 @@ import { IconCheck, IconCopy } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
 import {
   QuestionCards,
-  hasQuestionBlocks,
-  stripQuestionBlocks,
 } from "./QuestionCards";
+import { hasQuestionBlocks, stripQuestionBlocks } from "@/lib/question-parser";
 import { useDiffStore } from "@/stores/diffStore";
 
 interface ChatMarkdownProps {

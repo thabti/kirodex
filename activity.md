@@ -1,3 +1,27 @@
+## 2026-04-14 15:10 GST (Dubai)
+
+### ACP: Scope question format preprompt to plan mode only
+
+Moved the structured questions preprompt instruction behind a `is_plan_mode` check so it only gets injected when `mode_id` is `kiro_planner`. Chat mode no longer receives the question formatting rules. Fixed a borrow-after-move by checking `params.mode_id` before `spawn_connection` consumes it.
+
+**Modified:** `src-tauri/src/commands/acp.rs`
+
+## 2026-04-14 19:03 GST (Dubai)
+
+### SlashPanels: Flatten grouped mcpServers in /agent panel
+
+The `/agent` slash command panel failed to render MCP servers when kiro-cli sent `mcpServers` as a grouped object (e.g. `{ "other": [...] }`) instead of a flat array. Widened the IPC type to accept both formats and added normalization in the `onCommandsUpdate` handler to flatten grouped objects via `Object.values().flat()`.
+
+**Modified:** `src/renderer/lib/ipc.ts`, `src/renderer/stores/taskStore.ts`
+
+## 2026-04-14 15:05 GST (Dubai)
+
+### QuestionCards: Extract parser module, harden edge cases, add preprompt and 46 tests
+
+Extracted all question parsing logic from QuestionCards.tsx into a standalone `question-parser.ts` module for testability. Hardened the parser to handle URL collision (markdown link references no longer trigger Q&A UI), uppercase option letters, multi-line option continuation, and bold format question extraction. Added a structured questions preprompt instruction in the Rust `system_prefix` so the LLM consistently uses `[N]:` bracket format. Wrote 46 unit tests covering all parsing functions and edge cases. All builds pass clean (tsc, vite, cargo, vitest 332 tests).
+
+**Modified:** `src/renderer/lib/question-parser.ts`, `src/renderer/lib/question-parser.test.ts`, `src/renderer/components/chat/QuestionCards.tsx`, `src/renderer/components/chat/ChatMarkdown.tsx`, `src-tauri/src/commands/acp.rs`
+
 ## 2026-04-14 14:05 GST (Dubai)
 
 ### Chat: Focus ring, send transition, collapsible pills, and unit tests

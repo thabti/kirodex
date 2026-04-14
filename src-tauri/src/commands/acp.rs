@@ -728,6 +728,8 @@ pub fn task_create(
     // message history to diverge between the connection thread's copy and the
     // real managed state.
 
+    let is_plan_mode = params.mode_id.as_deref() == Some("kiro_planner");
+
     let handle = spawn_connection(
         id.clone(),
         params.workspace,
@@ -744,6 +746,19 @@ pub fn task_create(
         "Every git commit must include the co-author trailer:\n\n",
         "```\nCo-authored-by: Kirodex <274876363+kirodex@users.noreply.github.com>\n```\n\n",
         "Use conventional commit format: `type(scope): description`.\n\n",
+        "---\n\n",
+        "## Structured questions\n\n",
+        "When you need to ask the user clarifying questions before starting work, ",
+        "use this exact format so the UI can render interactive question cards:\n\n",
+        "[1]: Question text here?\n",
+        "a. **Label** — Description of this option\n",
+        "b. **Label** — Description of this option\n",
+        "c. **Other** — Describe your preference\n\n",
+        "Rules:\n",
+        "- Use `[N]:` bracket-number format for each question (not bold, not numbered lists).\n",
+        "- Use lowercase `a.` `b.` `c.` for options.\n",
+        "- Place each question and its options on consecutive lines with no extra blank lines between them.\n",
+        "- You may include a short lead-in sentence before the questions.\n\n",
         "---\n\n",
     );
     let json_report_suffix = if co_author_json_report {
@@ -765,7 +780,7 @@ pub fn task_create(
     } else {
         ""
     };
-    let full_prompt = format!("{system_prefix}{}{json_report_suffix}", params.prompt);
+    let full_prompt = format!("{system_prefix}{question_format}{}{json_report_suffix}", params.prompt);
     let _ = handle.cmd_tx.send(AcpCommand::Prompt(full_prompt));
 
     state.connections.lock().map_err(|e| format!("Lock poisoned: {e}"))?.insert(id, handle);
