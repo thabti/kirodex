@@ -1,3 +1,44 @@
+## 2026-04-14 15:19 (Dubai) — Task 5: Fix tool call, message, and content area contrast
+
+### Changes made:
+
+**ToolCallEntry.tsx** (5 changes):
+- `text-muted-foreground/30` → `text-muted-foreground/60` (chevron icons, diff loading spinner)
+- `text-foreground/40` → `text-muted-foreground` (tool icon default state)
+- `text-foreground/60` → `text-foreground/80` (tool call title)
+
+**ToolCallDisplay.tsx** (3 changes):
+- `text-muted-foreground/40` → `text-muted-foreground/70` (chevron icons, "more" button)
+- `text-muted-foreground/60` → `text-muted-foreground/80` ("more" button hover)
+
+**MessageItem.tsx** (3 changes):
+- `text-muted-foreground/40` → `text-muted-foreground/70` (system message divider text)
+- `text-muted-foreground/50` → `text-muted-foreground/70` (copy button hover)
+- `text-muted-foreground/30` → `text-muted-foreground/60` (timestamp)
+
+**UserMessageRow.tsx** (3 changes):
+- `text-foreground/60` → `text-foreground/80` (file mention pill)
+- `text-muted-foreground/50` → `text-muted-foreground/70` (copy button hover)
+- `text-muted-foreground/30` → `text-muted-foreground/60` (timestamp)
+
+**ReadOutput.tsx** (1 change):
+- `text-muted-foreground/30` → `text-muted-foreground/60` (line number gutter)
+
+**CollapsedAnswers.tsx** (2 changes):
+- `text-muted-foreground/40` → `text-muted-foreground/70` (chevron icons)
+
+**WorkingRow.tsx** — Already modified in a prior task; no matching patterns remain.
+
+**AssistantTextRow.tsx, ThinkingDisplay.tsx, SystemMessageRow.tsx** — No matching patterns found; no changes needed.
+
+## 2026-04-14 19:22 GST (Dubai)
+
+### Chat: Color loading text randomizer by mode
+
+Updated the loading text randomizer in both `WorkingRow` and `GeneratingIndicator` to reflect the current mode. Default mode uses `text-primary` (blue), planning mode uses `text-teal-400` (matching the PlanToggle). Both components now read `currentModeId` from `useSettingsStore`.
+
+**Modified:** `src/renderer/components/chat/WorkingRow.tsx`, `src/renderer/components/chat/MessageItem.tsx`
+
 ## 2026-04-14 19:11 GST (Dubai)
 
 ### ChatInput: Remove inner textarea focus ring
@@ -236,3 +277,40 @@ Removed the two-button Chat/Plan mode toggle since the default mode is coding, n
 The app icon at `src-tauri/icons/icon.png` was in RGB format (no alpha channel), causing `tauri::generate_context!()` to panic with "icon is not RGBA". Converted the icon to RGBA (PNG color-type 6) using ImageMagick. Build now compiles successfully.
 
 **Modified:** src-tauri/icons/icon.png
+
+## 2026-04-14 15:19 (Dubai) — Task 4: Fix chat input and chat panel contrast
+
+### Changes made:
+
+**ChatInput.tsx** (7 changes):
+- `placeholder:text-muted-foreground/35` → `placeholder:text-muted-foreground/60`
+- `text-foreground/25` (pasted chunk size hint) → `text-muted-foreground`
+- `text-foreground/30` (IconClipboard) → `text-muted-foreground/70`
+- `text-foreground/50` (toolbar pill text) → `text-foreground/70`
+- `text-foreground/60` (pasted chunk pill) → `text-foreground/80`
+- `text-muted-foreground/40` (attach button) → `text-muted-foreground/70`
+- `text-muted-foreground/25` (keyboard hint) → `text-muted-foreground/50`
+
+**ChatPanel.tsx** — No matching `/30` or `/40` opacity classes found; no changes needed.
+
+**PendingChat.tsx** (1 change):
+- `text-muted-foreground/40` ("New thread" text) → `text-muted-foreground/60`
+
+## 2026-04-14 15:19 (Dubai) — Task 6: Fix AppHeader, KiroConfigPanel, and navigation contrast
+
+Applied text contrast rules across three files to improve readability:
+
+### Changes applied:
+- `text-muted-foreground/25` → `text-muted-foreground/50`
+- `text-muted-foreground/15` → `text-muted-foreground/40`
+- `text-muted-foreground/30` → `text-muted-foreground/60`
+- `text-muted-foreground/40` → `text-muted-foreground/70`
+- `text-muted-foreground/50` → `text-muted-foreground/70`
+- `text-muted-foreground/60` → `text-muted-foreground`
+- `text-foreground/70` → `text-foreground/85`
+- `text-foreground/40` → `text-muted-foreground`
+
+### Files modified:
+- `src/renderer/components/AppHeader.tsx` — 6 replacements (Sep separator, "New thread", ghost icons, user menu, "Check again" button)
+- `src/renderer/components/sidebar/KiroConfigPanel.tsx` — 18 replacements (stack meta colors, section toggles, chevrons, counts, tooltips, search UI, "Kiro" header, "No matches")
+- `src/renderer/components/sidebar/KiroFileViewer.tsx` — 3 replacements (shortPath, editor button, close button)

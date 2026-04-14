@@ -1,4 +1,5 @@
 import { memo, useState, useRef, useEffect } from 'react'
+import { useSettingsStore } from '@/stores/settingsStore'
 
 const LOADING_WORDS = [
   'Thinking',
@@ -14,6 +15,7 @@ const LOADING_WORDS = [
 ]
 
 export const WorkingRow = memo(function WorkingRow() {
+  const isPlan = useSettingsStore((s) => s.currentModeId) === 'kiro_planner'
   const [idx, setIdx] = useState(() =>
     Math.floor(Math.random() * LOADING_WORDS.length),
   )
@@ -39,7 +41,7 @@ export const WorkingRow = memo(function WorkingRow() {
     <div className="py-2 select-none" data-timeline-row-kind="working">
       <div className="flex items-center gap-2">
         <span
-          className="text-[13px] text-muted-foreground/50 transition-opacity duration-300"
+          className={`text-[13px] transition-opacity duration-300 ${isPlan ? 'text-teal-400' : 'text-primary'}`}
           style={{ opacity: visible ? 1 : 0 }}
         >
           {LOADING_WORDS[idx]}&hellip;

@@ -8,6 +8,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useKiroStore } from "@/stores/kiroStore";
+import { useSettingsStore } from "@/stores/settingsStore";
 import ChatMarkdown from "./ChatMarkdown";
 import { ToolCallDisplay } from "./ToolCallDisplay";
 import { ThinkingDisplay } from "./ThinkingDisplay";
@@ -44,6 +45,7 @@ function McpErrorLines() {
 }
 
 function GeneratingIndicator() {
+  const isPlan = useSettingsStore((s) => s.currentModeId) === 'kiro_planner'
   const [idx, setIdx] = useState(() =>
     Math.floor(Math.random() * LOADING_WORDS.length),
   );
@@ -65,7 +67,7 @@ function GeneratingIndicator() {
     <div className="py-1 select-none">
       <div className="flex items-center gap-2">
         <span
-          className="text-xs text-muted-foreground/20 transition-opacity duration-300"
+          className={`text-xs transition-opacity duration-300 ${isPlan ? 'text-teal-400' : 'text-primary'}`}
           style={{ opacity: visible ? 1 : 0 }}
         >
           {LOADING_WORDS[idx]}&hellip;
@@ -140,7 +142,7 @@ export const MessageItem = memo(function MessageItem({
         ) : (
           <div className="flex items-center gap-2 py-1">
             <div className="h-px flex-1 bg-border/40" />
-            <span className="text-xs text-muted-foreground/40 select-none">
+            <span className="text-xs text-muted-foreground/70 select-none">
               {message.content}
             </span>
             <div className="h-px flex-1 bg-border/40" />
@@ -171,7 +173,7 @@ export const MessageItem = memo(function MessageItem({
                   <button
                     type="button"
                     onClick={handleCopy}
-                    className="rounded-md p-0.5 text-muted-foreground/0 transition-all group-hover:text-muted-foreground/50 hover:!text-foreground"
+                    className="rounded-md p-0.5 text-muted-foreground/0 transition-all group-hover:text-muted-foreground/70 hover:!text-foreground"
                   >
                     {copied ? (
                       <IconCheck className="size-3" aria-hidden />
@@ -184,7 +186,7 @@ export const MessageItem = memo(function MessageItem({
                   {copied ? "Copied!" : "Copy message"}
                 </TooltipContent>
               </Tooltip>
-              <span className="text-[10px] tabular-nums text-muted-foreground/30">
+              <span className="text-[10px] tabular-nums text-muted-foreground/60">
                 {timeStr}
               </span>
             </div>
