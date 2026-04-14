@@ -49,13 +49,13 @@ export function isTaskListToolCall(tc: ToolCall): boolean {
   return input.command === 'create' || input.command === 'complete' || input.command === 'add' || input.command === 'list'
 }
 
-/** Extract completed_task_ids from a complete command's rawOutput */
-function extractCompletedIds(rawOutput: unknown): string[] | null {
-  if (!rawOutput || typeof rawOutput !== 'object') return null
-  const out = rawOutput as Record<string, unknown>
-  if (Array.isArray(out.completed_task_ids)) return out.completed_task_ids as string[]
-  if (Array.isArray(out.items)) {
-    const first = out.items[0] as Record<string, unknown> | undefined
+/** Extract completed_task_ids from a tool call's rawInput or rawOutput */
+function extractCompletedIds(raw: unknown): string[] | null {
+  if (!raw || typeof raw !== 'object') return null
+  const obj = raw as Record<string, unknown>
+  if (Array.isArray(obj.completed_task_ids)) return obj.completed_task_ids as string[]
+  if (Array.isArray(obj.items)) {
+    const first = obj.items[0] as Record<string, unknown> | undefined
     if (first?.Json && typeof first.Json === 'object') {
       const json = first.Json as Record<string, unknown>
       if (Array.isArray(json.completed_task_ids)) return json.completed_task_ids as string[]
@@ -83,8 +83,8 @@ export function aggregateLatestTasks(allToolCalls: ToolCall[]): { tasks: TaskIte
         taskMap.set(t.id, t)
       }
     } else {
-      // Handle complete commands that only return completed_task_ids
-      const completedIds = extractCompletedIds(tc.rawOutput)
+      // Handle complete commands — completed_task_ids may be in rawInput or rawOutput
+      const completedIds = extractCompletedIds(tc.rawOutput) ?? extractCompletedIds(tc.rawInput)
       if (completedIds) {
         for (const id of completedIds) {
           const existing = taskMap.get(id)

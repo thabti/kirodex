@@ -1,5 +1,13 @@
 # Activity Log
 
+## 2026-04-14 15:58 GST (Dubai)
+
+### TaskListDisplay: Check rawInput for completed_task_ids
+
+The `complete` command sends `completed_task_ids` in `rawInput` (the tool parameters), not `rawOutput` (the tool result). Updated `extractCompletedIds` to accept any raw object generically, and `aggregateLatestTasks` now falls back to `rawInput` when `rawOutput` doesn't contain `completed_task_ids`. This ensures the last task gets ticked when the agent marks it done.
+
+**Modified:** `src/renderer/components/chat/TaskListDisplay.tsx`
+
 ## 2026-04-14 15:45 GST (Dubai)
 
 ### TaskListDisplay: Fix last task never ticked
