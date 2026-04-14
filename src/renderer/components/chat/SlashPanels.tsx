@@ -303,7 +303,7 @@ function PanelShell({ children, onDismiss }: { children: React.ReactNode; onDism
 }
 
 // ── Usage panel ─────────────────────────────────────────────────
-const formatTokens = (n: number): string => {
+export const formatTokens = (n: number): string => {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`
   if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`
   return String(n)

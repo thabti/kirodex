@@ -18,10 +18,12 @@ describe('CollapsedAnswers', () => {
     expect(screen.getByText('Answered 2 questions')).toBeInTheDocument()
   })
 
-  it('expands on click', () => {
+  it('starts expanded and collapses on click', () => {
     render(<CollapsedAnswers questionAnswers={[{ question: 'What?', answer: 'This' }]} />)
-    fireEvent.click(screen.getByRole('button'))
     expect(screen.getByText('What?')).toBeInTheDocument()
     expect(screen.getByText('This')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button'))
+    expect(screen.queryByText('What?')).not.toBeInTheDocument()
+    expect(screen.queryByText('This')).not.toBeInTheDocument()
   })
 })

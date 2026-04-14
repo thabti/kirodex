@@ -6,6 +6,7 @@ vi.mock('@/lib/ipc', () => ({
     deleteTask: vi.fn().mockResolvedValue(undefined),
     listTasks: vi.fn().mockResolvedValue([]),
     sendMessage: vi.fn().mockResolvedValue(undefined),
+    forkTask: vi.fn().mockResolvedValue({ id: 'fork-1', name: 'Fork', workspace: '/ws', status: 'paused', createdAt: '', messages: [] }),
   },
 }))
 vi.mock('@/lib/history-store', () => ({
@@ -266,6 +267,152 @@ describe('simple setters', () => {
     useTaskStore.getState().upsertTask(makeTask())
     useTaskStore.getState().updateUsage('task-1', 5000, 10000)
     expect(useTaskStore.getState().tasks['task-1'].contextUsage).toEqual({ used: 5000, size: 10000 })
+  })
+})
+
+describe('archiveTask', () => {
+  it('marks task as archived and completed', () => {
+    useTaskStore.getState().upsertTask(makeTask({ status: 'running' }))
+    useTaskStore.getState().archiveTask('task-1')
+    const task = useTaskStore.getState().tasks['task-1']
+    expect(task.isArchived).toBe(true)
+    expect(task.status).toBe('completed')
+  })
+
+  it('clears streaming state for archived task', () => {
+    useTaskStore.getState().upsertTask(makeTask({ status: 'running' }))
+    useTaskStore.setState({
+      streamingChunks: { 'task-1': 'partial' },
+      thinkingChunks: { 'task-1': 'hmm' },
+      liveToolCalls: { 'task-1': [{ toolCallId: 'tc1', title: 'read', status: 'in_progress' }] },
+    })
+    useTaskStore.getState().archiveTask('task-1')
+    expect(useTaskStore.getState().streamingChunks['task-1']).toBe('')
+    expect(useTaskStore.getState().thinkingChunks['task-1']).toBe('')
+    expect(useTaskStore.getState().liveToolCalls['task-1']).toEqual([])
+  })
+
+  it('no-ops for already archived task', () => {
+    useTaskStore.getState().upsertTask(makeTask({ isArchived: true, status: 'completed' }))
+    const before = useTaskStore.getState().tasks['task-1']
+    useTaskStore.getState().archiveTask('task-1')
+    const after = useTaskStore.getState().tasks['task-1']
+    expect(before).toBe(after)
+  })
+
+  it('no-ops for non-existent task', () => {
+    useTaskStore.getState().archiveTask('nonexistent')
+    expect(useTaskStore.getState().tasks['nonexistent']).toBeUndefined()
+  })
+})
+
+describe('forkTask', () => {
+  it('adds forked task to state and selects it', async () => {
+    const { ipc } = await import('@/lib/ipc')
+    const forkedTask = makeTask({ id: 'fork-1', name: 'Fork of Test Task', workspace: '/projects/test' })
+    vi.mocked(ipc.forkTask).mockResolvedValueOnce(forkedTask)
+    useTaskStore.getState().upsertTask(makeTask())
+    useTaskStore.setState({ selectedTaskId: 'task-1' })
+    await useTaskStore.getState().forkTask('task-1')
+    expect(useTaskStore.getState().tasks['fork-1']).toBeDefined()
+    expect(useTaskStore.getState().selectedTaskId).toBe('fork-1')
+    expect(useTaskStore.getState().view).toBe('chat')
+  })
+
+  it('adds workspace to projects if not present', async () => {
+    const { ipc } = await import('@/lib/ipc')
+    const forkedTask = makeTask({ id: 'fork-1', workspace: '/new-ws' })
+    vi.mocked(ipc.forkTask).mockResolvedValueOnce(forkedTask)
+    useTaskStore.getState().upsertTask(makeTask())
+    await useTaskStore.getState().forkTask('task-1')
+    expect(useTaskStore.getState().projects).toContain('/new-ws')
+  })
+
+  it('adds system error message on fork failure', async () => {
+    const { ipc } = await import('@/lib/ipc')
+    vi.mocked(ipc.forkTask).mockRejectedValueOnce(new Error('ACP connection lost'))
+    useTaskStore.getState().upsertTask(makeTask())
+    useTaskStore.setState({ selectedTaskId: 'task-1' })
+    await useTaskStore.getState().forkTask('task-1')
+    const task = useTaskStore.getState().tasks['task-1']
+    const systemMsg = task.messages.find((m) => m.role === 'system')
+    expect(systemMsg).toBeDefined()
+    expect(systemMsg?.content).toContain('Fork failed')
+    expect(systemMsg?.content).toContain('ACP connection lost')
+  })
+})
+
+describe('taskModes', () => {
+  it('setTaskMode stores mode for task', () => {
+    useTaskStore.getState().setTaskMode('task-1', 'kiro_planner')
+    expect(useTaskStore.getState().taskModes['task-1']).toBe('kiro_planner')
+  })
+
+  it('setTaskMode no-ops when mode unchanged', () => {
+    useTaskStore.setState({ taskModes: { 'task-1': 'kiro_planner' } })
+    const before = useTaskStore.getState().taskModes
+    useTaskStore.getState().setTaskMode('task-1', 'kiro_planner')
+    expect(useTaskStore.getState().taskModes).toBe(before)
+  })
+
+  it('removeTask clears taskMode for that task', () => {
+    useTaskStore.setState({ taskModes: { 'task-1': 'kiro_planner', 'task-2': 'kiro_default' } })
+    useTaskStore.getState().upsertTask(makeTask())
+    useTaskStore.getState().removeTask('task-1')
+    expect(useTaskStore.getState().taskModes['task-1']).toBeUndefined()
+    expect(useTaskStore.getState().taskModes['task-2']).toBe('kiro_default')
+  })
+})
+
+describe('drafts', () => {
+  it('setDraft stores content for workspace', () => {
+    useTaskStore.getState().setDraft('/ws', 'hello world')
+    expect(useTaskStore.getState().drafts['/ws']).toBe('hello world')
+  })
+
+  it('setDraft removes entry when content is empty', () => {
+    useTaskStore.getState().setDraft('/ws', 'hello')
+    useTaskStore.getState().setDraft('/ws', '   ')
+    expect(useTaskStore.getState().drafts['/ws']).toBeUndefined()
+  })
+
+  it('setDraft no-ops when content unchanged', () => {
+    useTaskStore.getState().setDraft('/ws', 'hello')
+    const before = useTaskStore.getState().drafts
+    useTaskStore.getState().setDraft('/ws', 'hello')
+    expect(useTaskStore.getState().drafts).toBe(before)
+  })
+
+  it('removeDraft removes entry and suppresses next setDraft', () => {
+    useTaskStore.getState().setDraft('/ws', 'hello')
+    useTaskStore.getState().removeDraft('/ws')
+    expect(useTaskStore.getState().drafts['/ws']).toBeUndefined()
+    // Next setDraft for this workspace should be suppressed
+    useTaskStore.getState().setDraft('/ws', 'resurrected')
+    expect(useTaskStore.getState().drafts['/ws']).toBeUndefined()
+    // But a second setDraft should work normally
+    useTaskStore.getState().setDraft('/ws', 'new content')
+    expect(useTaskStore.getState().drafts['/ws']).toBe('new content')
+  })
+
+  it('removeDraft no-ops for non-existent workspace', () => {
+    const before = useTaskStore.getState().drafts
+    useTaskStore.getState().removeDraft('/nonexistent')
+    expect(useTaskStore.getState().drafts).toBe(before)
+  })
+})
+
+describe('removeProject cleans up taskModes', () => {
+  it('removes taskModes for tasks in the removed project', () => {
+    useTaskStore.getState().addProject('/ws')
+    useTaskStore.getState().upsertTask(makeTask({ id: 't1', workspace: '/ws' }))
+    useTaskStore.getState().upsertTask(makeTask({ id: 't2', workspace: '/ws' }))
+    useTaskStore.getState().upsertTask(makeTask({ id: 't3', workspace: '/other' }))
+    useTaskStore.setState({ taskModes: { t1: 'kiro_planner', t2: 'kiro_default', t3: 'kiro_planner' } })
+    useTaskStore.getState().removeProject('/ws')
+    expect(useTaskStore.getState().taskModes['t1']).toBeUndefined()
+    expect(useTaskStore.getState().taskModes['t2']).toBeUndefined()
+    expect(useTaskStore.getState().taskModes['t3']).toBe('kiro_planner')
   })
 })
 

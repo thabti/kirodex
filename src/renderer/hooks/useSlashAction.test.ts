@@ -4,6 +4,7 @@ import { renderHook, act } from '@testing-library/react'
 vi.mock('@/lib/ipc', () => ({
   ipc: {
     setMode: vi.fn().mockResolvedValue(undefined),
+    sendMessage: vi.fn().mockResolvedValue(undefined),
     createTask: vi.fn().mockResolvedValue({ id: 'task-1', name: 'Test', workspace: '/ws', status: 'running', createdAt: '', messages: [] }),
   },
 }))
@@ -110,6 +111,63 @@ describe('useSlashAction /plan toggle', () => {
     let handled: boolean
     act(() => { handled = result.current.execute('/unknown') })
     expect(handled!).toBe(false)
+  })
+})
+
+describe('useSlashAction /usage toggle', () => {
+  it('/usage opens usage panel', () => {
+    const { result } = renderHook(() => useSlashAction())
+    act(() => { result.current.execute('/usage') })
+    expect(result.current.panel).toBe('usage')
+  })
+
+  it('/usage toggles panel off when already open', () => {
+    const { result } = renderHook(() => useSlashAction())
+    act(() => { result.current.execute('/usage') })
+    expect(result.current.panel).toBe('usage')
+    act(() => { result.current.execute('/usage') })
+    expect(result.current.panel).toBeNull()
+  })
+
+  it('execute returns true for /usage', () => {
+    const { result } = renderHook(() => useSlashAction())
+    let handled: boolean
+    act(() => { handled = result.current.execute('/usage') })
+    expect(handled!).toBe(true)
+  })
+})
+
+describe('useSlashAction /fork', () => {
+  it('/fork calls forkTask on the selected task', () => {
+    const forkSpy = vi.spyOn(useTaskStore.getState(), 'forkTask').mockResolvedValue(undefined)
+    const { result } = renderHook(() => useSlashAction())
+    act(() => { result.current.execute('/fork') })
+    expect(forkSpy).toHaveBeenCalledWith('task-1')
+    forkSpy.mockRestore()
+  })
+
+  it('/fork does nothing when no task is selected', () => {
+    useTaskStore.setState({ selectedTaskId: null })
+    const forkSpy = vi.spyOn(useTaskStore.getState(), 'forkTask').mockResolvedValue(undefined)
+    const { result } = renderHook(() => useSlashAction())
+    act(() => { result.current.execute('/fork') })
+    expect(forkSpy).not.toHaveBeenCalled()
+    forkSpy.mockRestore()
+  })
+
+  it('execute returns true for /fork', () => {
+    const { result } = renderHook(() => useSlashAction())
+    let handled: boolean
+    act(() => { handled = result.current.execute('/fork') })
+    expect(handled!).toBe(true)
+  })
+
+  it('/fork clears panel', () => {
+    const { result } = renderHook(() => useSlashAction())
+    act(() => { result.current.execute('/model') })
+    expect(result.current.panel).toBe('model')
+    act(() => { result.current.execute('/fork') })
+    expect(result.current.panel).toBeNull()
   })
 })
 

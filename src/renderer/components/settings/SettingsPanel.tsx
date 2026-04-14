@@ -14,6 +14,7 @@ import { Switch } from '@/components/ui/switch'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import type { AppSettings } from '@/types'
+import { AboutDialog } from './AboutDialog'
 
 // ── Navigation ───────────────────────────────────────────────────
 
@@ -216,6 +217,7 @@ export const SettingsPanel = () => {
   const [isDetecting, setIsDetecting] = useState(false)
   const [keymapFilter, setKeymapFilter] = useState('')
   const [appVersion, setAppVersion] = useState('')
+  const [isAboutOpen, setIsAboutOpen] = useState(false)
 
   useEffect(() => { getVersion().then(setAppVersion).catch(() => {}) }, [])
   useEffect(() => { if (open && !kiroAuthChecked) checkAuth() }, [open, kiroAuthChecked, checkAuth])
@@ -313,10 +315,14 @@ export const SettingsPanel = () => {
               Back
             </button>
             <div className="flex items-center justify-between px-3">
-              <div>
+              <button
+                type="button"
+                onClick={() => setIsAboutOpen(true)}
+                className="text-left transition-colors hover:text-foreground"
+              >
                 <p className="text-[10px] text-muted-foreground/60">Kirodex {appVersion ? `v${appVersion}` : ''}</p>
                 <p className="text-[10px] text-muted-foreground/60">Copyright © 2026 Thabti</p>
-              </div>
+              </button>
               <a
                 href="https://github.com/thabti/kirodex"
                 target="_blank"
@@ -703,6 +709,8 @@ export const SettingsPanel = () => {
           </div>
         </div>
       </div>
+
+      <AboutDialog open={isAboutOpen} onOpenChange={setIsAboutOpen} />
     </div>
   )
 }

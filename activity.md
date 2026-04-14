@@ -1,5 +1,27 @@
 # Activity Log
 
+## 2026-04-15 01:28 GST (Dubai)
+
+### Settings: add About Kirodex dialog with update button
+
+Created a new `AboutDialog` component triggered by clicking the version/copyright area in the SettingsPanel sidebar footer. The dialog shows the app icon, "Kirodex" title, version number, and a context-aware update button that adapts to the current update status (check/download/restart). Includes copyright and GitHub link in the footer.
+
+**Modified:**
+- `src/renderer/components/settings/AboutDialog.tsx` (new)
+- `src/renderer/components/settings/SettingsPanel.tsx`
+
+## 2026-04-15 01:10 GST (Dubai)
+
+### Tests: add unit tests covering 0.8.13 changes
+
+Added 27 new tests across 3 files covering untested 0.8.13 features: `/usage` and `/fork` slash commands in useSlashAction, `formatTokens` utility (exported from SlashPanels), and `aggregateLatestTasks` including the empty tasks array guard fix and `isTaskListToolCall`. All 40 test files (375 tests) pass. No broken tests found in existing suite.
+
+**Modified:**
+- `src/renderer/components/chat/SlashPanels.tsx` (exported `formatTokens`)
+- `src/renderer/hooks/useSlashAction.test.ts` (+7 tests)
+- `src/renderer/components/chat/format-tokens.test.ts` (new, +3 tests)
+- `src/renderer/components/chat/TaskListDisplay.test.ts` (new, +17 tests)
+
 ## 2026-04-15 00:12 GST (Dubai)
 
 ### Commit: fork_session + collapsible chat input
