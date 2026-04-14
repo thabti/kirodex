@@ -11,10 +11,9 @@ import { useTaskStore } from '@/stores/taskStore'
 import { ipc } from '@/lib/ipc'
 import { InlineDiff } from './InlineDiff'
 import { getToolIcon } from './tool-call-utils'
-import { TaskListDisplay, isTaskListToolCall } from './TaskListDisplay'
 import { ReadOutput } from './ReadOutput'
 
-export const ToolCallEntry = memo(function ToolCallEntry({ toolCall, allToolCalls }: { toolCall: ToolCall; allToolCalls: ToolCall[] }) {
+export const ToolCallEntry = memo(function ToolCallEntry({ toolCall }: { toolCall: ToolCall }) {
   const [expanded, setExpanded] = useState(false)
   const [fileDiff, setFileDiff] = useState<string | null>(null)
   const [diffLoading, setDiffLoading] = useState(false)
@@ -22,7 +21,6 @@ export const ToolCallEntry = memo(function ToolCallEntry({ toolCall, allToolCall
   const isRunning = toolCall.status === 'in_progress'
   const isFailed = toolCall.status === 'failed'
   const isCompleted = toolCall.status === 'completed'
-  const isTaskList = isTaskListToolCall(toolCall)
 
   const firstPath = toolCall.locations?.[0]?.path
   const shortPath = firstPath ? firstPath.split('/').slice(-2).join('/') : null
@@ -110,13 +108,11 @@ export const ToolCallEntry = memo(function ToolCallEntry({ toolCall, allToolCall
 
       {expanded && hasDiff && <InlineDiff diffText={fileDiff} />}
 
-      {isTaskList && <TaskListDisplay toolCall={toolCall} allToolCalls={allToolCalls} />}
-
-      {expanded && hasContent && !isTaskList && toolCall.kind === 'read' && (
+      {expanded && hasContent && toolCall.kind === 'read' && (
         <ReadOutput rawInput={toolCall.rawInput} rawOutput={toolCall.rawOutput} />
       )}
 
-      {expanded && hasContent && !isTaskList && toolCall.kind !== 'read' && (
+      {expanded && hasContent && toolCall.kind !== 'read' && (
         <div className="ml-6 mr-2 mb-1.5 mt-1 min-w-0 rounded-md border border-border/30 bg-background/50 px-3 py-2.5 text-[13px] space-y-2">
           {toolCall.content?.map((item, i) => (
             <div key={i}>

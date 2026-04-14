@@ -4,6 +4,7 @@ import {
 } from '@tabler/icons-react'
 import type { ToolCall } from '@/types'
 import { ToolCallEntry } from './ToolCallEntry'
+import { TaskListDisplay, isTaskListToolCall } from './TaskListDisplay'
 
 const MAX_VISIBLE_DEFAULT = 6
 
@@ -29,6 +30,8 @@ export const ToolCallDisplay = memo(function ToolCallDisplay({ toolCalls }: Tool
 
   const visibleCalls = showAll ? toolCalls : toolCalls.slice(0, MAX_VISIBLE_DEFAULT)
   const hasMore = toolCalls.length > MAX_VISIBLE_DEFAULT
+
+  const hasTaskList = useMemo(() => toolCalls.some(isTaskListToolCall), [toolCalls])
 
   return (
     <div data-testid="tool-call-display" className="rounded-lg border border-border/30 bg-card/30">
@@ -71,7 +74,7 @@ export const ToolCallDisplay = memo(function ToolCallDisplay({ toolCalls }: Tool
       {expanded && (
         <div className="border-t border-border/20 py-1">
           {visibleCalls.map((tc) => (
-            <ToolCallEntry key={tc.toolCallId} toolCall={tc} allToolCalls={toolCalls} />
+            <ToolCallEntry key={tc.toolCallId} toolCall={tc} />
           ))}
           {hasMore && !showAll && (
             <button
@@ -84,6 +87,8 @@ export const ToolCallDisplay = memo(function ToolCallDisplay({ toolCalls }: Tool
           )}
         </div>
       )}
+
+      {hasTaskList && <TaskListDisplay allToolCalls={toolCalls} />}
     </div>
   )
 })

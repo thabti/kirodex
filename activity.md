@@ -1,5 +1,29 @@
 # Activity Log
 
+## 2026-04-14 15:45 GST (Dubai)
+
+### TaskListDisplay: Fix last task never ticked
+
+Fixed two bugs preventing the last task from showing as completed. First, `aggregateLatestTasks` now handles `complete` command output that only returns `completed_task_ids` (no `tasks` array) by marking matching tasks as completed in the existing map. Second, moved `TaskListDisplay` rendering from `ToolCallEntry` to `ToolCallDisplay` so it always uses the full `toolCalls` array, unaffected by the `MAX_VISIBLE_DEFAULT` truncation that hides tool calls beyond the first six.
+
+**Modified:** `src/renderer/components/chat/TaskListDisplay.tsx`, `src/renderer/components/chat/ToolCallDisplay.tsx`, `src/renderer/components/chat/ToolCallEntry.tsx`
+
+## 2026-04-14 15:48 GST (Dubai)
+
+### ChatInput: Set user message bubble background to #2c2e35
+
+Changed the user message bubble from `bg-primary/10 dark:bg-primary/[0.08]` to `bg-[#2c2e35]`.
+
+**Modified:** `src/renderer/components/chat/UserMessageRow.tsx`
+
+## 2026-04-14 15:47 GST (Dubai)
+
+### ChatInput: Set background to #2c2e35
+
+Changed the ChatInput wrapper background from `bg-card` to `bg-[#2c2e35]`. Updated the scroll shadow gradient to match.
+
+**Modified:** `src/renderer/components/chat/ChatInput.tsx`
+
 ## 2026-04-14 15:25 GST (Dubai)
 
 ### UX: Complete Linear/Codex-inspired colour overhaul and sidebar density upgrade

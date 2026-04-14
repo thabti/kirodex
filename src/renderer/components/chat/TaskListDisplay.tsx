@@ -49,11 +49,27 @@ export function isTaskListToolCall(tc: ToolCall): boolean {
   return input.command === 'create' || input.command === 'complete' || input.command === 'add' || input.command === 'list'
 }
 
+/** Extract completed_task_ids from a complete command's rawOutput */
+function extractCompletedIds(rawOutput: unknown): string[] | null {
+  if (!rawOutput || typeof rawOutput !== 'object') return null
+  const out = rawOutput as Record<string, unknown>
+  if (Array.isArray(out.completed_task_ids)) return out.completed_task_ids as string[]
+  if (Array.isArray(out.items)) {
+    const first = out.items[0] as Record<string, unknown> | undefined
+    if (first?.Json && typeof first.Json === 'object') {
+      const json = first.Json as Record<string, unknown>
+      if (Array.isArray(json.completed_task_ids)) return json.completed_task_ids as string[]
+    }
+  }
+  return null
+}
+
 /**
  * Aggregate the latest task state from all task-list tool calls in the group.
  * Later tool calls (complete/add) override earlier ones by task id.
+ * Handles complete commands that return only completed_task_ids without a tasks array.
  */
-function aggregateLatestTasks(allToolCalls: ToolCall[]): { tasks: TaskItem[]; description: string | null } {
+export function aggregateLatestTasks(allToolCalls: ToolCall[]): { tasks: TaskItem[]; description: string | null } {
   const taskMap = new Map<string, TaskItem>()
   let description: string | null = null
 
@@ -66,6 +82,17 @@ function aggregateLatestTasks(allToolCalls: ToolCall[]): { tasks: TaskItem[]; de
       for (const t of tasks) {
         taskMap.set(t.id, t)
       }
+    } else {
+      // Handle complete commands that only return completed_task_ids
+      const completedIds = extractCompletedIds(tc.rawOutput)
+      if (completedIds) {
+        for (const id of completedIds) {
+          const existing = taskMap.get(id)
+          if (existing) {
+            taskMap.set(id, { ...existing, completed: true })
+          }
+        }
+      }
     }
   }
 
@@ -73,28 +100,12 @@ function aggregateLatestTasks(allToolCalls: ToolCall[]): { tasks: TaskItem[]; de
   return { tasks: Array.from(taskMap.values()), description }
 }
 
-/**
- * Check if this tool call is the last task-list tool call in the group.
- * We only render the task list on the last one to avoid duplicates.
- */
-export function isLastTaskListToolCall(toolCall: ToolCall, allToolCalls: ToolCall[]): boolean {
-  let lastId: string | null = null
-  for (const tc of allToolCalls) {
-    if (isTaskListToolCall(tc)) lastId = tc.toolCallId
-  }
-  return lastId === toolCall.toolCallId
-}
-
 interface TaskListDisplayProps {
-  toolCall: ToolCall
   allToolCalls: ToolCall[]
 }
 
-export const TaskListDisplay = memo(function TaskListDisplay({ toolCall, allToolCalls }: TaskListDisplayProps) {
+export const TaskListDisplay = memo(function TaskListDisplay({ allToolCalls }: TaskListDisplayProps) {
   const [expanded, setExpanded] = useState(true)
-
-  // Only render on the last task-list tool call to avoid duplicates
-  if (!isLastTaskListToolCall(toolCall, allToolCalls)) return null
 
   const { tasks, description } = aggregateLatestTasks(allToolCalls)
   if (!tasks.length) return null
