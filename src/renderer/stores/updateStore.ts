@@ -21,12 +21,15 @@ interface UpdateState {
   error: string | null
   /** Version the user dismissed (skip re-showing toast for same version) */
   dismissedVersion: string | null
+  /** Callback set by useUpdateChecker so other components can trigger download */
+  triggerDownload: (() => void) | null
 
   setStatus: (status: UpdateStatus) => void
   setUpdateInfo: (info: UpdateInfo | null) => void
   setProgress: (progress: UpdateProgress | null) => void
   setError: (error: string | null) => void
   dismissVersion: (version: string) => void
+  setTriggerDownload: (fn: (() => void) | null) => void
   reset: () => void
 }
 
@@ -38,11 +41,13 @@ export const useUpdateStore = create<UpdateState>((set) => ({
   progress: null,
   error: null,
   dismissedVersion: (() => { try { return localStorage.getItem(DISMISSED_KEY) } catch { return null } })(),
+  triggerDownload: null,
 
   setStatus: (status) => set({ status }),
   setUpdateInfo: (updateInfo) => set({ updateInfo }),
   setProgress: (progress) => set({ progress }),
   setError: (error) => set({ error, status: 'error' }),
+  setTriggerDownload: (fn) => set({ triggerDownload: fn }),
   dismissVersion: (version) => {
     try {
       localStorage.setItem(DISMISSED_KEY, version)

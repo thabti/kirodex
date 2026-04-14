@@ -4,6 +4,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useTaskStore } from '@/stores/taskStore'
 import { useDebugStore } from '@/stores/debugStore'
+import { useUpdateStore } from '@/stores/updateStore'
 import { useResizeHandle } from '@/hooks/useResizeHandle'
 import { KiroConfigPanel } from './KiroConfigPanel'
 
@@ -39,6 +40,13 @@ const KiroConfigFooter = memo(function KiroConfigFooter() {
 
 export const SidebarFooter = memo(function SidebarFooter() {
   const setSettingsOpen = useTaskStore((s) => s.setSettingsOpen)
+  const isUpdateAvailable = useUpdateStore((s) => s.status === 'available')
+  const triggerDownload = useUpdateStore((s) => s.triggerDownload)
+
+  const handleUpdateClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation()
+    triggerDownload?.()
+  }, [triggerDownload])
 
   return (
     <>
@@ -60,9 +68,21 @@ export const SidebarFooter = memo(function SidebarFooter() {
               className="flex w-full h-6 cursor-pointer items-center gap-2 overflow-hidden rounded-lg px-2 text-xs text-muted-foreground/70 hover:bg-accent hover:text-foreground transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring">
               <IconSettings className="size-3.5" aria-hidden />
               <span className="text-xs">Settings</span>
+              {isUpdateAvailable && (
+                <span
+                  role="button"
+                  tabIndex={0}
+                  aria-label="Download and install update"
+                  onClick={handleUpdateClick}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); triggerDownload?.() } }}
+                  className="ml-auto shrink-0 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-medium leading-none text-primary-foreground hover:bg-primary/80 transition-colors"
+                >
+                  Update Now
+                </span>
+              )}
             </button>
           </TooltipTrigger>
-          <TooltipContent side="top">Open settings</TooltipContent>
+          <TooltipContent side="top">{isUpdateAvailable ? 'Update available — click badge to install' : 'Open settings'}</TooltipContent>
         </Tooltip>
       </div>
     </>

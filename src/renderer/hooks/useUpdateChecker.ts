@@ -5,7 +5,7 @@ import { getVersion } from '@tauri-apps/api/app'
 
 import type { Update } from '@tauri-apps/plugin-updater'
 
-const CHECK_INTERVAL_MS = 4 * 60 * 60 * 1000 // 4 hours
+const CHECK_INTERVAL_MS = 30 * 60 * 1000 // 30 minutes
 
 export const useUpdateChecker = () => {
   const store = useUpdateStore()
@@ -103,6 +103,15 @@ export const useUpdateChecker = () => {
       if (intervalRef.current) clearInterval(intervalRef.current)
     }
   }, [checkForUpdate])
+
+  // Expose downloadAndInstall to the store so other components (e.g. sidebar badge) can trigger it
+  useEffect(() => {
+    if (store.status === 'available') {
+      useUpdateStore.getState().setTriggerDownload(() => { downloadAndInstall() })
+    } else {
+      useUpdateStore.getState().setTriggerDownload(null)
+    }
+  }, [store.status, downloadAndInstall])
 
   return {
     ...store,
