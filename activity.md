@@ -1,5 +1,13 @@
 # Activity Log
 
+## 2026-04-14 16:40 GST (Dubai)
+
+### FileMentionPicker: @ mention shows agents with styled pills
+
+Built-in agents (Default, Planner) now appear at the top of the @ mention picker with their specific icons (IconCode/blue, IconListCheck/teal). .kiro agents follow with IconRobot/violet. FileMentionPill renders agent pills with the correct icon, color, and formatted full name (e.g. "Rust Senior Engineer" instead of "rust-senior-engineer").
+
+**Modified:** `src/renderer/components/chat/FileMentionPicker.tsx`
+
 ## 2026-04-14 16:35 GST (Dubai)
 
 ### KiroConfigPanel + SlashPanels: Fix agent grouping and /agent visibility
