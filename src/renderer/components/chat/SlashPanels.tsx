@@ -1,6 +1,9 @@
-import { memo } from 'react'
+import { memo, useCallback } from 'react'
+import { IconCode, IconListCheck } from '@tabler/icons-react'
 import { cn } from '@/lib/utils'
 import { useSettingsStore } from '@/stores/settingsStore'
+import { useTaskStore } from '@/stores/taskStore'
+import { ipc } from '@/lib/ipc'
 import type { SlashPanel } from '@/hooks/useSlashAction'
 
 // ── Status dot colors ───────────────────────────────────────────────
@@ -10,6 +13,12 @@ const STATUS_DOT: Record<string, { cls: string; label: string }> = {
   error:      { cls: 'bg-red-400', label: 'error' },
   'needs-auth': { cls: 'bg-red-400', label: 'needs auth' },
 }
+
+// ── Built-in agents ─────────────────────────────────────────────────
+const BUILT_IN_AGENTS = [
+  { id: 'kiro_default', name: 'Default', description: 'Code, edit, and execute', icon: IconCode, color: 'text-blue-400' },
+  { id: 'kiro_planner', name: 'Planner', description: 'Plan before coding', icon: IconListCheck, color: 'text-teal-400' },
+] as const
 
 // ── Model picker panel ──────────────────────────────────────────────
 const ModelPickerPanel = memo(function ModelPickerPanel({ onDismiss }: { onDismiss: () => void }) {
@@ -63,45 +72,78 @@ const ModelPickerPanel = memo(function ModelPickerPanel({ onDismiss }: { onDismi
 })
 
 // ── Agent / MCP server list panel ───────────────────────────────────
-const AgentListPanel = memo(function AgentListPanel() {
+const AgentListPanel = memo(function AgentListPanel({ onDismiss }: { onDismiss: () => void }) {
   const servers = useSettingsStore((s) => s.liveMcpServers)
+  const currentModeId = useSettingsStore((s) => s.currentModeId)
 
-  if (servers.length === 0) return (
-    <PanelShell>
-      <p className="px-3 py-3 text-xs text-muted-foreground/70">No MCP servers connected</p>
-    </PanelShell>
-  )
+  const handleSelectAgent = useCallback((agentId: string) => {
+    useSettingsStore.setState({ currentModeId: agentId })
+    const taskId = useTaskStore.getState().selectedTaskId
+    if (taskId) {
+      useTaskStore.getState().setTaskMode(taskId, agentId)
+      ipc.setMode(taskId, agentId).catch(() => {})
+      ipc.sendMessage(taskId, `/agent ${agentId}`).catch(() => {})
+    }
+    onDismiss()
+  }, [onDismiss])
 
   return (
     <PanelShell>
+      {/* Built-in agents */}
       <div className="px-3 pt-2 pb-1">
-        <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70">MCP Servers</span>
+        <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70">Agents</span>
       </div>
-      <div className="max-h-[200px] overflow-y-auto pb-1">
-        <div className="grid grid-cols-[1fr_80px_70px] gap-2 px-3 py-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/60">
-          <span>Name</span>
-          <span>Status</span>
-          <span className="text-right">Tools</span>
-        </div>
-        {servers.map((server) => {
-          const dot = STATUS_DOT[server.status] ?? STATUS_DOT.loading
+      <ul className="pb-1">
+        {BUILT_IN_AGENTS.map((agent) => {
+          const isActive = currentModeId === agent.id
+          const Icon = agent.icon
           return (
-            <div
-              key={server.name}
-              className="grid grid-cols-[1fr_80px_70px] gap-2 px-3 py-1.5 text-[12px] text-muted-foreground hover:bg-accent/30 transition-colors"
+            <li
+              key={agent.id}
+              role="option"
+              aria-selected={isActive}
+              onMouseDown={(e) => { e.preventDefault(); handleSelectAgent(agent.id) }}
+              className={cn(
+                'flex cursor-pointer items-center gap-2.5 px-3 py-1.5 text-[12px] transition-colors',
+                isActive ? 'text-foreground' : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground',
+              )}
             >
-              <span className="truncate text-foreground/90">{server.name}</span>
-              <span className="flex items-center gap-1.5">
-                <span className={cn('size-1.5 shrink-0 rounded-full', dot.cls)} />
-                <span className="text-[11px]">{dot.label}</span>
-              </span>
-              <span className="text-right text-[11px] text-muted-foreground/70">
-                {server.toolCount > 0 ? `${server.toolCount} tools` : '—'}
-              </span>
-            </div>
+              <Icon className={cn('size-3.5 shrink-0', isActive ? agent.color : 'text-muted-foreground/60')} />
+              <span className={cn('flex-1', isActive && 'font-medium')}>{agent.name}</span>
+              <span className="text-[10px] text-muted-foreground/50">{agent.description}</span>
+              {isActive && <span className="text-[10px] text-primary/60">active</span>}
+            </li>
           )
         })}
-      </div>
+      </ul>
+
+      {/* MCP servers */}
+      {servers.length > 0 && (
+        <>
+          <div className="mx-3 border-t border-border/40" />
+          <div className="px-3 pt-2 pb-1">
+            <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70">MCP Servers</span>
+          </div>
+          <div className="max-h-[160px] overflow-y-auto pb-1">
+            {servers.map((server) => {
+              const dot = STATUS_DOT[server.status] ?? STATUS_DOT.loading
+              return (
+                <div
+                  key={server.name}
+                  className="flex items-center gap-2.5 px-3 py-1.5 text-[12px] text-muted-foreground"
+                >
+                  <span className={cn('size-1.5 shrink-0 rounded-full', dot.cls)} />
+                  <span className="flex-1 truncate text-foreground/90">{server.name}</span>
+                  <span className="text-[10px] text-muted-foreground/50">{dot.label}</span>
+                  <span className="text-[10px] text-muted-foreground/40">
+                    {server.toolCount > 0 ? `${server.toolCount} tools` : '—'}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        </>
+      )}
     </PanelShell>
   )
 })
@@ -124,6 +166,6 @@ export const SlashActionPanel = memo(function SlashActionPanel({
   onDismiss: () => void
 }) {
   if (panel === 'model') return <ModelPickerPanel onDismiss={onDismiss} />
-  if (panel === 'agent') return <AgentListPanel />
+  if (panel === 'agent') return <AgentListPanel onDismiss={onDismiss} />
   return null
 })
