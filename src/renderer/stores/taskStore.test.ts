@@ -20,7 +20,7 @@ vi.mock('./debugStore', () => ({
   useDebugStore: { getState: () => ({ addEntry: vi.fn() }) },
 }))
 vi.mock('./settingsStore', () => ({
-  useSettingsStore: { getState: () => ({}), setState: vi.fn() },
+  useSettingsStore: { getState: () => ({ settings: {}, saveSettings: vi.fn().mockResolvedValue(undefined) }), setState: vi.fn() },
 }))
 vi.mock('./diffStore', () => ({
   useDiffStore: { getState: () => ({ fetchDiff: vi.fn() }) },
@@ -491,5 +491,196 @@ describe('applyTurnEnd', () => {
   it('returns empty object for unknown task', () => {
     const result = applyTurnEnd(baseState(), 'unknown', 'end_turn')
     expect(result).toEqual({})
+  })
+})
+
+describe('loadTasks', () => {
+  it('loads live tasks from backend and merges history', async () => {
+    const { ipc } = await import('@/lib/ipc')
+    const { loadThreads, loadProjects, toArchivedTasks } = await import('@/lib/history-store')
+    const liveTask = makeTask({ id: 'live-1', workspace: '/ws1' })
+    vi.mocked(ipc.listTasks).mockResolvedValueOnce([liveTask])
+    vi.mocked(loadThreads).mockResolvedValueOnce([])
+    vi.mocked(loadProjects).mockResolvedValueOnce([{ workspace: '/ws2', threadIds: [] }])
+    vi.mocked(toArchivedTasks).mockReturnValueOnce([])
+    await useTaskStore.getState().loadTasks()
+    expect(useTaskStore.getState().tasks['live-1']).toBeDefined()
+    expect(useTaskStore.getState().projects).toContain('/ws1')
+    expect(useTaskStore.getState().projects).toContain('/ws2')
+    expect(useTaskStore.getState().connected).toBe(true)
+  })
+
+  it('does not overwrite live tasks with archived ones', async () => {
+    const { ipc } = await import('@/lib/ipc')
+    const { loadThreads, toArchivedTasks } = await import('@/lib/history-store')
+    const liveTask = makeTask({ id: 'shared-id', status: 'running', workspace: '/ws' })
+    const archivedTask = makeTask({ id: 'shared-id', status: 'completed', workspace: '/ws', isArchived: true })
+    vi.mocked(ipc.listTasks).mockResolvedValueOnce([liveTask])
+    vi.mocked(loadThreads).mockResolvedValueOnce([])
+    vi.mocked(toArchivedTasks).mockReturnValueOnce([archivedTask])
+    const { loadProjects } = await import('@/lib/history-store')
+    vi.mocked(loadProjects).mockResolvedValueOnce([])
+    await useTaskStore.getState().loadTasks()
+    expect(useTaskStore.getState().tasks['shared-id'].status).toBe('running')
+  })
+
+  it('restores project display names from history', async () => {
+    const { ipc } = await import('@/lib/ipc')
+    const { loadThreads, loadProjects, toArchivedTasks } = await import('@/lib/history-store')
+    vi.mocked(ipc.listTasks).mockResolvedValueOnce([])
+    vi.mocked(loadThreads).mockResolvedValueOnce([])
+    vi.mocked(loadProjects).mockResolvedValueOnce([
+      { workspace: '/ws', displayName: 'My Project', threadIds: [] },
+    ])
+    vi.mocked(toArchivedTasks).mockReturnValueOnce([])
+    await useTaskStore.getState().loadTasks()
+    expect(useTaskStore.getState().projectNames['/ws']).toBe('My Project')
+  })
+
+  it('falls back to history-only when backend fails', async () => {
+    const { ipc } = await import('@/lib/ipc')
+    const { loadThreads, loadProjects, toArchivedTasks } = await import('@/lib/history-store')
+    vi.mocked(ipc.listTasks).mockRejectedValueOnce(new Error('backend down'))
+    const archivedTask = makeTask({ id: 'archived-1', workspace: '/ws', isArchived: true })
+    vi.mocked(loadThreads).mockResolvedValueOnce([])
+    vi.mocked(loadProjects).mockResolvedValueOnce([{ workspace: '/ws', threadIds: ['archived-1'] }])
+    vi.mocked(toArchivedTasks).mockReturnValueOnce([archivedTask])
+    await useTaskStore.getState().loadTasks()
+    expect(useTaskStore.getState().tasks['archived-1']).toBeDefined()
+    expect(useTaskStore.getState().connected).toBe(false)
+  })
+
+  it('sets connected false when both backend and history fail', async () => {
+    const { ipc } = await import('@/lib/ipc')
+    const { loadThreads } = await import('@/lib/history-store')
+    vi.mocked(ipc.listTasks).mockRejectedValueOnce(new Error('backend down'))
+    vi.mocked(loadThreads).mockRejectedValueOnce(new Error('disk error'))
+    await useTaskStore.getState().loadTasks()
+    expect(useTaskStore.getState().connected).toBe(false)
+  })
+
+  it('still sets connected when history load fails but backend succeeds', async () => {
+    const { ipc } = await import('@/lib/ipc')
+    const { loadThreads } = await import('@/lib/history-store')
+    vi.mocked(ipc.listTasks).mockResolvedValueOnce([makeTask({ workspace: '/ws' })])
+    vi.mocked(loadThreads).mockRejectedValueOnce(new Error('disk error'))
+    await useTaskStore.getState().loadTasks()
+    expect(useTaskStore.getState().connected).toBe(true)
+    expect(useTaskStore.getState().tasks['task-1']).toBeDefined()
+  })
+})
+
+describe('setConnected', () => {
+  it('sets connected state', () => {
+    useTaskStore.getState().setConnected(true)
+    expect(useTaskStore.getState().connected).toBe(true)
+  })
+
+  it('no-ops when value unchanged', () => {
+    useTaskStore.setState({ connected: true })
+    const before = useTaskStore.getState()
+    useTaskStore.getState().setConnected(true)
+    // Should be same reference (no state update)
+    expect(useTaskStore.getState().connected).toBe(before.connected)
+  })
+})
+
+describe('persistHistory', () => {
+  it('calls saveThreads with current tasks and projectNames', async () => {
+    const { saveThreads } = await import('@/lib/history-store')
+    useTaskStore.getState().upsertTask(makeTask())
+    useTaskStore.setState({ projectNames: { '/ws': 'My Project' } })
+    useTaskStore.getState().persistHistory()
+    expect(saveThreads).toHaveBeenCalledWith(
+      expect.objectContaining({ 'task-1': expect.any(Object) }),
+      expect.objectContaining({ '/ws': 'My Project' }),
+    )
+  })
+})
+
+describe('clearHistory', () => {
+  it('cancels running tasks and clears all state', async () => {
+    const { ipc } = await import('@/lib/ipc')
+    const { clearHistory: clearHistoryStore } = await import('@/lib/history-store')
+    useTaskStore.getState().upsertTask(makeTask({ id: 't1', status: 'running', workspace: '/ws' }))
+    useTaskStore.getState().upsertTask(makeTask({ id: 't2', status: 'paused', workspace: '/ws' }))
+    useTaskStore.getState().addProject('/ws')
+    await useTaskStore.getState().clearHistory()
+    expect(ipc.cancelTask).toHaveBeenCalledWith('t1')
+    expect(ipc.cancelTask).toHaveBeenCalledWith('t2')
+    expect(clearHistoryStore).toHaveBeenCalledTimes(1)
+    expect(Object.keys(useTaskStore.getState().tasks)).toHaveLength(0)
+    expect(useTaskStore.getState().projects).toHaveLength(0)
+    expect(useTaskStore.getState().selectedTaskId).toBeNull()
+  })
+
+  it('does not cancel completed tasks', async () => {
+    const { ipc } = await import('@/lib/ipc')
+    vi.mocked(ipc.cancelTask).mockClear()
+    useTaskStore.getState().upsertTask(makeTask({ id: 't1', status: 'completed', workspace: '/ws' }))
+    await useTaskStore.getState().clearHistory()
+    expect(ipc.cancelTask).not.toHaveBeenCalled()
+  })
+})
+
+describe('archiveThreads', () => {
+  it('removes all tasks for workspace and adds to deletedTaskIds', () => {
+    useTaskStore.getState().upsertTask(makeTask({ id: 't1', workspace: '/ws' }))
+    useTaskStore.getState().upsertTask(makeTask({ id: 't2', workspace: '/ws' }))
+    useTaskStore.getState().upsertTask(makeTask({ id: 't3', workspace: '/other' }))
+    useTaskStore.getState().archiveThreads('/ws')
+    expect(useTaskStore.getState().tasks['t1']).toBeUndefined()
+    expect(useTaskStore.getState().tasks['t2']).toBeUndefined()
+    expect(useTaskStore.getState().tasks['t3']).toBeDefined()
+    expect(useTaskStore.getState().deletedTaskIds.has('t1')).toBe(true)
+    expect(useTaskStore.getState().deletedTaskIds.has('t2')).toBe(true)
+  })
+
+  it('clears selectedTaskId if it was in the archived workspace', () => {
+    useTaskStore.getState().upsertTask(makeTask({ id: 't1', workspace: '/ws' }))
+    useTaskStore.setState({ selectedTaskId: 't1', view: 'chat' })
+    useTaskStore.getState().archiveThreads('/ws')
+    expect(useTaskStore.getState().selectedTaskId).toBeNull()
+    expect(useTaskStore.getState().view).toBe('dashboard')
+  })
+})
+
+describe('removeProject', () => {
+  it('removes project, tasks, and clears drafts', () => {
+    useTaskStore.getState().addProject('/ws')
+    useTaskStore.getState().upsertTask(makeTask({ id: 't1', workspace: '/ws' }))
+    useTaskStore.getState().setDraft('/ws', 'draft text')
+    useTaskStore.getState().removeProject('/ws')
+    expect(useTaskStore.getState().projects).not.toContain('/ws')
+    expect(useTaskStore.getState().tasks['t1']).toBeUndefined()
+    expect(useTaskStore.getState().drafts['/ws']).toBeUndefined()
+  })
+
+  it('clears pendingWorkspace if it matches removed project', () => {
+    useTaskStore.getState().addProject('/ws')
+    useTaskStore.setState({ pendingWorkspace: '/ws' })
+    useTaskStore.getState().removeProject('/ws')
+    expect(useTaskStore.getState().pendingWorkspace).toBeNull()
+  })
+
+  it('switches to dashboard when selected task is removed', () => {
+    useTaskStore.getState().addProject('/ws')
+    useTaskStore.getState().upsertTask(makeTask({ id: 't1', workspace: '/ws' }))
+    useTaskStore.setState({ selectedTaskId: 't1', view: 'chat' })
+    useTaskStore.getState().removeProject('/ws')
+    expect(useTaskStore.getState().view).toBe('dashboard')
+  })
+})
+
+describe('setSettingsOpen', () => {
+  it('opens settings with section', () => {
+    useTaskStore.getState().setSettingsOpen(true, 'appearance')
+    expect(useTaskStore.getState().isSettingsOpen).toBe(true)
+    expect(useTaskStore.getState().settingsInitialSection).toBe('appearance')
+  })
+
+  it('opens settings without section defaults to null', () => {
+    useTaskStore.getState().setSettingsOpen(true)
+    expect(useTaskStore.getState().settingsInitialSection).toBeNull()
   })
 })

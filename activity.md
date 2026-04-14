@@ -1,5 +1,58 @@
 # Activity Log
 
+## 2026-04-15 01:45 GST (Dubai)
+
+### Tests: Increased unit test coverage for components, hooks, lib, and stores
+
+Wrote and enhanced 11 test files covering unified-title-bar components (TitleBarToolbar, TrafficLights, WindowsControls, platform variants), useUpdateChecker hook, analytics utilities, fuzzy-search, history-store, sounds, and all Zustand stores (debugStore, diffStore, kiroStore, settingsStore, taskStore, updateStore). All 48 test files pass with 535 tests. Key coverage gains: 7 files from 0% to 100%, updateStore/diffStore/fuzzy-search/history-store/sounds all at 100%, settingsStore at 98%, debugStore at 96%, kiroStore at 89%.
+
+**Modified:**
+- `src/renderer/components/unified-title-bar/unified-title-bar.test.tsx`
+- `src/renderer/hooks/useUpdateChecker.test.ts`
+- `src/renderer/lib/analytics.test.ts`
+- `src/renderer/lib/fuzzy-search.test.ts`
+- `src/renderer/lib/history-store.test.ts`
+- `src/renderer/lib/sounds.test.ts`
+- `src/renderer/stores/debugStore.test.ts`
+- `src/renderer/stores/diffStore.test.ts`
+- `src/renderer/stores/kiroStore.test.ts`
+- `src/renderer/stores/taskStore.test.ts`
+- `src/renderer/stores/updateStore.test.ts`
+
+## 2026-04-15 02:00 GST (Dubai)
+
+### Tests: Improved frontend test coverage across stores, lib, hooks, and components
+
+Wrote and rewrote test files for 11 modules with low coverage. All 48 test files pass (519 tests). Key coverage improvements: fuzzy-search 3.7%→100%, sounds 0%→100%, history-store 17%→100%, updateStore 38%→100%, settingsStore 29%→98%, kiroStore 40%→89%, debugStore 50%→95%, diffStore 72%→100%, useUpdateChecker 0%→59%, unified-title-bar 0%→44%. Overall: stores 46%→72%, lib 52%→84%, hooks 0%→59%.
+
+**Modified:**
+- `src/renderer/lib/fuzzy-search.test.ts` (new)
+- `src/renderer/lib/sounds.test.ts` (new)
+- `src/renderer/lib/history-store.test.ts` (rewritten)
+- `src/renderer/lib/analytics.test.ts` (new)
+- `src/renderer/stores/settingsStore.test.ts` (rewritten)
+- `src/renderer/stores/updateStore.test.ts` (rewritten)
+- `src/renderer/stores/kiroStore.test.ts` (rewritten)
+- `src/renderer/stores/debugStore.test.ts` (rewritten)
+- `src/renderer/stores/diffStore.test.ts` (rewritten)
+- `src/renderer/hooks/useUpdateChecker.test.ts` (new)
+- `src/renderer/components/unified-title-bar/unified-title-bar.test.tsx` (new)
+
+## 2026-04-15 01:57 GST (Dubai)
+
+### Fork: improved UI and fixed performance hang
+
+Redesigned the fork system message from a red error-style banner to a centered emerald pill with a fork icon and the parent thread name. Added a variant system to `SystemMessageRow` (fork/info/error) so different system messages render with appropriate styling. Fixed the performance hang in `task_fork` by converting it from a sync Tauri command with a blocking `recv_timeout(10s)` to an async command using `tokio::time::timeout`. Added `isForking` state to the Zustand store so fork buttons show a disabled spinner during the operation.
+
+**Modified:**
+- `src-tauri/src/commands/acp.rs`
+- `src/renderer/components/chat/SystemMessageRow.tsx`
+- `src/renderer/lib/timeline.ts`
+- `src/renderer/stores/taskStore.ts`
+- `src/renderer/components/AppHeader.tsx`
+- `src/renderer/components/chat/MessageItem.tsx`
+- `src/renderer/components/chat/UserMessageRow.tsx`
+
 ## 2026-04-15 01:40 GST (Dubai)
 
 ### Settings: update indicator dot + restart prompt dialog
