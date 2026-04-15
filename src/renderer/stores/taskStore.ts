@@ -1,20 +1,20 @@
 import { create } from 'zustand'
-import type { AgentTask, ActivityEntry, ToolCall, PlanStep } from '@/types'
+import type { AgentTask, ActivityEntry, ToolCall, PlanStep, SoftDeletedThread } from '@/types'
 import { ipc } from '@/lib/ipc'
 import { joinChunk } from '@/lib/utils'
 import * as historyStore from '@/lib/history-store'
 import { useDebugStore } from './debugStore'
-
-let _forkInProgress = false
 import { useSettingsStore } from './settingsStore'
 import { useDiffStore } from './diffStore'
 import { useKiroStore } from './kiroStore'
 import { track } from '@/lib/analytics'
+import { sendTaskNotification } from '@/lib/notifications'
 
 interface TaskStore {
   tasks: Record<string, AgentTask>
   projects: string[]           // workspace paths
   deletedTaskIds: Set<string>  // guard against backend re-adding deleted tasks
+  softDeleted: Record<string, SoftDeletedThread>  // threads pending permanent deletion
   selectedTaskId: string | null
   pendingWorkspace: string | null  // workspace for a new thread not yet created
   view: 'chat' | 'dashboard'
@@ -36,10 +36,12 @@ interface TaskStore {
   drafts: Record<string, string>
   /** One-shot guard: workspace whose next setDraft call should be suppressed */
   _suppressDraftSave: string | null
-  /** Task ID from the last desktop notification, cleared after navigation */
-  lastNotifiedTaskId: string | null
+  /** Task IDs from desktop notifications pending click-to-navigate */
+  notifiedTaskIds: string[]
   /** Per-thread mode (e.g. 'kiro_planner') so toggling plan mode in one thread doesn't affect others */
   taskModes: Record<string, string>
+  /** Whether a fork operation is in progress */
+  isForking: boolean
   setSelectedTask: (id: string | null) => void
   setView: (view: 'chat' | 'dashboard') => void
   setNewProjectOpen: (open: boolean) => void
@@ -50,6 +52,10 @@ interface TaskStore {
   upsertTask: (task: AgentTask) => void
   removeTask: (id: string) => void
   archiveTask: (id: string) => void
+  softDeleteTask: (id: string) => void
+  restoreTask: (id: string) => void
+  permanentlyDeleteTask: (id: string) => void
+  purgeExpiredSoftDeletes: () => void
   appendChunk: (taskId: string, chunk: string) => void
   appendThinkingChunk: (taskId: string, chunk: string) => void
   upsertToolCall: (taskId: string, toolCall: ToolCall) => void
@@ -82,6 +88,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   projects: [],
   projectNames: {},
   deletedTaskIds: new Set<string>(),
+  softDeleted: {},
   selectedTaskId: null,
   pendingWorkspace: null,
   view: 'chat',
@@ -97,8 +104,9 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   terminalOpenTasks: new Set<string>(),
   drafts: {},
   _suppressDraftSave: null,
-  lastNotifiedTaskId: null,
+  notifiedTaskIds: [],
   taskModes: {},
+  isForking: false,
 
   setSelectedTask: (id) => {
     if (get().selectedTaskId === id) return
@@ -120,7 +128,12 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   removeProject: (workspace) => set((s) => {
     const taskIds = Object.keys(s.tasks).filter((id) => s.tasks[id].workspace === workspace)
     const tasks = { ...s.tasks }
-    taskIds.forEach((id) => { delete tasks[id] })
+    const softDeleted = { ...s.softDeleted }
+    const now = new Date().toISOString()
+    taskIds.forEach((id) => {
+      softDeleted[id] = { task: { ...tasks[id], isArchived: true, status: 'completed' }, deletedAt: now }
+      delete tasks[id]
+    })
     taskIds.forEach((id) => { void ipc.cancelTask(id).catch(() => {}) })
     taskIds.forEach((id) => { void ipc.deleteTask(id) })
     const selectedTaskId = taskIds.includes(s.selectedTaskId ?? '') ? null : s.selectedTaskId
@@ -132,6 +145,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     return {
       projects: s.projects.filter((p) => p !== workspace),
       tasks,
+      softDeleted,
       selectedTaskId,
       deletedTaskIds,
       drafts,
@@ -144,7 +158,12 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   archiveThreads: (workspace) => set((s) => {
     const taskIds = Object.keys(s.tasks).filter((id) => s.tasks[id].workspace === workspace)
     const tasks = { ...s.tasks }
-    taskIds.forEach((id) => { delete tasks[id] })
+    const softDeleted = { ...s.softDeleted }
+    const now = new Date().toISOString()
+    taskIds.forEach((id) => {
+      softDeleted[id] = { task: { ...tasks[id], isArchived: true, status: 'completed' }, deletedAt: now }
+      delete tasks[id]
+    })
     taskIds.forEach((id) => { void ipc.cancelTask(id).catch(() => {}) })
     taskIds.forEach((id) => { void ipc.deleteTask(id) })
     const selectedTaskId = taskIds.includes(s.selectedTaskId ?? '') ? null : s.selectedTaskId
@@ -152,13 +171,14 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     taskIds.forEach((id) => deletedTaskIds.add(id))
     return {
       tasks,
+      softDeleted,
       selectedTaskId,
       deletedTaskIds,
       view: selectedTaskId === null && s.view === 'chat' ? 'dashboard' : s.view,
     }
   }),
 
-  upsertTask: (task) =>
+  upsertTask: (task) => {
     set((state) => {
       // Don't re-add tasks that were explicitly deleted
       if (state.deletedTaskIds.has(task.id)) return state
@@ -180,7 +200,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
       ) {
         return state
       }
-      const merged = { ...task, messages }
+      const merged = { ...task, messages, ...(prev?.parentTaskId && !task.parentTaskId ? { parentTaskId: prev.parentTaskId } : {}) }
       const statusChanged = !prev || prev.status !== task.status
       if (statusChanged && (task.status === 'completed' || task.status === 'error' || task.status === 'cancelled')) {
         track('task_completed', { status: task.status })
@@ -200,29 +220,30 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
         tasks: { ...state.tasks, [task.id]: merged },
         activityFeed: activity,
       }
-    }),
+    })
+    // Notify on permission requests while backgrounded
+    if (task.pendingPermission) {
+      const prev = get().tasks[task.id]
+      // Only fire if this is a new permission (not already notified)
+      if (!prev || prev.pendingPermission?.requestId !== task.pendingPermission.requestId) {
+        const permSettings = useSettingsStore.getState().settings
+        sendTaskNotification({
+          task,
+          status: 'permission',
+          isNotificationsEnabled: permSettings.notifications ?? true,
+          isSoundEnabled: permSettings.soundNotifications ?? true,
+          onNotified: (tid) => {
+            set((s) => ({
+              notifiedTaskIds: s.notifiedTaskIds.includes(tid) ? s.notifiedTaskIds : [...s.notifiedTaskIds, tid],
+            }))
+          },
+        })
+      }
+    }
+  },
 
   removeTask: (id) => {
-    set((state) => {
-      if (!state.tasks[id]) return state
-      const { [id]: _, ...rest } = state.tasks
-      const { [id]: _c, ...chunks } = state.streamingChunks
-      const { [id]: _t, ...thinking } = state.thinkingChunks
-      const { [id]: _tc, ...tools } = state.liveToolCalls
-      const { [id]: _m, ...modes } = state.taskModes
-      const deletedTaskIds = new Set(state.deletedTaskIds)
-      deletedTaskIds.add(id)
-      return {
-        tasks: rest,
-        streamingChunks: chunks,
-        thinkingChunks: thinking,
-        liveToolCalls: tools,
-        taskModes: modes,
-        deletedTaskIds,
-        selectedTaskId: state.selectedTaskId === id ? null : state.selectedTaskId,
-      }
-    })
-    get().persistHistory()
+    get().softDeleteTask(id)
   },
 
   archiveTask: (id) => {
@@ -236,6 +257,88 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
       liveToolCalls: { ...s.liveToolCalls, [id]: [] },
     }))
     void ipc.deleteTask(id)
+    get().persistHistory()
+  },
+
+  softDeleteTask: (id) => {
+    const task = get().tasks[id]
+    if (!task) return
+    void ipc.cancelTask(id).catch(() => {})
+    void ipc.deleteTask(id)
+    set((state) => {
+      const { [id]: removed, ...rest } = state.tasks
+      const { [id]: _c, ...chunks } = state.streamingChunks
+      const { [id]: _t, ...thinking } = state.thinkingChunks
+      const { [id]: _tc, ...tools } = state.liveToolCalls
+      const { [id]: _m, ...modes } = state.taskModes
+      const deletedTaskIds = new Set(state.deletedTaskIds)
+      deletedTaskIds.add(id)
+      const softDeleted = {
+        ...state.softDeleted,
+        [id]: { task: { ...removed, isArchived: true, status: 'completed' as const }, deletedAt: new Date().toISOString() },
+      }
+      return {
+        tasks: rest,
+        streamingChunks: chunks,
+        thinkingChunks: thinking,
+        liveToolCalls: tools,
+        taskModes: modes,
+        deletedTaskIds,
+        softDeleted,
+        selectedTaskId: state.selectedTaskId === id ? null : state.selectedTaskId,
+      }
+    })
+    get().persistHistory()
+  },
+
+  restoreTask: (id) => {
+    const entry = get().softDeleted[id]
+    if (!entry) return
+    set((state) => {
+      const { [id]: _, ...remaining } = state.softDeleted
+      const deletedTaskIds = new Set(state.deletedTaskIds)
+      deletedTaskIds.delete(id)
+      const projects = state.projects.includes(entry.task.workspace)
+        ? state.projects
+        : [...state.projects, entry.task.workspace]
+      return {
+        tasks: { ...state.tasks, [id]: entry.task },
+        softDeleted: remaining,
+        deletedTaskIds,
+        projects,
+      }
+    })
+    get().persistHistory()
+  },
+
+  permanentlyDeleteTask: (id) => {
+    if (!get().softDeleted[id]) return
+    set((state) => {
+      const { [id]: _, ...remaining } = state.softDeleted
+      const deletedTaskIds = new Set(state.deletedTaskIds)
+      deletedTaskIds.add(id)
+      return { softDeleted: remaining, deletedTaskIds }
+    })
+    get().persistHistory()
+  },
+
+  purgeExpiredSoftDeletes: () => {
+    const TWO_DAYS_MS = 48 * 60 * 60 * 1000
+    const now = Date.now()
+    const { softDeleted } = get()
+    const expiredIds = Object.keys(softDeleted).filter(
+      (id) => now - new Date(softDeleted[id].deletedAt).getTime() >= TWO_DAYS_MS,
+    )
+    if (expiredIds.length === 0) return
+    set((state) => {
+      const next = { ...state.softDeleted }
+      const deletedTaskIds = new Set(state.deletedTaskIds)
+      for (const id of expiredIds) {
+        delete next[id]
+        deletedTaskIds.add(id)
+      }
+      return { softDeleted: next, deletedTaskIds }
+    })
     get().persistHistory()
   },
 
@@ -382,8 +485,8 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   },
 
   forkTask: async (taskId) => {
-    if (_forkInProgress) return
-    _forkInProgress = true
+    if (get().isForking) return
+    set({ isForking: true })
     try {
       const task = get().tasks[taskId]
       const forked = await ipc.forkTask(taskId, task?.workspace, task?.name)
@@ -396,6 +499,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
           selectedTaskId: forked.id,
           view: 'chat' as const,
           projects,
+          isForking: false,
         }
       })
       get().persistHistory()
@@ -410,8 +514,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
           messages: [...task.messages, { role: 'system', content: `⚠️ Fork failed: ${msg}`, timestamp: new Date().toISOString() }],
         })
       }
-    } finally {
-      _forkInProgress = false
+      set({ isForking: false })
     }
   },
 
@@ -482,9 +585,10 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
 
       // Load persisted history (archived threads from previous sessions)
       try {
-        const [savedThreads, savedProjects] = await Promise.all([
+        const [savedThreads, savedProjects, savedSoftDeleted] = await Promise.all([
           historyStore.loadThreads(),
           historyStore.loadProjects(),
+          historyStore.loadSoftDeleted(),
         ])
         const archived = historyStore.toArchivedTasks(savedThreads)
         for (const t of archived) {
@@ -500,7 +604,12 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
         for (const sp of savedProjects) {
           if (sp.displayName) projectNames[sp.workspace] = sp.displayName
         }
-        set({ tasks, projects, projectNames, connected: true })
+        // Restore soft-deleted threads
+        const softDeleted: Record<string, import('@/types').SoftDeletedThread> = {}
+        for (const sd of savedSoftDeleted) {
+          softDeleted[sd.task.id] = sd
+        }
+        set({ tasks, projects, projectNames, softDeleted, connected: true })
       } catch {
         // History load failed — still usable without it
         set({ tasks, projects, connected: true })
@@ -508,9 +617,10 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     } catch {
       // Backend not available — try loading from history only
       try {
-        const [savedThreads, savedProjects] = await Promise.all([
+        const [savedThreads, savedProjects, savedSoftDeleted] = await Promise.all([
           historyStore.loadThreads(),
           historyStore.loadProjects(),
+          historyStore.loadSoftDeleted(),
         ])
         const archived = historyStore.toArchivedTasks(savedThreads)
         const tasks = Object.fromEntries(archived.map((t) => [t.id, t]))
@@ -519,7 +629,11 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
         for (const sp of savedProjects) {
           if (sp.displayName) projectNames[sp.workspace] = sp.displayName
         }
-        set({ tasks, projects, projectNames, connected: false })
+        const softDeleted: Record<string, import('@/types').SoftDeletedThread> = {}
+        for (const sd of savedSoftDeleted) {
+          softDeleted[sd.task.id] = sd
+        }
+        set({ tasks, projects, projectNames, softDeleted, connected: false })
       } catch {
         set({ connected: false })
       }
@@ -532,8 +646,9 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   },
 
   persistHistory: () => {
-    const { tasks, projectNames } = get()
+    const { tasks, projectNames, softDeleted } = get()
     historyStore.saveThreads(tasks, projectNames).catch(() => {})
+    historyStore.saveSoftDeleted(Object.values(softDeleted)).catch(() => {})
   },
 
   clearHistory: async () => {
@@ -552,6 +667,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
       projects: [],
       projectNames: {},
       deletedTaskIds: new Set<string>(),
+      softDeleted: {},
       selectedTaskId: null,
       pendingWorkspace: null,
       streamingChunks: {},
@@ -561,6 +677,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
       terminalOpenTasks: new Set<string>(),
       drafts: {},
       _suppressDraftSave: null,
+      notifiedTaskIds: [],
     })
     // Reset settings to defaults and go back to onboarding
     const defaultSettings = { ...useSettingsStore.getState().settings, hasOnboarded: false, projectPrefs: {} }
@@ -704,24 +821,21 @@ export function initTaskListeners(): () => void {
     useTaskStore.getState().persistHistory()
 
     // Send a native notification when the window is not focused and notifications are enabled
-    if (!document.hasFocus() && (useSettingsStore.getState().settings.notifications ?? true)) {
-      const task = useTaskStore.getState().tasks[taskId]
-      const taskName = task?.name ?? 'Agent finished'
-      const lastAssistantMsg = task?.messages
-        ?.filter((m) => m.role === 'assistant' && m.content.trim())
-        .at(-1)?.content.replace(/[#*`_~>\[\]()]/g, '').trim()
-      const MAX_BODY_LENGTH = 120
-      const body = lastAssistantMsg
-        ? lastAssistantMsg.length > MAX_BODY_LENGTH
-          ? lastAssistantMsg.slice(0, MAX_BODY_LENGTH) + '…'
-          : lastAssistantMsg
-        : taskName
-      useTaskStore.setState({ lastNotifiedTaskId: taskId })
-      import('@tauri-apps/plugin-notification').then(({ isPermissionGranted, sendNotification }) => {
-        isPermissionGranted().then((ok) => {
-          if (ok) sendNotification({ title: 'Kirodex', body, extra: { taskId } })
-        })
-      }).catch(() => {})
+    const settings = useSettingsStore.getState().settings
+    const task = useTaskStore.getState().tasks[taskId]
+    if (task) {
+      const notifStatus = stopReason === 'refusal' || task.status === 'error' ? 'error' : 'completed'
+      sendTaskNotification({
+        task,
+        status: notifStatus,
+        isNotificationsEnabled: settings.notifications ?? true,
+        isSoundEnabled: settings.soundNotifications ?? true,
+        onNotified: (tid) => {
+          useTaskStore.setState((s) => ({
+            notifiedTaskIds: s.notifiedTaskIds.includes(tid) ? s.notifiedTaskIds : [...s.notifiedTaskIds, tid],
+          }))
+        },
+      })
     }
 
     // Auto-send the first queued message if any exist
@@ -831,6 +945,22 @@ export function initTaskListeners(): () => void {
         liveToolCalls: { ...s.liveToolCalls, [taskId]: [] },
       }
     })
+    // Notify on errors while backgrounded
+    const errSettings = useSettingsStore.getState().settings
+    const errTask = useTaskStore.getState().tasks[taskId]
+    if (errTask) {
+      sendTaskNotification({
+        task: errTask,
+        status: 'error',
+        isNotificationsEnabled: errSettings.notifications ?? true,
+        isSoundEnabled: errSettings.soundNotifications ?? true,
+        onNotified: (tid) => {
+          useTaskStore.setState((s) => ({
+            notifiedTaskIds: s.notifiedTaskIds.includes(tid) ? s.notifiedTaskIds : [...s.notifiedTaskIds, tid],
+          }))
+        },
+      })
+    }
   })
 
   return () => {

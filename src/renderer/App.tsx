@@ -2,6 +2,7 @@ import { useEffect, useCallback, useState, useRef, lazy, Suspense } from "react"
 import { Toaster, toast } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { applyTheme, listenSystemTheme, persistTheme } from "@/lib/theme";
 import { AppHeader } from "@/components/AppHeader";
 import { TaskSidebar } from "@/components/sidebar/TaskSidebar";
 const ChatPanel = lazy(() =>
@@ -59,13 +60,13 @@ function LoginBanner() {
         <path d="M8 1.333A6.667 6.667 0 1 0 14.667 8 6.674 6.674 0 0 0 8 1.333Zm0 10.334a.667.667 0 1 1 0-1.334.667.667 0 0 1 0 1.334ZM8.667 8a.667.667 0 0 1-1.334 0V5.333a.667.667 0 0 1 1.334 0V8Z" fill="currentColor"/>
       </svg>
       <div className="flex-1 min-w-0">
-        <p className="text-[13px] font-medium text-amber-200/90">Sign in to Kiro to start using AI agents</p>
-        <p className="text-[11px] text-amber-200/50">Authentication is required to create threads and interact with agents</p>
+        <p className="text-[13px] font-medium text-amber-700 dark:text-amber-200/90">Sign in to Kiro to start using AI agents</p>
+        <p className="text-[11px] text-amber-600/70 dark:text-amber-200/50">Authentication is required to create threads and interact with agents</p>
       </div>
       <button
         type="button"
         onClick={openLogin}
-        className="shrink-0 rounded-lg bg-amber-500/20 px-3 py-1.5 text-[12px] font-medium text-amber-200 transition-colors hover:bg-amber-500/30"
+        className="shrink-0 rounded-lg bg-amber-500/20 px-3 py-1.5 text-[12px] font-medium text-amber-700 dark:text-amber-200 transition-colors hover:bg-amber-500/30"
       >
         Sign in
       </button>
@@ -87,18 +88,18 @@ function EmptyState() {
 
   return (
     <div data-testid="empty-state" className="flex min-h-0 flex-1 flex-col items-center justify-center px-6">
-      <div className="flex flex-col items-center gap-5 -mt-12">
+      <div className="flex flex-col items-center gap-5 -mt-12 max-w-sm">
         <div className="flex size-14 items-center justify-center rounded-2xl bg-primary/10">
           <IconStack2 size={28} stroke={1.5} className="text-primary" />
         </div>
         <div className="text-center">
           <h2 className="text-lg font-semibold text-foreground">
-            {hasProjects ? "Start a new thread" : "Get started"}
+            {hasProjects ? "Start a new thread" : "Open a project to get started"}
           </h2>
-          <p className="mt-1 text-[13px] text-muted-foreground/60">
+          <p className="mt-1.5 text-[13px] leading-relaxed text-muted-foreground/60">
             {hasProjects
               ? "Pick a project and start chatting with Kiro"
-              : "Import a project folder to begin"}
+              : "Point Kirodex at any folder on your machine. The AI agent works directly with your files, runs commands, and helps you build."}
           </p>
         </div>
         <LoginBanner />
@@ -119,6 +120,11 @@ function EmptyState() {
             </>
           )}
         </button>
+        {!hasProjects && (
+          <p className="text-[11px] text-muted-foreground/40">
+            Or press <kbd className="rounded border border-border/60 bg-muted/40 px-1.5 py-0.5 font-mono text-[10px]">⌘O</kbd> to open a folder
+          </p>
+        )}
       </div>
     </div>
   );
@@ -179,13 +185,15 @@ function UpdateNotifier() {
   return null;
 }
 
-/** Navigate to a task from a clicked notification, then clear the pending marker. */
+/** Navigate to a task from a clicked notification, then remove it from the queue. */
 const navigateToNotifiedTask = (taskId: string): void => {
   const store = useTaskStore.getState()
   if (!store.tasks[taskId]) return
   store.setSelectedTask(taskId)
   store.setView('chat')
-  useTaskStore.setState({ lastNotifiedTaskId: null })
+  useTaskStore.setState((s) => ({
+    notifiedTaskIds: s.notifiedTaskIds.filter((id) => id !== taskId),
+  }))
 }
 
 export function App() {
@@ -202,6 +210,7 @@ export function App() {
   const analyticsEnabled = useSettingsStore((s) => s.settings.analyticsEnabled ?? true);
   const analyticsAnonId = useSettingsStore((s) => s.settings.analyticsAnonId ?? null);
   const fontSize = useSettingsStore((s) => s.settings.fontSize);
+  const theme = useSettingsStore((s) => s.settings.theme ?? 'dark');
   const sidebarPosition = useSettingsStore((s) => s.settings.sidebarPosition ?? 'left');
   const isRightSidebar = sidebarPosition === 'right';
   useKeyboardShortcuts();
@@ -210,6 +219,14 @@ export function App() {
   useEffect(() => {
     document.documentElement.style.setProperty('--app-font-size', `${fontSize ?? 13}px`);
   }, [fontSize]);
+
+  // Apply theme and listen for OS preference changes (for 'system' mode)
+  useEffect(() => {
+    applyTheme(theme);
+    persistTheme(theme);
+    if (theme !== 'system') return
+    return listenSystemTheme(() => applyTheme('system'))
+  }, [theme]);
 
   // Sync active workspace → apply per-project model/autoApprove prefs
   useEffect(() => {
@@ -234,11 +251,17 @@ export function App() {
   }, [diffIsOpen]);
 
   useEffect(() => {
-    useTaskStore.getState().loadTasks();
+    useTaskStore.getState().loadTasks().then(() => {
+      useTaskStore.getState().purgeExpiredSoftDeletes();
+    });
     useSettingsStore.getState().loadSettings();
     useSettingsStore.getState().checkAuth();
     // Pre-warm ACP to get models/modes before user creates a thread
     ipc.probeCapabilities().catch(() => {});
+    // Purge expired soft-deleted threads every hour
+    const purgeInterval = setInterval(() => {
+      useTaskStore.getState().purgeExpiredSoftDeletes();
+    }, 60 * 60 * 1000);
     // Request notification permission so end_turn alerts work
     import("@tauri-apps/plugin-notification").then(({ isPermissionGranted, requestPermission, onAction }) => {
       isPermissionGranted().then((granted) => {
@@ -250,16 +273,17 @@ export function App() {
         if (tid) navigateToNotifiedTask(tid);
       }).catch(() => {});
     }).catch(() => {});
-    // Fallback: navigate on window focus if a notification was pending
+    // Fallback: navigate on window focus if notifications were pending
     const handleWindowFocus = () => {
-      const tid = useTaskStore.getState().lastNotifiedTaskId;
-      if (tid) navigateToNotifiedTask(tid);
+      const ids = useTaskStore.getState().notifiedTaskIds
+      if (ids.length > 0) navigateToNotifiedTask(ids[ids.length - 1])
     };
     window.addEventListener("focus", handleWindowFocus);
     const cleanupTask = initTaskListeners();
     const cleanupKiro = initKiroListeners();
     return () => {
       window.removeEventListener("focus", handleWindowFocus);
+      clearInterval(purgeInterval);
       cleanupTask();
       cleanupKiro();
     };

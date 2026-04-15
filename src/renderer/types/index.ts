@@ -81,8 +81,17 @@ export interface AgentTask {
   agentProfileId?: string
   /** True only when the user explicitly hit Pause mid-run (not draft/idle) */
   userPaused?: boolean
+  /** Task ID of the parent thread this was forked from */
+  parentTaskId?: string
   /** True for threads restored from persisted history (read-only) */
   isArchived?: boolean
+}
+
+// ── Soft-deleted threads ──────────────────────────────────────────
+
+export interface SoftDeletedThread {
+  readonly task: AgentTask
+  readonly deletedAt: string
 }
 
 // ── Profiles ──────────────────────────────────────────────────────
@@ -108,6 +117,7 @@ export interface ProjectPrefs {
 }
 
 export type SidebarPosition = 'left' | 'right'
+export type ThemeMode = 'dark' | 'light' | 'system'
 
 export interface AppSettings {
   kiroBin: string
@@ -119,9 +129,12 @@ export interface AppSettings {
   coAuthor?: boolean
   coAuthorJsonReport?: boolean
   notifications?: boolean
+  soundNotifications?: boolean
   projectPrefs?: Record<string, ProjectPrefs>
   hasOnboarded?: boolean
   sidebarPosition?: SidebarPosition
+  /** Theme mode: dark, light, or system (follows OS preference). Default: dark. */
+  theme?: ThemeMode
   /** Opt-in flag for anonymous product analytics. Default: false. */
   analyticsEnabled?: boolean
   /** Random UUID generated on first opt-in, cleared on opt-out. */
