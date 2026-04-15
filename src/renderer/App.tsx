@@ -232,15 +232,18 @@ export function App() {
   // Sync active workspace → apply per-project model/autoApprove prefs
   useEffect(() => {
     const tasks = useTaskStore.getState().tasks;
-    const workspace = selectedTaskId
-      ? (tasks[selectedTaskId]?.workspace ?? null)
-      : null;
-    useSettingsStore.getState().setActiveWorkspace(workspace);
+    const task = selectedTaskId ? tasks[selectedTaskId] : null;
+    // activeWorkspace = project root (for prefs lookup), operationalWorkspace = actual cwd (worktree path if applicable)
+    const workspace = task
+      ? (task.originalWorkspace ?? task.workspace)
+      : pendingWorkspace;
+    const operationalWs = task ? task.workspace : pendingWorkspace;
+    useSettingsStore.getState().setActiveWorkspace(workspace, operationalWs);
     // Reset mode to default when entering a new/pending thread (no selectedTaskId)
     if (!selectedTaskId) {
       useSettingsStore.setState({ currentModeId: 'kiro_default' });
     }
-  }, [selectedTaskId]);
+  }, [selectedTaskId, pendingWorkspace]);
   const [sidePanelOpen, setSidePanelOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(240);
@@ -330,8 +333,16 @@ export function App() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  const toggleSidePanel = useCallback(() => setSidePanelOpen((o) => !o), []);
-  const closeSidePanel = useCallback(() => setSidePanelOpen(false), []);
+  const toggleSidePanel = useCallback(() => {
+    setSidePanelOpen((prev) => {
+      if (prev) useDiffStore.getState().setOpen(false)
+      return !prev
+    })
+  }, [])
+  const closeSidePanel = useCallback(() => {
+    setSidePanelOpen(false)
+    useDiffStore.getState().setOpen(false)
+  }, [])
   const toggleSidebar = useCallback(() => setIsSidebarCollapsed((v) => !v), []);
 
   if (settingsLoaded && !hasOnboardedV2)

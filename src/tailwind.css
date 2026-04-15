@@ -6,6 +6,8 @@
     --animate-skeleton: skeleton 2s -1s infinite linear;
     --color-warning-foreground: var(--warning-foreground);
     --color-warning: var(--warning);
+    --color-pink-foreground: var(--pink-foreground);
+    --color-pink: var(--pink);
     --color-success-foreground: var(--success-foreground);
     --color-success: var(--success);
     --color-info-foreground: var(--info-foreground);
@@ -92,6 +94,8 @@
     --success-foreground: #047857;
     --warning: #f59e0b;
     --warning-foreground: #b45309;
+    --pink: #ec4899;
+    --pink-foreground: #ffffff;
 }
 
 .dark {
@@ -122,6 +126,8 @@
     --success-foreground: #6ee7b7;
     --warning: #fbbf24;
     --warning-foreground: #fcd34d;
+    --pink: #f472b6;
+    --pink-foreground: #ffffff;
 }
 
 /* Scale UI via font-size instead of zoom — CSS zoom breaks viewport units
