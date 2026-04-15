@@ -260,6 +260,10 @@ export interface JsDebugEntry {
   readonly isError: boolean
   /** Active task ID at capture time */
   readonly taskId?: string | null
+  /** Active thread name at capture time */
+  readonly threadName?: string | null
+  /** Active project (workspace basename) at capture time */
+  readonly projectName?: string | null
   /** Network request fields */
   readonly url?: string
   readonly method?: string
