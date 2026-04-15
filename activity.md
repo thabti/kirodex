@@ -1,3 +1,33 @@
+## 2026-04-15 17:09 GST (Dubai)
+
+### index.html + main.tsx: Remove error-fallback div
+
+Removed the `#error-fallback` div from `index.html` and stripped the related DOM manipulation from `showError()` in `main.tsx`. The function now only logs to console. Also removed the reload/copy-error button wiring that referenced the removed elements.
+
+**Modified:** index.html, src/renderer/main.tsx
+
+---
+
+## 2026-04-15 17:04 GST (Dubai)
+
+### Cargo: Enable devtools in production builds
+
+Added `"devtools"` feature flag to the `tauri` dependency so the WebView inspector is available in release builds.
+
+**Modified:** src-tauri/Cargo.toml
+
+---
+
+## 2026-04-15 17:03 GST (Dubai)
+
+### SidebarFooter: Improve update indicator dot styling
+
+Changed the update indicator dot from a solid pulsing `bg-primary` circle to a two-layer emerald green dot with a soft ping animation. The outer ring fades in/out while the inner dot stays solid, giving a calmer, more polished look that doesn't read as "error red."
+
+**Modified:** src/renderer/components/sidebar/SidebarFooter.tsx
+
+---
+
 # Activity Log
 
 ## 2026-04-15 17:00 GST (Dubai)

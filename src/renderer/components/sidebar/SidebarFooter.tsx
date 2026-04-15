@@ -76,9 +76,12 @@ export const SidebarFooter = memo(function SidebarFooter() {
                 {isIndicatorVisible && (
                   <span
                     data-testid="update-indicator-dot"
-                    className="absolute -right-0.5 -top-0.5 size-2 rounded-full bg-primary animate-pulse"
+                    className="absolute -right-0.5 -top-0.5 flex size-2.5 items-center justify-center"
                     aria-label="Update available"
-                  />
+                  >
+                    <span className="absolute size-full animate-ping rounded-full bg-emerald-400/40" />
+                    <span className="relative size-1.5 rounded-full bg-emerald-400" />
+                  </span>
                 )}
               </span>
               <span className="text-[13px]">Settings</span>

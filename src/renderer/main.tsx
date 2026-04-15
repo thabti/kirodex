@@ -9,25 +9,6 @@ import { readPersistedTheme, applyTheme } from './lib/theme'
 applyTheme(readPersistedTheme())
 
 function showError(err: unknown) {
-  const fallback = document.getElementById('error-fallback')
-  const msg = document.getElementById('error-message')
-  const root = document.getElementById('root')
-  if (fallback) fallback.style.display = 'flex'
-  if (root) root.style.display = 'none'
-
-  let text: string
-  if (err instanceof Error) {
-    // Clean up Vite/Tauri internal frames to surface the actual error
-    const stack = (err.stack ?? '')
-      .split('\n')
-      .filter((l) => !l.includes('node_modules/.vite/'))
-      .slice(0, 15)
-      .join('\n')
-    text = `${err.name}: ${err.message}\n\n${stack}`
-  } else {
-    text = String(err)
-  }
-  if (msg) msg.textContent = text
   console.error('[Kirodex crash]', err)
 }
 
@@ -86,19 +67,7 @@ window.addEventListener('error', (e) => {
   showError(e.error ?? e.message)
 })
 
-// Wire up error fallback buttons
-document.getElementById('reload-btn')?.addEventListener('click', () => {
-  window.location.reload()
-})
-document.getElementById('copy-error-btn')?.addEventListener('click', () => {
-  const msg = document.getElementById('error-message')?.textContent ?? ''
-  navigator.clipboard.writeText(msg).then(() => {
-    const btn = document.getElementById('copy-error-btn')
-    if (btn) { btn.textContent = 'Copied!'; setTimeout(() => { btn.textContent = 'Copy Error' }, 2000) }
-  }).catch(() => {})
-})
-
-// ⌘R / Ctrl+R to reload (works even when error screen is showing)
+// ⌘R / Ctrl+R to reload
 window.addEventListener('keydown', (e) => {
   if ((e.metaKey || e.ctrlKey) && e.key === 'r') {
     e.preventDefault()
