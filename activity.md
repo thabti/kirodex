@@ -1,5 +1,13 @@
 # Activity Log
 
+## 2026-04-16 01:25 GST (Dubai)
+
+### BranchSelector: detect worktree-locked branches, prevent checkout
+
+Branches checked out in a worktree are now detected by the backend (`git_list_branches` iterates `repo.worktrees()` and collects their HEAD branches). These branches show a violet "worktree" badge and are disabled in the branch list. This prevents the git error "cannot force-update branch used by worktree" when trying to checkout a worktree branch from the main repo.
+
+**Modified:** `src-tauri/src/commands/git.rs`, `src/renderer/lib/ipc.ts`, `src/renderer/components/chat/BranchSelector.tsx`
+
 ## 2026-04-16 01:20 GST (Dubai)
 
 ### BranchSelector: add force checkout for conflict errors

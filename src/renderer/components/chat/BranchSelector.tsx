@@ -18,6 +18,7 @@ import { useTaskStore } from '@/stores/taskStore'
 interface LocalBranch {
   name: string
   current: boolean
+  worktreeLocked: boolean
 }
 
 interface RemoteBranch {
@@ -163,6 +164,21 @@ export const BranchSelector = memo(function BranchSelector({ workspace, isWorktr
 
   // ── Actions ─────────────────────────────────────────────────────────
 
+  const friendlyGitError = (raw: string): { message: string; isConflict: boolean } => {
+    const lower = raw.toLowerCase()
+    if (lower.includes('conflict'))
+      return { message: 'Uncommitted changes conflict with this branch. Commit or stash your changes first.', isConflict: true }
+    if (lower.includes('not found') || lower.includes('revspec'))
+      return { message: 'Branch not found. It may have been deleted.', isConflict: false }
+    if (lower.includes('worktree') || lower.includes('checked out'))
+      return { message: 'This branch is checked out in another worktree and cannot be switched to.', isConflict: false }
+    if (lower.includes('lock') || lower.includes('locked'))
+      return { message: 'The repository is locked by another process. Try again in a moment.', isConflict: false }
+    if (lower.includes('already exists'))
+      return { message: 'A branch with this name already exists.', isConflict: false }
+    return { message: raw, isConflict: false }
+  }
+
   const handleCheckout = useCallback(
     async (branch: string, force?: boolean) => {
       if (!workspace || checkingOut) return
@@ -178,13 +194,13 @@ export const BranchSelector = memo(function BranchSelector({ workspace, isWorktr
         await fetchBranches()
         setOpen(false)
       } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err)
-        const isConflict = msg.includes('conflict') || msg.includes('Conflict')
+        const raw = err instanceof Error ? err.message : String(err)
+        const { message, isConflict } = friendlyGitError(raw)
         if (isConflict && !force) {
-          setError('Uncommitted changes conflict with this branch.')
+          setError(message)
           setConflictBranch(branch)
         } else {
-          setError(msg)
+          setError(message)
           setConflictBranch(null)
         }
       } finally {
@@ -206,9 +222,8 @@ export const BranchSelector = memo(function BranchSelector({ workspace, isWorktr
         await fetchBranches()
         setOpen(false)
       } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err)
-        setError(msg)
-        console.error('[branch-selector] create failed:', err)
+        const raw = err instanceof Error ? err.message : String(err)
+        setError(friendlyGitError(raw).message)
       } finally {
         setCheckingOut(false)
       }
@@ -348,7 +363,8 @@ export const BranchSelector = memo(function BranchSelector({ workspace, isWorktr
                         key={branch.name}
                         name={branch.name}
                         isCurrent={branch.current}
-                        disabled={checkingOut || (isWorktree && !branch.current)}
+                        disabled={checkingOut || branch.worktreeLocked || (!!isWorktree && !branch.current)}
+                        badge={branch.worktreeLocked ? 'worktree' : undefined}
                         onClick={() => handleCheckout(branch.name)}
                       />
                     ))}
@@ -515,7 +531,7 @@ function BranchItem({
       <span className="min-w-0 flex-1 truncate">{name}</span>
       {isCurrent && <IconCheck className="size-3.5 shrink-0 text-foreground" />}
       {badge && !isCurrent && (
-        <span className="shrink-0 text-[10px] text-muted-foreground">{badge}</span>
+        <span className={cn('shrink-0 text-[10px]', badge === 'worktree' ? 'rounded bg-violet-500/15 px-1 py-0.5 text-violet-500 dark:text-violet-400' : 'text-muted-foreground')}>{badge}</span>
       )}
     </button>
   )
