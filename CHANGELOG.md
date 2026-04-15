@@ -1,5 +1,19 @@
 # Changelog
 
+## [v0.10.0] - 2026-04-16
+
+### Features
+
+- overhaul title bar with native traffic light repositioning
+
+### Bug fixes
+
+- use bg-background instead of bg-card for dark mode consistency
+
+### Styling
+
+- change primary color from indigo to blue-500
+
 ## [v0.9.2] - 2026-04-16
 
 ### Features
