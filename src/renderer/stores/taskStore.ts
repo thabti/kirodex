@@ -46,8 +46,8 @@ interface TaskStore {
   taskModes: Record<string, string>
   /** Whether a fork operation is in progress */
   isForking: boolean
-  /** Pending worktree cleanup — set when a worktree thread has uncommitted changes */
-  worktreeCleanupPending: { taskId: string; worktreePath: string; originalWorkspace: string; action: 'archive' | 'delete' } | null
+  /** Pending worktree cleanup — set when a worktree thread is being deleted/archived */
+  worktreeCleanupPending: { taskId: string; worktreePath: string; branch: string; originalWorkspace: string; action: 'archive' | 'delete'; hasChanges: boolean | null } | null
   setSelectedTask: (id: string | null) => void
   setView: (view: 'chat' | 'dashboard') => void
   setNewProjectOpen: (open: boolean) => void
@@ -301,16 +301,23 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   archiveTask: (id) => {
     const task = get().tasks[id]
     if (!task || task.isArchived) return
-    // Check for worktree cleanup
+    // Worktree threads: show confirmation dialog BEFORE deleting
     if (task.worktreePath && task.originalWorkspace) {
+      const branch = task.worktreePath.split('/').pop() ?? 'unknown'
+      // Set pending immediately with hasChanges=null (loading), then check async
+      set({ worktreeCleanupPending: { taskId: id, worktreePath: task.worktreePath, branch, originalWorkspace: task.originalWorkspace, action: 'archive', hasChanges: null } })
       void ipc.gitWorktreeHasChanges(task.worktreePath).then((hasChanges) => {
-        if (hasChanges) {
-          set({ worktreeCleanupPending: { taskId: id, worktreePath: task.worktreePath!, originalWorkspace: task.originalWorkspace!, action: 'archive' } })
-        } else {
-          void ipc.gitWorktreeRemove(task.originalWorkspace!, task.worktreePath!).catch(() => {})
-        }
-      }).catch(() => {})
+        set((s) => s.worktreeCleanupPending?.taskId === id
+          ? { worktreeCleanupPending: { ...s.worktreeCleanupPending!, hasChanges } }
+          : s)
+      }).catch(() => {
+        set((s) => s.worktreeCleanupPending?.taskId === id
+          ? { worktreeCleanupPending: { ...s.worktreeCleanupPending!, hasChanges: false } }
+          : s)
+      })
+      return
     }
+    // Non-worktree: proceed immediately
     void ipc.cancelTask(id).catch(() => {})
     set((s) => ({
       tasks: { ...s.tasks, [id]: { ...s.tasks[id], isArchived: true, status: 'completed' } },
@@ -325,20 +332,22 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   softDeleteTask: (id) => {
     const task = get().tasks[id]
     if (!task) return
-    // Check for worktree cleanup
+    // Worktree threads: show confirmation dialog BEFORE deleting
     if (task.worktreePath && task.originalWorkspace) {
+      const branch = task.worktreePath.split('/').pop() ?? 'unknown'
+      set({ worktreeCleanupPending: { taskId: id, worktreePath: task.worktreePath, branch, originalWorkspace: task.originalWorkspace, action: 'delete', hasChanges: null } })
       void ipc.gitWorktreeHasChanges(task.worktreePath).then((hasChanges) => {
-        if (hasChanges) {
-          set({ worktreeCleanupPending: { taskId: id, worktreePath: task.worktreePath!, originalWorkspace: task.originalWorkspace!, action: 'delete' } })
-        } else {
-          void ipc.gitWorktreeRemove(task.originalWorkspace!, task.worktreePath!).catch((err) => {
-            console.warn('[worktree] Failed to remove worktree:', err)
-          })
-        }
-      }).catch((err) => {
-        console.warn('[worktree] Failed to check worktree changes:', err)
+        set((s) => s.worktreeCleanupPending?.taskId === id
+          ? { worktreeCleanupPending: { ...s.worktreeCleanupPending!, hasChanges } }
+          : s)
+      }).catch(() => {
+        set((s) => s.worktreeCleanupPending?.taskId === id
+          ? { worktreeCleanupPending: { ...s.worktreeCleanupPending!, hasChanges: false } }
+          : s)
       })
+      return
     }
+    // Non-worktree: proceed immediately
     void ipc.cancelTask(id).catch(() => {})
     void ipc.deleteTask(id)
     set((state) => {
@@ -840,15 +849,56 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     useSettingsStore.setState({ settings: defaultSettings })
   },
 
-  resolveWorktreeCleanup: (remove) => {
+  resolveWorktreeCleanup: (removeWorktree) => {
     const pending = get().worktreeCleanupPending
     if (!pending) return
-    if (remove) {
-      void ipc.gitWorktreeRemove(pending.originalWorkspace, pending.worktreePath).catch((err) => {
+    set({ worktreeCleanupPending: null })
+    const { taskId, action, worktreePath, originalWorkspace } = pending
+    // Proceed with the actual delete/archive
+    if (action === 'archive') {
+      const task = get().tasks[taskId]
+      if (!task || task.isArchived) return
+      void ipc.cancelTask(taskId).catch(() => {})
+      set((s) => ({
+        tasks: { ...s.tasks, [taskId]: { ...s.tasks[taskId], isArchived: true, status: 'completed' } },
+        streamingChunks: { ...s.streamingChunks, [taskId]: '' },
+        thinkingChunks: { ...s.thinkingChunks, [taskId]: '' },
+        liveToolCalls: { ...s.liveToolCalls, [taskId]: [] },
+      }))
+      void ipc.deleteTask(taskId)
+    } else {
+      void ipc.cancelTask(taskId).catch(() => {})
+      void ipc.deleteTask(taskId)
+      set((state) => {
+        const { [taskId]: removed, ...rest } = state.tasks
+        const { [taskId]: _c, ...chunks } = state.streamingChunks
+        const { [taskId]: _t, ...thinking } = state.thinkingChunks
+        const { [taskId]: _tc, ...tools } = state.liveToolCalls
+        const { [taskId]: _m, ...modes } = state.taskModes
+        const deletedTaskIds = new Set(state.deletedTaskIds)
+        deletedTaskIds.add(taskId)
+        const softDeleted = {
+          ...state.softDeleted,
+          [taskId]: { task: { ...removed, isArchived: true, status: 'completed' as const }, deletedAt: new Date().toISOString() },
+        }
+        return {
+          tasks: rest,
+          streamingChunks: chunks,
+          thinkingChunks: thinking,
+          liveToolCalls: tools,
+          taskModes: modes,
+          deletedTaskIds,
+          softDeleted,
+          selectedTaskId: state.selectedTaskId === taskId ? null : state.selectedTaskId,
+        }
+      })
+    }
+    if (removeWorktree) {
+      void ipc.gitWorktreeRemove(originalWorkspace, worktreePath).catch((err) => {
         console.warn('[worktree] Failed to remove worktree during cleanup:', err)
       })
     }
-    set({ worktreeCleanupPending: null })
+    get().persistHistory()
   },
 }))
 
