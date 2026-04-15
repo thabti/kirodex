@@ -6,12 +6,14 @@ export interface SidebarTask {
   readonly id: string
   readonly name: string
   readonly workspace: string
+  readonly projectId: string
   readonly createdAt: string
   readonly lastActivityAt: string
   readonly status: string
   readonly isArchived?: boolean
   readonly isDraft?: boolean
   readonly worktreePath?: string
+  readonly originalWorkspace?: string
 }
 
 export type SortKey = 'recent' | 'oldest' | 'name-asc' | 'name-desc'
@@ -39,6 +41,7 @@ function sortTasks(tasks: readonly SidebarTask[], sort: SortKey): SidebarTask[] 
 export function useSidebarTasks(sort: SortKey): readonly SidebarProject[] {
   const tasks = useTaskStore((s) => s.tasks)
   const projects = useTaskStore((s) => s.projects)
+  const projectIds = useTaskStore((s) => s.projectIds)
   const projectNames = useTaskStore((s) => s.projectNames)
   const drafts = useTaskStore((s) => s.drafts)
 
@@ -53,12 +56,13 @@ export function useSidebarTasks(sort: SortKey): readonly SidebarProject[] {
       const msgs = t.messages
       const lastMsg = msgs.length > 0 ? msgs[msgs.length - 1].timestamp : ''
       const lastActivityAt = lastMsg || t.createdAt
+      const pid = t.projectId ?? t.originalWorkspace ?? t.workspace
       const p = prev.get(t.id)
-      if (p && p.name === t.name && p.status === t.status && p.createdAt === t.createdAt && p.workspace === t.workspace && p.isArchived === t.isArchived && p.worktreePath === t.worktreePath && p.lastActivityAt === lastActivityAt && !p.isDraft) {
+      if (p && p.name === t.name && p.status === t.status && p.createdAt === t.createdAt && p.workspace === t.workspace && p.isArchived === t.isArchived && p.worktreePath === t.worktreePath && p.originalWorkspace === t.originalWorkspace && p.projectId === pid && p.lastActivityAt === lastActivityAt && !p.isDraft) {
         next.set(t.id, p)
       } else {
         changed = true
-        next.set(t.id, { id: t.id, name: t.name, workspace: t.workspace, createdAt: t.createdAt, lastActivityAt, status: t.status, isArchived: t.isArchived, worktreePath: t.worktreePath })
+        next.set(t.id, { id: t.id, name: t.name, workspace: t.workspace, projectId: pid, createdAt: t.createdAt, lastActivityAt, status: t.status, isArchived: t.isArchived, worktreePath: t.worktreePath, originalWorkspace: t.originalWorkspace })
       }
     }
     if (!changed) return prev
@@ -67,10 +71,10 @@ export function useSidebarTasks(sort: SortKey): readonly SidebarProject[] {
   }, [tasks])
 
   return useMemo(() => {
-    // Group tasks by workspace
+    // Group tasks by projectId — the canonical project identity
     const grouped = new Map<string, SidebarTask[]>()
     for (const task of sidebarTasks.values()) {
-      const cwd = task.workspace
+      const cwd = task.projectId
       if (!grouped.has(cwd)) grouped.set(cwd, [])
       grouped.get(cwd)!.push(task)
     }
@@ -80,29 +84,52 @@ export function useSidebarTasks(sort: SortKey): readonly SidebarProject[] {
       grouped.set(cwd, sortTasks(tasks, sort))
     }
 
-    // Inject draft entries at the top of each workspace's list
+    // Inject draft entries — drafts are keyed by workspace, resolve to projectId
     for (const [ws, content] of Object.entries(drafts)) {
       if (!content.trim()) continue
+      const pid = projectIds[ws] ?? ws
       const draftTask: SidebarTask = {
         id: `draft:${ws}`,
         name: content.trim(),
         workspace: ws,
+        projectId: pid,
         createdAt: new Date(0).toISOString(),
         lastActivityAt: new Date(0).toISOString(),
         status: 'draft',
         isDraft: true,
       }
-      const existing = grouped.get(ws) ?? []
-      grouped.set(ws, [draftTask, ...existing])
+      const existing = grouped.get(pid) ?? []
+      grouped.set(pid, [draftTask, ...existing])
     }
 
-    // Build project list from all known workspaces
+    // Collect worktree workspace paths so they don't appear as top-level projects
+    const worktreeWorkspaces = new Set<string>()
+    for (const task of sidebarTasks.values()) {
+      if (task.worktreePath) {
+        worktreeWorkspaces.add(task.workspace)
+        worktreeWorkspaces.add(task.worktreePath)
+      }
+    }
+
+    // Build reverse map: projectId → workspace path for display
+    const idToWorkspace = new Map<string, string>()
+    for (const [ws, pid] of Object.entries(projectIds)) {
+      idToWorkspace.set(pid, ws)
+    }
+
+    // Build project list from all known workspaces (skip worktree paths)
     const result: SidebarProject[] = []
-    const seen = new Set<string>()
+    const seenPid = new Set<string>()
+    const seenCwd = new Set<string>()
 
     for (const ws of projects) {
-      seen.add(ws)
-      const tasks = grouped.get(ws) ?? []
+      if (worktreeWorkspaces.has(ws)) continue
+      if (seenCwd.has(ws)) continue
+      const pid = projectIds[ws] ?? ws
+      if (seenPid.has(pid)) continue
+      seenPid.add(pid)
+      seenCwd.add(ws)
+      const tasks = grouped.get(pid) ?? []
       result.push({
         name: projectNames[ws] ?? ws.split('/').pop() ?? ws,
         cwd: ws,
@@ -111,11 +138,14 @@ export function useSidebarTasks(sort: SortKey): readonly SidebarProject[] {
     }
 
     // Add any projects that have tasks but aren't in the projects array
-    for (const [cwd, tasks] of grouped) {
-      if (seen.has(cwd)) continue
+    for (const [pid, tasks] of grouped) {
+      if (seenPid.has(pid)) continue
+      const ws = idToWorkspace.get(pid) ?? pid
+      if (worktreeWorkspaces.has(ws)) continue
+      if (seenCwd.has(ws)) continue
       result.push({
-        name: projectNames[cwd] ?? cwd.split('/').pop() ?? cwd,
-        cwd,
+        name: projectNames[ws] ?? ws.split('/').pop() ?? ws,
+        cwd: ws,
         tasks,
       })
     }
@@ -134,5 +164,5 @@ export function useSidebarTasks(sort: SortKey): readonly SidebarProject[] {
     }
 
     return result as readonly SidebarProject[]
-  }, [sidebarTasks, sort, projects, projectNames, drafts])
+  }, [sidebarTasks, sort, projects, projectIds, projectNames, drafts])
 }

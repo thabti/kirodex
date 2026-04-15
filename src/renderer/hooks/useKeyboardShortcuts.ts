@@ -91,9 +91,10 @@ export function useKeyboardShortcuts() {
       if (key === 'n' && !e.shiftKey) {
         e.preventDefault()
         const state = useTaskStore.getState()
-        // Use the active workspace or the first project
-        const workspace = state.selectedTaskId
-          ? state.tasks[state.selectedTaskId]?.workspace
+        // Use the active project root or the first project
+        const task = state.selectedTaskId ? state.tasks[state.selectedTaskId] : null
+        const workspace = task
+          ? (task.originalWorkspace ?? task.workspace)
           : state.projects[0]
         if (workspace) {
           state.setPendingWorkspace(workspace)

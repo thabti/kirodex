@@ -49,11 +49,14 @@ export function useChatInput({ disabled, isRunning, initialValue, onSendMessage,
   // ── Track Shift key for raw paste (Cmd+Shift+V) ────────────────
   const isShiftHeldRef = useRef(false)
   useEffect(() => {
-    const handleDown = (e: globalThis.KeyboardEvent) => { if (e.key === 'Shift') isShiftHeldRef.current = true }
-    const handleUp = (e: globalThis.KeyboardEvent) => { if (e.key === 'Shift') isShiftHeldRef.current = false }
-    window.addEventListener('keydown', handleDown)
-    window.addEventListener('keyup', handleUp)
-    return () => { window.removeEventListener('keydown', handleDown); window.removeEventListener('keyup', handleUp) }
+    const el = textareaRef.current
+    if (!el) return
+    const handleDown = (e: globalThis.KeyboardEvent) => { if (e.shiftKey) isShiftHeldRef.current = true }
+    const handleUp = () => { isShiftHeldRef.current = false }
+    el.addEventListener('keydown', handleDown)
+    el.addEventListener('keyup', handleUp)
+    el.addEventListener('blur', handleUp)
+    return () => { el.removeEventListener('keydown', handleDown); el.removeEventListener('keyup', handleUp); el.removeEventListener('blur', handleUp) }
   }, [])
   // ── Pasted text chunks ─────────────────────────────────────────
   const [pastedChunks, setPastedChunks] = useState<PastedChunk[]>([])
@@ -167,12 +170,16 @@ export function useChatInput({ disabled, isRunning, initialValue, onSendMessage,
       { name: 'plan', description: 'Toggle plan mode on or off' },
       { name: 'upload', description: 'Upload images or files' },
       { name: 'usage', description: 'Show token and cost usage for this session' },
+      { name: 'branch', description: 'Create and checkout a new git branch' },
+      { name: 'worktree', description: 'Create a worktree and spawn a new thread in it' },
       { name: 'close', description: 'Close and delete the current thread' },
       { name: 'exit', description: 'Close and delete the current thread' },
       { name: 'fork', description: 'Fork the current thread into a new session' },
     ]
-    const names = new Set(backendCommands.map((c) => c.name.replace(/^\/+/, '')))
-    return [...backendCommands, ...clientCommands.filter((c) => !names.has(c.name))]
+    const HIDDEN_COMMANDS = new Set(['reply'])
+    const filtered = backendCommands.filter((c) => !HIDDEN_COMMANDS.has(c.name.replace(/^\/+/, '')))
+    const names = new Set(filtered.map((c) => c.name.replace(/^\/+/, '')))
+    return [...filtered, ...clientCommands.filter((c) => !names.has(c.name))]
   }, [backendCommands])
 
   // ── Cursor-based slash trigger (mirrors mention detection) ───
