@@ -106,6 +106,10 @@ window.addEventListener('keydown', (e) => {
   }
 })
 
+// Install JS debug interceptors (console, errors, fetch/XHR) before React renders
+import { installJsInterceptors } from './lib/jsInterceptors'
+installJsInterceptors()
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <ErrorBoundary>

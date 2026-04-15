@@ -99,7 +99,13 @@ pub fn run() {
 
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
-        .plugin(tauri_plugin_log::Builder::new().build())
+        .plugin(tauri_plugin_log::Builder::new()
+            .targets([
+                tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::Stdout),
+                tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::LogDir { file_name: None }),
+                tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::Webview),
+            ])
+            .build())
         .plugin(tauri_plugin_store::Builder::default().build())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_process::init())
@@ -170,6 +176,10 @@ pub fn run() {
             git::git_diff_stats,
             git::git_staged_stats,
             git::git_remote_url,
+            git::git_worktree_create,
+            git::git_worktree_remove,
+            git::git_worktree_has_changes,
+            git::git_worktree_setup,
             // ACP
             acp::task_create,
             acp::task_list,

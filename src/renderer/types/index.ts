@@ -246,3 +246,21 @@ export interface DebugLogEntry {
   isError: boolean
   mcpServerName?: string
 }
+
+// ── JS Debug Panel Types ──────────────────────────────────────────
+
+export type JsDebugCategory = 'log' | 'warn' | 'error' | 'exception' | 'network' | 'rust'
+
+export interface JsDebugEntry {
+  readonly id: number
+  readonly timestamp: string
+  readonly category: JsDebugCategory
+  readonly message: string
+  readonly detail: string
+  readonly isError: boolean
+  /** Network request fields */
+  readonly url?: string
+  readonly method?: string
+  readonly status?: number
+  readonly duration?: number
+}
