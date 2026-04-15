@@ -1,4 +1,5 @@
 import { useJsDebugStore } from '@/stores/jsDebugStore'
+import { useTaskStore } from '@/stores/taskStore'
 import type { JsDebugCategory, JsDebugEntry } from '@/types'
 
 type ConsoleMethod = 'log' | 'warn' | 'error'
@@ -37,11 +38,13 @@ const formatDetail = (args: unknown[]): string => {
     .join('\n')
 }
 
-const addEntry = (entry: Omit<JsDebugEntry, 'id' | 'timestamp'>): void => {
+const addEntry = (entry: Omit<JsDebugEntry, 'id' | 'timestamp' | 'taskId'>): void => {
+  const taskId = useTaskStore.getState().selectedTaskId ?? null
   useJsDebugStore.getState().addEntry({
     ...entry,
     id: 0,
     timestamp: new Date().toISOString(),
+    taskId,
   } as JsDebugEntry)
 }
 

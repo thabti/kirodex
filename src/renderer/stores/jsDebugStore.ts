@@ -7,6 +7,8 @@ interface JsDebugFilter {
   readonly search: string
   readonly category: JsDebugCategory | 'all'
   readonly errorsOnly: boolean
+  readonly threadName: string
+  readonly projectName: string
 }
 
 interface JsDebugStore {
@@ -44,6 +46,8 @@ export const useJsDebugStore = create<JsDebugStore>((set) => ({
     search: '',
     category: 'all',
     errorsOnly: false,
+    threadName: '',
+    projectName: '',
   },
 
   addEntry: (raw) => {

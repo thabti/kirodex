@@ -258,6 +258,8 @@ export interface JsDebugEntry {
   readonly message: string
   readonly detail: string
   readonly isError: boolean
+  /** Active task ID at capture time */
+  readonly taskId?: string | null
   /** Network request fields */
   readonly url?: string
   readonly method?: string
