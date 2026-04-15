@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <base href="/kirodex/">
+  <title>Changelog — Kirodex</title>
+  <meta name="description" content="Kirodex release history and changelog.">
+  <link rel="icon" type="image/svg+xml" href="assets/icon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="dist/style.css">
+</head>
+<body>
+
+  <!-- ── Nav ─────────────────────────────────────────────────── -->
+  <nav class="fixed top-0 left-0 right-0 z-50 border-b border-[rgba(255,255,255,0.07)] bg-[#0D0D0D]/80 backdrop-blur-md">
+    <div class="mx-auto flex h-14 max-w-5xl items-center justify-between px-6">
+      <a href="./" class="flex items-center gap-2.5 text-[15px] font-semibold text-foreground no-underline">
+        <img src="assets/icon.svg" alt="" width="24" height="24" class="rounded">
+        Kirodex
+      </a>
+      <div class="hidden items-center gap-6 text-[13px] text-muted-foreground sm:flex">
+        <a href="./#features" class="transition-colors hover:text-foreground no-underline">Features</a>
+        <a href="./#install" class="transition-colors hover:text-foreground no-underline">Install</a>
+        <a href="changelog.html" class="text-foreground no-underline">Changelog</a>
+        <a href="https://github.com/thabti/kirodex" target="_blank" rel="noopener" class="transition-colors hover:text-foreground no-underline">GitHub</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ── Changelog ───────────────────────────────────────────── -->
+  <main class="mx-auto max-w-3xl px-6 pt-28 pb-20">
+    <h1 class="mb-2 text-3xl font-bold tracking-tight sm:text-4xl">Changelog</h1>
+    <p class="mb-12 text-[15px] text-muted-foreground">Release history for Kirodex. See <a href="https://github.com/thabti/kirodex/releases" target="_blank" rel="noopener" class="text-[#818cf8] underline underline-offset-2">GitHub Releases</a> for downloads.</p>
+
+    <div id="changelog" class="space-y-12">
+      <noscript>
+        <p class="text-muted-foreground">Enable JavaScript to load the changelog, or view it on <a href="https://github.com/thabti/kirodex/blob/main/CHANGELOG.md" class="text-[#818cf8] underline underline-offset-2">GitHub</a>.</p>
+      </noscript>
+    </div>
+  </main>
+
+  <!-- ── Footer ──────────────────────────────────────────────── -->
+  <footer class="border-t border-[rgba(255,255,255,0.07)] px-6 py-10">
+    <div class="mx-auto flex max-w-5xl flex-col items-center gap-6 sm:flex-row sm:justify-between">
+      <div class="flex items-center gap-4 text-[13px] text-muted-foreground">
+        <a href="./" class="transition-colors hover:text-foreground no-underline">Home</a>
+        <span class="text-[rgba(255,255,255,0.15)]">·</span>
+        <a href="https://github.com/thabti/kirodex" target="_blank" rel="noopener" class="transition-colors hover:text-foreground no-underline">GitHub</a>
+        <span class="text-[rgba(255,255,255,0.15)]">·</span>
+        <span>MIT License</span>
+      </div>
+      <div class="text-[13px] text-muted-foreground">Built by Sabeur Thabti</div>
+    </div>
+  </footer>
+
+  <script>
+    const renderChangelog = async () => {
+      const container = document.getElementById('changelog');
+      try {
+        const res = await fetch('https://raw.githubusercontent.com/thabti/kirodex/main/CHANGELOG.md');
+        if (!res.ok) throw new Error('fetch failed');
+        const md = await res.text();
+        const lines = md.split('\n');
+        let html = '';
+        let inList = false;
+        for (const line of lines) {
+          if (line.startsWith('# ')) continue;
+          if (line.startsWith('## ')) {
+            if (inList) { html += '</ul>'; inList = false; }
+            const match = line.match(/## \[(.+?)\](?: - (.+))?/);
+            const tag = match ? match[1] : line.slice(3);
+            const date = match && match[2] ? match[2] : '';
+            html += `<div class="relative pl-6 border-l border-[rgba(255,255,255,0.08)]">`;
+            html += `<div class="absolute -left-1.5 top-1.5 h-3 w-3 rounded-full border-2 border-[#818cf8] bg-[#0D0D0D]"></div>`;
+            html += `<div class="flex flex-wrap items-baseline gap-3 mb-4">`;
+            html += `<a href="https://github.com/thabti/kirodex/releases/tag/${tag}" target="_blank" rel="noopener" class="text-lg font-semibold text-foreground no-underline hover:text-[#818cf8] transition-colors">${tag}</a>`;
+            if (date) html += `<span class="text-[13px] text-muted-foreground">${date}</span>`;
+            html += `</div>`;
+            continue;
+          }
+          if (line.startsWith('### ')) {
+            if (inList) { html += '</ul>'; inList = false; }
+            const category = line.slice(4);
+            const colors = {
+              'Features': 'text-[#34d399]',
+              'Bug fixes': 'text-[#f87171]',
+              'Styling': 'text-[#c084fc]',
+              'Refactoring': 'text-[#fbbf24]',
+              'Documentation': 'text-[#60a5fa]',
+              'CI': 'text-[#60a5fa]',
+              'Tests': 'text-[#14b8a6]',
+            };
+            const color = colors[category] || 'text-muted-foreground';
+            html += `<p class="mb-2 text-[13px] font-medium ${color}">${category}</p>`;
+            continue;
+          }
+          if (line.startsWith('- ')) {
+            if (!inList) { html += '<ul class="mb-4 space-y-1">'; inList = true; }
+            html += `<li class="text-[14px] leading-relaxed text-muted-foreground pl-3 relative before:content-[''] before:absolute before:left-0 before:top-[10px] before:h-1 before:w-1 before:rounded-full before:bg-[rgba(255,255,255,0.25)]">${line.slice(2)}</li>`;
+            continue;
+          }
+          if (line.trim() === '' && inList) {
+            html += '</ul>'; inList = false;
+          }
+        }
+        if (inList) html += '</ul>';
+        html += '</div>';
+        container.innerHTML = html;
+      } catch {
+        container.innerHTML = '<p class="text-muted-foreground">Failed to load changelog. View it on <a href="https://github.com/thabti/kirodex/blob/main/CHANGELOG.md" class="text-[#818cf8] underline underline-offset-2">GitHub</a>.</p>';
+      }
+    };
+    renderChangelog();
+  </script>
+
+</body>
+</html>
