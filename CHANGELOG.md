@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.8.15] - 2026-04-15
+
+### Features
+
+- add inline rename for project and thread breadcrumbs
+
 ## [v0.8.14] - 2026-04-15
 
 ### Features
