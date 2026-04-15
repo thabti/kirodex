@@ -1,5 +1,15 @@
 # Changelog
 
+## [v0.10.1] - 2026-04-16
+
+### Features
+
+- add cross-platform support for Windows and Linux
+
+### Styling
+
+- unify system message rows to muted inline style
+
 ## [v0.10.0] - 2026-04-16
 
 ### Features
