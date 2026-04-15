@@ -1,5 +1,21 @@
 # Changelog
 
+## [v0.9.1] - 2026-04-15
+
+### Bug fixes
+
+- remove error fallback, improve update dot, enable devtools (#12)
+
+### Styling
+
+- lighter palette, performance hero, blue icon branding
+- bigger fonts, lighter palette, blue production icon
+
+### Documentation
+
+- add performance stats badges
+- add 7 engineering learnings from session
+
 ## [v0.9.0] - 2026-04-15
 
 ### Features
