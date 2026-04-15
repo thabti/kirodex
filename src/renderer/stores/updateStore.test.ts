@@ -78,11 +78,14 @@ describe('updateStore', () => {
   })
 
   it('dismissVersion handles localStorage error gracefully', () => {
-    const spy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('quota') })
+    const storageSpy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('quota') })
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     // Should not throw — the store catches localStorage errors
     expect(() => useUpdateStore.getState().dismissVersion('1.0.0')).not.toThrow()
     expect(useUpdateStore.getState().dismissedVersion).toBe('1.0.0')
-    spy.mockRestore()
+    expect(warnSpy).toHaveBeenCalledWith('Failed to persist dismissed version:', expect.any(Error))
+    warnSpy.mockRestore()
+    storageSpy.mockRestore()
   })
 
   it('reset clears status, updateInfo, progress, and error', () => {
