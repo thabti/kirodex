@@ -181,9 +181,74 @@ use tokio_util::compat::{TokioAsyncReadCompatExt, TokioAsyncWriteCompatExt};
 
 struct KirodexClient {
     task_id: String,
+    workspace: String,
     app: tauri::AppHandle,
     auto_approve: bool,
     perm_tx: mpsc::UnboundedSender<(String, acp::RequestPermissionRequest, oneshot::Sender<PermissionReply>)>,
+    /// Paths outside the workspace that the user explicitly mentioned in messages.
+    /// These are allowed through the sandbox.
+    allowed_paths: Arc<std::sync::Mutex<std::collections::HashSet<String>>>,
+}
+
+/// Check whether `path` is inside `workspace` after canonicalization.
+/// Returns false for paths that escape via `..`, symlinks to outside, or sibling dirs.
+fn is_within_workspace(workspace: &str, path: &str) -> bool {
+    let ws = match std::fs::canonicalize(workspace) {
+        Ok(p) => p,
+        Err(_) => return std::path::Path::new(path).starts_with(workspace),
+    };
+    // Try to canonicalize the full path first (works if file exists)
+    if let Ok(canonical) = std::fs::canonicalize(path) {
+        return canonical.starts_with(&ws);
+    }
+    // File doesn't exist yet — canonicalize the parent directory instead
+    let p = std::path::Path::new(path);
+    if let Some(parent) = p.parent() {
+        if let Ok(canonical_parent) = std::fs::canonicalize(parent) {
+            return canonical_parent.starts_with(&ws);
+        }
+    }
+    false
+}
+
+/// Extract absolute file paths from user message text.
+/// Matches tokens that start with `/` and look like file paths.
+fn extract_paths_from_message(text: &str) -> Vec<String> {
+    let mut paths = Vec::new();
+    for token in text.split_whitespace() {
+        // Strip surrounding backticks, quotes, parens
+        let cleaned = token.trim_matches(|c: char| c == '`' || c == '\'' || c == '"' || c == '(' || c == ')' || c == '[' || c == ']');
+        if cleaned.starts_with('/') && cleaned.len() > 1 && cleaned.contains('/') {
+            // Must look like a file path (has at least one path separator beyond the root)
+            let segments: Vec<&str> = cleaned.split('/').filter(|s| !s.is_empty()).collect();
+            if segments.len() >= 2 {
+                paths.push(cleaned.to_string());
+            }
+        }
+    }
+    paths
+}
+
+/// Check if a path is allowed by the user-mentioned paths set.
+/// Matches if the requested path starts with (is inside) any allowed path,
+/// or if any allowed path starts with the requested path's directory.
+fn is_path_allowed(allowed: &std::collections::HashSet<String>, path: &str) -> bool {
+    let p = std::path::Path::new(path);
+    for allowed_path in allowed {
+        let ap = std::path::Path::new(allowed_path);
+        // Exact match or requested path is under an allowed directory
+        if p.starts_with(ap) || p == ap {
+            return true;
+        }
+        // Allowed path is a file, and the request is for the same file
+        // or a file in the same directory
+        if let Some(allowed_parent) = ap.parent() {
+            if p.starts_with(allowed_parent) {
+                return true;
+            }
+        }
+    }
+    false
 }
 
 #[async_trait::async_trait(?Send)]
@@ -379,6 +444,17 @@ impl acp::Client for KirodexClient {
     async fn read_text_file(&self, args: acp::ReadTextFileRequest) -> acp::Result<acp::ReadTextFileResponse> {
         let val = serde_json::to_value(&args).unwrap_or_default();
         let path = val.get("path").and_then(|v| v.as_str()).unwrap_or("");
+        if !path.is_empty() && !is_within_workspace(&self.workspace, path) {
+            let allowed = self.allowed_paths.lock().unwrap_or_else(|e| e.into_inner());
+            if !is_path_allowed(&allowed, path) {
+                log::warn!("[ACP] read_text_file blocked: '{}' is outside workspace '{}'", path, self.workspace);
+                return Err(acp::Error::invalid_params().data(serde_json::json!({
+                    "path": path,
+                    "workspace": self.workspace,
+                    "reason": "Path is outside the project workspace and was not mentioned by the user"
+                })));
+            }
+        }
         match std::fs::read_to_string(path) {
             Ok(content) => Ok(serde_json::from_value(serde_json::json!({ "content": content })).unwrap()),
             Err(_) => Ok(serde_json::from_value(serde_json::json!({ "content": "" })).unwrap()),
@@ -389,6 +465,17 @@ impl acp::Client for KirodexClient {
         let val = serde_json::to_value(&args).unwrap_or_default();
         let path = val.get("path").and_then(|v| v.as_str()).unwrap_or("");
         let content = val.get("content").and_then(|v| v.as_str()).unwrap_or("");
+        if !path.is_empty() && !is_within_workspace(&self.workspace, path) {
+            let allowed = self.allowed_paths.lock().unwrap_or_else(|e| e.into_inner());
+            if !is_path_allowed(&allowed, path) {
+                log::warn!("[ACP] write_text_file blocked: '{}' is outside workspace '{}'", path, self.workspace);
+                return Err(acp::Error::invalid_params().data(serde_json::json!({
+                    "path": path,
+                    "workspace": self.workspace,
+                    "reason": "Path is outside the project workspace and was not mentioned by the user"
+                })));
+            }
+        }
         let _ = std::fs::write(path, content);
         Ok(serde_json::from_value(serde_json::json!({})).unwrap())
     }
@@ -563,11 +650,15 @@ async fn run_acp_connection(
     let outgoing = stdin.compat_write();
     let incoming = stdout.compat();
 
+    let allowed_paths = Arc::new(std::sync::Mutex::new(std::collections::HashSet::new()));
+
     let client = KirodexClient {
         task_id: task_id.clone(),
+        workspace: workspace.clone(),
         app: app.clone(),
         auto_approve,
         perm_tx,
+        allowed_paths: allowed_paths.clone(),
     };
 
     let (conn, io_future) = acp::ClientSideConnection::new(
@@ -634,6 +725,15 @@ async fn run_acp_connection(
     while let Some(cmd) = cmd_rx.recv().await {
         match cmd {
             AcpCommand::Prompt(text) => {
+                // Extract absolute paths from user message to allow through the sandbox
+                let external_paths = extract_paths_from_message(&text);
+                if !external_paths.is_empty() {
+                    if let Ok(mut allowed) = allowed_paths.lock() {
+                        for p in &external_paths {
+                            allowed.insert(p.clone());
+                        }
+                    }
+                }
                 let prompt_req = acp::PromptRequest::new(
                     session_id.clone(),
                     vec![text.into()],
@@ -722,6 +822,7 @@ pub fn task_create(
     let settings = settings_state.0.lock().map_err(|e| e.to_string())?;
     let auto_approve = params.auto_approve.unwrap_or(settings.settings.auto_approve);
     let kiro_bin = settings.settings.kiro_bin.clone();
+    let co_author = settings.settings.co_author;
     let co_author_json_report = settings.settings.co_author_json_report;
     drop(settings);
 
@@ -764,14 +865,8 @@ pub fn task_create(
         params.mode_id,
     )?;
 
-    // Send initial prompt with project rules prepended (not shown in UI)
-    let system_prefix = concat!(
-        "# Kirodex project rules\n\n",
-        "## Commits\n\n",
-        "Every git commit must include the co-author trailer:\n\n",
-        "```\nCo-authored-by: Kirodex <274876363+kirodex@users.noreply.github.com>\n```\n\n",
-        "Use conventional commit format: `type(scope): description`.\n\n",
-        "---\n\n",
+    // Send initial prompt with UI formatting rules prepended (not shown in UI)
+    let mut system_prefix = String::from(concat!(
         "## Structured questions\n\n",
         "When you need to ask the user clarifying questions before starting work, ",
         "use this exact format so the UI can render interactive question cards:\n\n",
@@ -785,7 +880,16 @@ pub fn task_create(
         "- Place each question and its options on consecutive lines with no extra blank lines between them.\n",
         "- You may include a short lead-in sentence before the questions.\n\n",
         "---\n\n",
-    );
+    ));
+    if co_author {
+        system_prefix.push_str(concat!(
+            "## Commits\n\n",
+            "Every git commit must include the co-author trailer:\n\n",
+            "```\nCo-authored-by: Kirodex <274876363+kirodex@users.noreply.github.com>\n```\n\n",
+            "Use conventional commit format: `type(scope): description`.\n\n",
+            "---\n\n",
+        ));
+    }
     let json_report_suffix = if co_author_json_report {
         concat!(
             "\n\n## Completion report\n\n",
@@ -1324,4 +1428,258 @@ pub fn probe_capabilities(
 
     // Return immediately — models/modes arrive via session_init event
     Ok(serde_json::json!({ "ok": true, "async": true }))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // ── is_within_workspace: allowed paths ──────────────────────────
+
+    #[test]
+    fn within_workspace_subpath() {
+        let tmp = tempfile::tempdir().unwrap();
+        let ws = tmp.path().to_str().unwrap();
+        let sub = tmp.path().join("src/main.rs");
+        std::fs::create_dir_all(sub.parent().unwrap()).unwrap();
+        std::fs::write(&sub, "fn main() {}").unwrap();
+        assert!(is_within_workspace(ws, sub.to_str().unwrap()));
+    }
+
+    #[test]
+    fn within_workspace_new_file() {
+        let tmp = tempfile::tempdir().unwrap();
+        let ws = tmp.path().to_str().unwrap();
+        let new_file = tmp.path().join("new.txt");
+        // File doesn't exist yet — parent does
+        assert!(is_within_workspace(ws, new_file.to_str().unwrap()));
+    }
+
+    #[test]
+    fn within_workspace_exact_root() {
+        let tmp = tempfile::tempdir().unwrap();
+        let ws = tmp.path().to_str().unwrap();
+        let root_file = tmp.path().join("README.md");
+        std::fs::write(&root_file, "# hi").unwrap();
+        assert!(is_within_workspace(ws, root_file.to_str().unwrap()));
+    }
+
+    #[test]
+    fn within_workspace_deeply_nested() {
+        let tmp = tempfile::tempdir().unwrap();
+        let ws = tmp.path().to_str().unwrap();
+        let deep = tmp.path().join("a/b/c/d/e/f.txt");
+        std::fs::create_dir_all(deep.parent().unwrap()).unwrap();
+        std::fs::write(&deep, "deep").unwrap();
+        assert!(is_within_workspace(ws, deep.to_str().unwrap()));
+    }
+
+    #[test]
+    fn within_workspace_new_file_in_new_subdir() {
+        let tmp = tempfile::tempdir().unwrap();
+        let ws = tmp.path().to_str().unwrap();
+        // Neither the file nor its parent dir exist, but grandparent (workspace) does
+        let new_file = tmp.path().join("new-dir/file.txt");
+        // Parent doesn't exist, grandparent does — falls through to false
+        // This is correct: we can't verify the path is safe if the parent doesn't exist
+        let result = is_within_workspace(ws, new_file.to_str().unwrap());
+        // The parent dir doesn't exist so canonicalize fails — returns false (safe default)
+        assert!(!result);
+    }
+
+    // ── is_within_workspace: blocked paths ──────────────────────────
+
+    #[test]
+    fn outside_workspace_sibling() {
+        let parent = tempfile::tempdir().unwrap();
+        let ws = parent.path().join("project-a");
+        let sibling = parent.path().join("project-b").join("file.txt");
+        std::fs::create_dir_all(&ws).unwrap();
+        std::fs::create_dir_all(sibling.parent().unwrap()).unwrap();
+        std::fs::write(&sibling, "secret").unwrap();
+        assert!(!is_within_workspace(ws.to_str().unwrap(), sibling.to_str().unwrap()));
+    }
+
+    #[test]
+    fn outside_workspace_dotdot_traversal() {
+        let parent = tempfile::tempdir().unwrap();
+        let ws = parent.path().join("project");
+        std::fs::create_dir_all(&ws).unwrap();
+        let escape = format!("{}/../secret.txt", ws.display());
+        std::fs::write(parent.path().join("secret.txt"), "data").unwrap();
+        assert!(!is_within_workspace(ws.to_str().unwrap(), &escape));
+    }
+
+    #[test]
+    fn outside_workspace_parent_dir() {
+        let parent = tempfile::tempdir().unwrap();
+        let ws = parent.path().join("project");
+        std::fs::create_dir_all(&ws).unwrap();
+        let parent_file = parent.path().join("parent-secret.txt");
+        std::fs::write(&parent_file, "secret").unwrap();
+        assert!(!is_within_workspace(ws.to_str().unwrap(), parent_file.to_str().unwrap()));
+    }
+
+    #[test]
+    fn outside_workspace_absolute_path() {
+        let ws = tempfile::tempdir().unwrap();
+        let other = tempfile::tempdir().unwrap();
+        let other_file = other.path().join("file.txt");
+        std::fs::write(&other_file, "other").unwrap();
+        assert!(!is_within_workspace(ws.path().to_str().unwrap(), other_file.to_str().unwrap()));
+    }
+
+    #[test]
+    fn outside_workspace_dotdot_in_middle() {
+        let parent = tempfile::tempdir().unwrap();
+        let ws = parent.path().join("project");
+        let sibling = parent.path().join("other");
+        std::fs::create_dir_all(&ws).unwrap();
+        std::fs::create_dir_all(&sibling).unwrap();
+        std::fs::write(sibling.join("secret.txt"), "data").unwrap();
+        // project/src/../../other/secret.txt
+        let escape = format!("{}/src/../../other/secret.txt", ws.display());
+        std::fs::create_dir_all(ws.join("src")).unwrap();
+        assert!(!is_within_workspace(ws.to_str().unwrap(), &escape));
+    }
+
+    // ── is_within_workspace: edge cases ─────────────────────────────
+
+    #[test]
+    fn empty_path_returns_false() {
+        let tmp = tempfile::tempdir().unwrap();
+        assert!(!is_within_workspace(tmp.path().to_str().unwrap(), ""));
+    }
+
+    #[test]
+    fn nonexistent_workspace_falls_back_to_string_prefix() {
+        // When workspace can't be canonicalized, falls back to starts_with
+        assert!(is_within_workspace("/nonexistent/ws", "/nonexistent/ws/file.txt"));
+        assert!(!is_within_workspace("/nonexistent/ws", "/other/file.txt"));
+    }
+
+    #[test]
+    fn workspace_prefix_attack_blocked() {
+        // /project-a-evil should NOT match /project-a
+        let parent = tempfile::tempdir().unwrap();
+        let ws = parent.path().join("project-a");
+        let evil = parent.path().join("project-a-evil").join("file.txt");
+        std::fs::create_dir_all(&ws).unwrap();
+        std::fs::create_dir_all(evil.parent().unwrap()).unwrap();
+        std::fs::write(&evil, "evil").unwrap();
+        assert!(!is_within_workspace(ws.to_str().unwrap(), evil.to_str().unwrap()));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn symlink_escape_blocked() {
+        let parent = tempfile::tempdir().unwrap();
+        let ws = parent.path().join("project");
+        let secret_dir = parent.path().join("secrets");
+        std::fs::create_dir_all(&ws).unwrap();
+        std::fs::create_dir_all(&secret_dir).unwrap();
+        std::fs::write(secret_dir.join("key.pem"), "private").unwrap();
+        // Create a symlink inside workspace that points outside
+        std::os::unix::fs::symlink(&secret_dir, ws.join("link")).unwrap();
+        let via_symlink = ws.join("link/key.pem");
+        assert!(!is_within_workspace(ws.to_str().unwrap(), via_symlink.to_str().unwrap()));
+    }
+
+    // ── extract_paths_from_message ──────────────────────────────────
+
+    #[test]
+    fn extract_absolute_path_from_message() {
+        let paths = extract_paths_from_message("look at /Users/me/project/src/main.rs please");
+        assert_eq!(paths, vec!["/Users/me/project/src/main.rs"]);
+    }
+
+    #[test]
+    fn extract_multiple_paths() {
+        let paths = extract_paths_from_message("compare /a/b/c.rs and /x/y/z.ts");
+        assert_eq!(paths.len(), 2);
+        assert!(paths.contains(&"/a/b/c.rs".to_string()));
+        assert!(paths.contains(&"/x/y/z.ts".to_string()));
+    }
+
+    #[test]
+    fn extract_path_in_backticks() {
+        let paths = extract_paths_from_message("read `/Users/me/project/file.txt`");
+        assert_eq!(paths, vec!["/Users/me/project/file.txt"]);
+    }
+
+    #[test]
+    fn extract_ignores_relative_paths() {
+        let paths = extract_paths_from_message("look at src/main.rs and ./lib/utils.ts");
+        assert!(paths.is_empty());
+    }
+
+    #[test]
+    fn extract_ignores_single_slash() {
+        let paths = extract_paths_from_message("use / as separator");
+        assert!(paths.is_empty());
+    }
+
+    #[test]
+    fn extract_ignores_url_paths() {
+        // URLs have // after scheme, but individual path-like tokens should still work
+        let paths = extract_paths_from_message("visit https://example.com/path");
+        assert!(paths.is_empty());
+    }
+
+    #[test]
+    fn extract_path_with_spaces_around() {
+        let paths = extract_paths_from_message("  /home/user/project/file.rs  ");
+        assert_eq!(paths, vec!["/home/user/project/file.rs"]);
+    }
+
+    #[test]
+    fn extract_path_in_quotes() {
+        let paths = extract_paths_from_message("read \"/Users/me/file.txt\"");
+        assert_eq!(paths, vec!["/Users/me/file.txt"]);
+    }
+
+    // ── is_path_allowed ─────────────────────────────────────────────
+
+    #[test]
+    fn allowed_exact_match() {
+        let mut allowed = std::collections::HashSet::new();
+        allowed.insert("/Users/me/project/file.rs".to_string());
+        assert!(is_path_allowed(&allowed, "/Users/me/project/file.rs"));
+    }
+
+    #[test]
+    fn allowed_sibling_file_in_same_dir() {
+        let mut allowed = std::collections::HashSet::new();
+        allowed.insert("/Users/me/project/src/main.rs".to_string());
+        // Another file in the same directory should be allowed
+        assert!(is_path_allowed(&allowed, "/Users/me/project/src/lib.rs"));
+    }
+
+    #[test]
+    fn allowed_file_under_mentioned_dir() {
+        let mut allowed = std::collections::HashSet::new();
+        allowed.insert("/Users/me/project/src".to_string());
+        assert!(is_path_allowed(&allowed, "/Users/me/project/src/main.rs"));
+    }
+
+    #[test]
+    fn not_allowed_unrelated_path() {
+        let mut allowed = std::collections::HashSet::new();
+        allowed.insert("/Users/me/project-a/file.rs".to_string());
+        assert!(!is_path_allowed(&allowed, "/Users/me/project-b/file.rs"));
+    }
+
+    #[test]
+    fn not_allowed_empty_set() {
+        let allowed = std::collections::HashSet::new();
+        assert!(!is_path_allowed(&allowed, "/Users/me/file.rs"));
+    }
+
+    #[test]
+    fn allowed_parent_dir_of_mentioned_file() {
+        let mut allowed = std::collections::HashSet::new();
+        allowed.insert("/Users/me/project/src/deep/file.rs".to_string());
+        // The parent directory of the mentioned file
+        assert!(is_path_allowed(&allowed, "/Users/me/project/src/deep/other.rs"));
+    }
 }

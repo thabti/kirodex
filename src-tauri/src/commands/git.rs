@@ -459,10 +459,13 @@ pub fn git_diff_file(
 // ── Worktree support ─────────────────────────────────────────────
 
 /// Allowed slug characters: alphanumeric, dashes, underscores, dots.
-/// No `..`, max 64 chars.
+/// No `..`, no leading/trailing dots, max 30 chars.
 fn validate_worktree_slug(slug: &str) -> Result<(), AppError> {
-    if slug.is_empty() || slug.len() > 64 {
-        return Err(AppError::Other("Slug must be 1–64 characters".to_string()));
+    if slug.is_empty() || slug.len() > 30 {
+        return Err(AppError::Other("Slug must be 1–30 characters".to_string()));
+    }
+    if slug.starts_with('.') || slug.ends_with('.') {
+        return Err(AppError::Other("Slug must not start or end with '.'".to_string()));
     }
     if slug.contains("..") {
         return Err(AppError::Other("Slug must not contain '..'".to_string()));
@@ -475,7 +478,7 @@ fn validate_worktree_slug(slug: &str) -> Result<(), AppError> {
     Ok(())
 }
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct WorktreeResult {
     pub worktree_path: String,
@@ -486,6 +489,10 @@ pub struct WorktreeResult {
 pub fn git_worktree_create(cwd: String, slug: String) -> Result<WorktreeResult, AppError> {
     validate_worktree_slug(&slug)?;
     let cwd_path = Path::new(&cwd);
+    // Reject creating a worktree from inside another worktree
+    if cwd.contains("/.kiro/worktrees/") {
+        return Err(AppError::Other("Cannot create a worktree from inside another worktree. Use the project root.".to_string()));
+    }
     let worktree_dir = cwd_path.join(".kiro").join("worktrees").join(&slug);
     let worktree_path = worktree_dir.to_string_lossy().to_string();
     let branch = format!("worktree-{slug}");
@@ -781,5 +788,16 @@ mod tests {
         ensure_gitignore_entry(dir.path(), ".kiro/worktrees/").unwrap();
         let content = std::fs::read_to_string(dir.path().join(".gitignore")).unwrap();
         assert_eq!(content, "node_modules/\n.kiro/worktrees/\n");
+    }
+
+    #[test]
+    fn worktree_create_rejects_worktree_path_as_cwd() {
+        let result = git_worktree_create(
+            "/project/.kiro/worktrees/feat".to_string(),
+            "new-branch".to_string(),
+        );
+        assert!(result.is_err());
+        let err = result.unwrap_err().to_string();
+        assert!(err.contains("Cannot create a worktree from inside another worktree"));
     }
 }
