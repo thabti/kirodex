@@ -81,6 +81,8 @@ fn make_remote_callbacks<'a>() -> RemoteCallbacks<'a> {
 pub struct LocalBranch {
     pub name: String,
     pub current: bool,
+    /// True if this branch is checked out in another worktree (cannot be switched to).
+    pub worktree_locked: bool,
 }
 
 #[derive(Serialize, Clone)]
@@ -126,12 +128,34 @@ pub fn git_list_branches(cwd: String) -> Result<BranchInfo, AppError> {
         .and_then(|h| h.shorthand().map(String::from))
         .unwrap_or_default();
 
+    // Collect branches locked by worktrees
+    let mut worktree_branches: std::collections::HashSet<String> = std::collections::HashSet::new();
+    if let Ok(worktrees) = repo.worktrees() {
+        for i in 0..worktrees.len() {
+            let wt_name = match worktrees.get(i) {
+                Some(n) => n,
+                None => continue,
+            };
+            if let Ok(wt) = repo.find_worktree(wt_name) {
+                if let Ok(wt_repo) = Repository::open_from_worktree(&wt) {
+                    if let Ok(wt_head) = wt_repo.head() {
+                        if let Some(branch) = wt_head.shorthand() {
+                            worktree_branches.insert(branch.to_string());
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     let mut local = Vec::new();
     for branch in repo.branches(Some(BranchType::Local))? {
         let (branch, _) = branch?;
         let name = branch.name()?.unwrap_or("").to_string();
+        let is_locked = !name.is_empty() && worktree_branches.contains(&name) && name != current;
         local.push(LocalBranch {
             current: name == current,
+            worktree_locked: is_locked,
             name,
         });
     }
@@ -657,7 +681,7 @@ mod tests {
 
     #[test]
     fn local_branch_serializes_camel_case() {
-        let b = LocalBranch { name: "main".to_string(), current: true };
+        let b = LocalBranch { name: "main".to_string(), current: true, worktree_locked: false };
         let json = serde_json::to_string(&b).unwrap();
         assert!(json.contains("\"name\":\"main\""));
         assert!(json.contains("\"current\":true"));
@@ -673,7 +697,7 @@ mod tests {
     #[test]
     fn branch_info_serializes_camel_case() {
         let info = BranchInfo {
-            local: vec![LocalBranch { name: "main".to_string(), current: true }],
+            local: vec![LocalBranch { name: "main".to_string(), current: true, worktree_locked: false }],
             remotes: HashMap::new(),
             current_branch: "main".to_string(),
         };

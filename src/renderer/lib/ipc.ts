@@ -70,7 +70,7 @@ export const ipc = {
   gitDetect: (path: string): Promise<boolean> =>
     invoke('git_detect', { path }),
   gitListBranches: (cwd: string): Promise<{
-    local: Array<{ name: string; current: boolean }>;
+    local: Array<{ name: string; current: boolean; worktreeLocked: boolean }>;
     remotes: Record<string, Array<{ name: string; fullRef: string }>>;
     currentBranch: string;
   }> =>
