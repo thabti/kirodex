@@ -93,6 +93,8 @@ export interface AgentTask {
   worktreePath?: string
   /** Original workspace path before worktree was created */
   originalWorkspace?: string
+  /** Canonical project workspace path — threads always group under this */
+  projectId?: string
 }
 
 // ── Soft-deleted threads ──────────────────────────────────────────
