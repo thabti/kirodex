@@ -18,7 +18,7 @@
     <a href="https://github.com/thabti/kirodex/issues">Request Feature</a>
   </p>
   <p align="center">
-    <img src="screenshots/chat-main.png" alt="Kirodex screenshot" />
+    <img src="screenshots/chat-task-list-diff-panel.png" alt="Kirodex screenshot" />
   </p>
 </p>
 
@@ -87,13 +87,18 @@ chmod +x Kirodex_*.AppImage && ./Kirodex_*.AppImage
 **Chat and agents**
 - Chat interface via the [Agent Client Protocol](https://github.com/anthropics/agent-client-protocol) SDK
 - Threaded agentic development — each conversation runs as an independent agent thread with its own context, tool calls, and execution history
-- Slash commands (`/clear`, `/model`, `/agent`, `/plan`, `/chat`) with inline model picker and MCP server panels
+- Empty thread splash screen with clickable slash commands and `@` mentions to get started fast
+- Slash commands (`/clear`, `/close`, `/model`, `/agent`, `/plan`, `/chat`) with fuzzy search across all pickers
+- Agent mention pills (`@agent`) with built-in agents, styled icons, and fuzzy matching
+- Plan mode with per-thread state and a handoff card to start building after planning
+- Thread archiving — `/close` preserves conversation history in a read-only view instead of deleting
 - Task management: create, pause, resume, cancel, delete
 - Question cards — agents can ask multi-choice questions; pick an option and reply inline
 - Kiro config sidebar — browse agents (grouped by stack), skills, steering rules, and MCP servers from `.kiro/`
 
 **Code and diffs**
 - Syntax-highlighted inline and side-by-side diff views ([Shiki](https://shiki.style))
+- Code viewer for read tool calls with line numbers and syntax highlighting
 - Click a file operation in chat to jump to that file
 - Changed files summary with per-file +/- stats and one-click stage/revert
 
@@ -107,6 +112,8 @@ chmod +x Kirodex_*.AppImage && ./Kirodex_*.AppImage
 
 **Terminal and settings**
 - Integrated PTY terminal (xterm.js)
+- `Cmd+L` shortcut to focus the chat input from anywhere
+- Update checker with sidebar badge when a new version is available
 - Full-screen settings panel: CLI path, default model, auto-approve, font size, keyboard shortcuts, git integration, and notification preferences
 
 ---
