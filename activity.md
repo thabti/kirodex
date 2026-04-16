@@ -1,5 +1,13 @@
 # Activity Log
 
+## 2026-04-16 12:00 GST (Dubai)
+
+### Website: adopt minimal t3-style layout with big hero image
+
+Redesigned the website landing page to match the ultra-minimal t3.codes layout: bold headline, single macOS download button, "Other platforms" link, and a prominent full-width app screenshot. Removed features grid, screenshots gallery, install tabs, and stats section. Darkened theme to near-black. Updated changelog.html nav/footer for consistency.
+
+**Modified:** `website/index.html`, `website/style.css`, `website/changelog.html`
+
 ## 2026-04-16 02:56 GST (Dubai)
 
 ### SystemMessageRow: restyle info and error variants to muted inline style
