@@ -69,10 +69,98 @@
       Other platforms
     </a>
 
+    <!-- Brew install terminal block -->
+    <div class="mt-8 w-full max-w-md">
+      <div class="rounded-xl border border-[rgba(255,255,255,0.08)] bg-[#111111] overflow-hidden shadow-lg">
+        <div class="flex items-center gap-2 px-4 py-2.5 border-b border-[rgba(255,255,255,0.06)]">
+          <span class="h-3 w-3 rounded-full bg-[#ff5f57]"></span>
+          <span class="h-3 w-3 rounded-full bg-[#febc2e]"></span>
+          <span class="h-3 w-3 rounded-full bg-[#28c840]"></span>
+          <span class="ml-2 text-[12px] text-muted-foreground">Terminal</span>
+        </div>
+        <div class="px-5 py-4 flex items-center gap-3">
+          <span class="text-muted-foreground select-none">$</span>
+          <code class="text-[14px] text-foreground">brew install --cask thabti/tap/kirodex</code>
+          <button
+            onclick="navigator.clipboard.writeText('brew install --cask thabti/tap/kirodex')"
+            class="ml-auto text-muted-foreground hover:text-foreground transition-colors cursor-pointer bg-transparent border-0 p-1 rounded"
+            aria-label="Copy brew install command"
+            tabindex="0"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
     <div class="mt-20 w-full max-w-6xl">
       <img src="assets/main.png" alt="Kirodex main view showing the chat interface, sidebar, and slash commands"
            class="w-full rounded-2xl border border-[rgba(255,255,255,0.06)] shadow-2xl shadow-black/50"
            loading="eager">
+    </div>
+  </section>
+
+  <!-- ── Features ─────────────────────────────────────────────── -->
+  <section class="px-6 py-24">
+    <div class="mx-auto max-w-6xl">
+      <h2 class="mb-4 text-center text-3xl font-bold tracking-tight text-foreground sm:text-4xl">Everything you need to ship with AI</h2>
+      <p class="mx-auto mb-16 max-w-2xl text-center text-[16px] text-muted-foreground">Chat, plan, diff, commit, and deploy from one native app. No Electron, no bloat.</p>
+
+      <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <!-- Feature 1 -->
+        <div class="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111111] p-6">
+          <div class="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-[rgba(255,255,255,0.05)]">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-info"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </div>
+          <h3 class="mb-2 text-[16px] font-semibold text-foreground">Agentic chat</h3>
+          <p class="text-[14px] leading-relaxed text-muted-foreground">Threaded conversations with AI agents via the Agent Client Protocol. Each thread runs independently with its own context and tools.</p>
+        </div>
+
+        <!-- Feature 2 -->
+        <div class="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111111] p-6">
+          <div class="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-[rgba(255,255,255,0.05)]">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-success"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+          </div>
+          <h3 class="mb-2 text-[16px] font-semibold text-foreground">Inline diffs</h3>
+          <p class="text-[14px] leading-relaxed text-muted-foreground">Syntax-highlighted inline and side-by-side diffs powered by Shiki. Review every change before it lands.</p>
+        </div>
+
+        <!-- Feature 3 -->
+        <div class="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111111] p-6">
+          <div class="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-[rgba(255,255,255,0.05)]">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-[#f97316]"><circle cx="12" cy="12" r="4"/><line x1="1.05" y1="12" x2="7" y2="12"/><line x1="17.01" y1="12" x2="22.96" y2="12"/></svg>
+          </div>
+          <h3 class="mb-2 text-[16px] font-semibold text-foreground">Git built in</h3>
+          <p class="text-[14px] leading-relaxed text-muted-foreground">Branch, stage, commit, push, and pull through native libgit2 bindings. Worktree support isolates each thread.</p>
+        </div>
+
+        <!-- Feature 4 -->
+        <div class="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111111] p-6">
+          <div class="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-[rgba(255,255,255,0.05)]">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-[#a78bfa]"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+          </div>
+          <h3 class="mb-2 text-[16px] font-semibold text-foreground">Integrated terminal</h3>
+          <p class="text-[14px] leading-relaxed text-muted-foreground">Full PTY terminal with xterm.js. Run commands without leaving the app.</p>
+        </div>
+
+        <!-- Feature 5 -->
+        <div class="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111111] p-6">
+          <div class="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-[rgba(255,255,255,0.05)]">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-[#facc15]"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+          </div>
+          <h3 class="mb-2 text-[16px] font-semibold text-foreground">Plan mode</h3>
+          <p class="text-[14px] leading-relaxed text-muted-foreground">Plan first, build second. Context-aware handoff suggests switching to implement mode before the context window fills up.</p>
+        </div>
+
+        <!-- Feature 6 -->
+        <div class="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[#111111] p-6">
+          <div class="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-[rgba(255,255,255,0.05)]">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-[#f472b6]"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <h3 class="mb-2 text-[16px] font-semibold text-foreground">Native and lightweight</h3>
+          <p class="text-[14px] leading-relaxed text-muted-foreground">12 MB, ~0% CPU at idle, ~110 MB RAM. Built with Tauri and Rust. No Electron.</p>
+        </div>
+      </div>
     </div>
   </section>
 
