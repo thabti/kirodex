@@ -236,6 +236,13 @@ export interface Attachment {
   base64Content?: string
 }
 
+/** Structured image attachment data sent to the Rust backend via IPC (fix #14). */
+export interface IpcAttachment {
+  readonly base64: string
+  readonly mimeType: string
+  readonly name: string
+}
+
 // ── Debug Panel Types ─────────────────────────────────────────────
 
 export type DebugCategory = 'notification' | 'request' | 'response' | 'error' | 'stderr' | 'lifecycle'

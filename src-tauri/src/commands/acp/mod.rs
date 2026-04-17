@@ -11,6 +11,9 @@ mod tests;
 pub use commands::*;
 pub use types::*;
 
+// Re-export connection helpers for testing
+pub(crate) use connection::{strip_image_tags, build_content_blocks};
+
 // Re-export sandbox functions for crate-internal use
 pub(crate) use sandbox::{
     extract_paths_from_json, extract_paths_from_json_inner, extract_paths_from_message,

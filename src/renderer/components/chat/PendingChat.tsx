@@ -4,6 +4,7 @@ import { ipc } from '@/lib/ipc'
 import { useTaskStore } from '@/stores/taskStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { slugify, isValidWorktreeSlug } from '@/lib/utils'
+import type { IpcAttachment } from '@/types'
 import { Checkbox } from '@/components/ui/checkbox'
 import { ChatInput } from './ChatInput'
 import { EmptyThreadSplash } from './EmptyThreadSplash'
@@ -58,7 +59,7 @@ export function PendingChat({ workspace }: PendingChatProps) {
     }
   }, [])
 
-  const handleSend = useCallback(async (msg: string) => {
+  const handleSend = useCallback(async (msg: string, attachments?: IpcAttachment[]) => {
     removeDraft(workspace)
     const cleanMsg = msg.replace(/<\/?kirodex_tangent>/g, '').trim()
     const name = cleanMsg.length > 60 ? cleanMsg.slice(0, 57) + '\u2026' : cleanMsg
@@ -78,7 +79,7 @@ export function PendingChat({ workspace }: PendingChatProps) {
           void ipc.gitWorktreeRemove(workspace, wtResult.worktreePath).catch(() => {})
           throw new Error('Worktree setup failed')
         }
-        const created = await ipc.createTask({ name, workspace: wtResult.worktreePath, prompt: msg, autoApprove, modeId })
+        const created = await ipc.createTask({ name, workspace: wtResult.worktreePath, prompt: msg, autoApprove, modeId, attachments })
         upsertTask({
           ...created,
           projectId: getProjectId(workspace),
@@ -101,7 +102,7 @@ export function PendingChat({ workspace }: PendingChatProps) {
       } catch (wtErr) {
         // Worktree failed — fall back to original workspace with inline error
         const errMsg = wtErr instanceof Error ? wtErr.message : String(wtErr)
-        const created = await ipc.createTask({ name, workspace, prompt: msg, autoApprove, modeId })
+        const created = await ipc.createTask({ name, workspace, prompt: msg, autoApprove, modeId, attachments })
         upsertTask({
           ...created,
           projectId: getProjectId(workspace),
@@ -122,7 +123,7 @@ export function PendingChat({ workspace }: PendingChatProps) {
       }
     }
 
-    const created = await ipc.createTask({ name, workspace, prompt: msg, autoApprove, modeId })
+    const created = await ipc.createTask({ name, workspace, prompt: msg, autoApprove, modeId, attachments })
     upsertTask({ ...created, projectId: getProjectId(workspace) })
     if (currentModeId && currentModeId !== 'kiro_default') {
       useTaskStore.getState().setTaskMode(created.id, currentModeId)

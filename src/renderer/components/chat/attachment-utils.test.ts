@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   getAttachmentType, getMimeType, buildAttachmentMessage,
+  extractIpcAttachments,
   IMAGE_EXTENSIONS, TEXT_EXTENSIONS, MAX_ATTACHMENT_SIZE, MAX_TEXT_SIZE,
 } from './attachment-utils'
 import type { Attachment } from '@/types'
@@ -96,5 +97,36 @@ describe('constants', () => {
 
   it('MAX_TEXT_SIZE is 512KB', () => {
     expect(MAX_TEXT_SIZE).toBe(512 * 1024)
+  })
+})
+
+describe('extractIpcAttachments', () => {
+  it('returns empty array for empty input', () => {
+    expect(extractIpcAttachments([])).toEqual([])
+  })
+
+  it('extracts image attachments with base64Content', () => {
+    const a: Attachment = { id: '1', name: 'pic.png', path: '', type: 'image', size: 100, mimeType: 'image/png', base64Content: 'abc123' }
+    const result = extractIpcAttachments([a])
+    expect(result).toEqual([{ base64: 'abc123', mimeType: 'image/png', name: 'pic.png' }])
+  })
+
+  it('excludes image attachments without base64Content', () => {
+    const a: Attachment = { id: '1', name: 'pic.png', path: '/tmp/pic.png', type: 'image', size: 100, mimeType: 'image/png' }
+    expect(extractIpcAttachments([a])).toEqual([])
+  })
+
+  it('excludes text and binary attachments', () => {
+    const text: Attachment = { id: '1', name: 'code.ts', path: '', type: 'text', size: 50, mimeType: 'text/plain', textContent: 'const x = 1' }
+    const binary: Attachment = { id: '2', name: 'data.bin', path: '', type: 'binary', size: 200, mimeType: 'application/octet-stream', base64Content: 'xyz' }
+    expect(extractIpcAttachments([text, binary])).toEqual([])
+  })
+
+  it('extracts only image attachments from mixed input', () => {
+    const img: Attachment = { id: '1', name: 'pic.jpg', path: '', type: 'image', size: 100, mimeType: 'image/jpeg', base64Content: 'imgdata' }
+    const text: Attachment = { id: '2', name: 'readme.md', path: '', type: 'text', size: 50, mimeType: 'text/plain', textContent: '# Hi' }
+    const result = extractIpcAttachments([img, text])
+    expect(result).toHaveLength(1)
+    expect(result[0].base64).toBe('imgdata')
   })
 })

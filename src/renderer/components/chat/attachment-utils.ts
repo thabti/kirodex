@@ -1,5 +1,5 @@
 import { ipc } from '@/lib/ipc'
-import type { Attachment, AttachmentType } from '@/types'
+import type { Attachment, AttachmentType, IpcAttachment } from '@/types'
 
 export const IMAGE_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp', 'ico'])
 export const TEXT_EXTENSIONS = new Set([
@@ -144,3 +144,14 @@ export const buildMessageWithInlineImages = (
   }
   return result
 }
+
+/**
+ * Extracts image attachments into the IPC-ready format for the Rust backend
+ * to build proper ACP ContentBlock::Image entries (fix #14).
+ */
+export const extractIpcAttachments = (
+  attachments: readonly Attachment[],
+): IpcAttachment[] =>
+  attachments
+    .filter((a): a is Attachment & { base64Content: string } => a.type === 'image' && !!a.base64Content)
+    .map((a) => ({ base64: a.base64Content, mimeType: a.mimeType, name: a.name }))
