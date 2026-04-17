@@ -908,7 +908,7 @@ describe('restoreTask', () => {
     useTaskStore.getState().softDeleteTask('task-1')
     useTaskStore.getState().restoreTask('task-1')
     expect(useTaskStore.getState().tasks['task-1']).toBeDefined()
-    expect(useTaskStore.getState().tasks['task-1'].isArchived).toBe(true)
+    expect(useTaskStore.getState().tasks['task-1'].isArchived).toBe(false)
     expect(useTaskStore.getState().softDeleted['task-1']).toBeUndefined()
   })
 

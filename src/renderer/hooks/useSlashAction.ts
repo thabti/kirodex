@@ -51,7 +51,7 @@ export const useSlashAction = (): SlashActionResult => {
     // Track every recognized slash command. The switch below rejects unknown
     // names by returning false, so we gate the track call on that path via
     // the `default` case.
-    const KNOWN = new Set(['clear', 'model', 'agent', 'settings', 'upload', 'plan', 'usage', 'close', 'exit', 'branch', 'worktree', 'btw', 'tangent'])
+    const KNOWN = new Set(['clear', 'model', 'agent', 'settings', 'upload', 'plan', 'usage', 'close', 'exit', 'branch', 'worktree', 'btw', 'tangent', 'fork'])
     if (KNOWN.has(name)) {
       track('feature_used', { feature: 'slash_command', detail: name })
     }
@@ -127,6 +127,12 @@ export const useSlashAction = (): SlashActionResult => {
         // Not in btw mode — return false so the picker inserts "/btw " for the user to type a question
         setPanel(null)
         return false
+      }
+      case 'fork': {
+        const { selectedTaskId, forkTask } = useTaskStore.getState()
+        if (selectedTaskId) void forkTask(selectedTaskId)
+        setPanel(null)
+        return true
       }
       default:
         setPanel(null)
