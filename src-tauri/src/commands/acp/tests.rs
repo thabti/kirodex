@@ -1,4 +1,5 @@
 use super::*;
+use agent_client_protocol as acp;
 use std::collections::BTreeSet;
 
 // ── is_within_workspace: allowed paths ──────────────────────────
@@ -995,4 +996,87 @@ fn task_auto_approve_roundtrip() {
     let json_str = serde_json::to_string(&task).unwrap();
     let restored: Task = serde_json::from_str(&json_str).unwrap();
     assert_eq!(restored.auto_approve, Some(true));
+}
+
+// ── strip_image_tags (fix #14) ──────────────────────────────────
+
+#[test]
+fn strip_image_tags_removes_attached_image_block() {
+    let input = "Hello\n[Attached image: pic.png (image/png, 100 bytes)]\n<image src=\"data:image/png;base64,abc123\" />\nWorld";
+    let result = strip_image_tags(input);
+    assert_eq!(result, "Hello\nWorld");
+}
+
+#[test]
+fn strip_image_tags_removes_standalone_image_tag() {
+    let input = "Check this: <image src=\"data:image/jpeg;base64,xyz789\" /> done";
+    let result = strip_image_tags(input);
+    assert_eq!(result, "Check this:  done");
+}
+
+#[test]
+fn strip_image_tags_preserves_text_without_images() {
+    let input = "No images here, just text.";
+    let result = strip_image_tags(input);
+    assert_eq!(result, input);
+}
+
+#[test]
+fn strip_image_tags_handles_multiple_images() {
+    let input = "<image src=\"data:image/png;base64,aaa\" />\ntext\n<image src=\"data:image/jpg;base64,bbb\" />";
+    let result = strip_image_tags(input);
+    assert_eq!(result, "text");
+}
+
+#[test]
+fn strip_image_tags_handles_empty_string() {
+    assert_eq!(strip_image_tags(""), "");
+}
+
+// ── build_content_blocks (fix #14) ──────────────────────────────
+
+#[test]
+fn build_content_blocks_text_only() {
+    let blocks = build_content_blocks("hello".to_string(), &[]);
+    assert_eq!(blocks.len(), 1);
+    match &blocks[0] {
+        acp::ContentBlock::Text(t) => assert_eq!(t.text, "hello"),
+        _ => panic!("expected Text block"),
+    }
+}
+
+#[test]
+fn build_content_blocks_with_attachments() {
+    let atts = vec![
+        AttachmentData { base64: "abc".to_string(), mime_type: "image/png".to_string(), name: Some("pic.png".to_string()) },
+    ];
+    let blocks = build_content_blocks("hello <image src=\"data:image/png;base64,abc\" />".to_string(), &atts);
+    assert_eq!(blocks.len(), 2);
+    match &blocks[1] {
+        acp::ContentBlock::Image(img) => {
+            assert_eq!(img.data, "abc");
+            assert_eq!(img.mime_type, "image/png");
+        }
+        _ => panic!("expected Image block"),
+    }
+}
+
+// ── AttachmentData deserialization (fix #14) ─────────────────────
+
+#[test]
+fn attachment_data_deserializes_from_camel_case() {
+    let json = r#"{"base64":"abc123","mimeType":"image/png","name":"pic.png"}"#;
+    let att: AttachmentData = serde_json::from_str(json).unwrap();
+    assert_eq!(att.base64, "abc123");
+    assert_eq!(att.mime_type, "image/png");
+    assert_eq!(att.name, Some("pic.png".to_string()));
+}
+
+#[test]
+fn attachment_data_deserializes_without_name() {
+    let json = r#"{"base64":"xyz","mimeType":"image/jpeg"}"#;
+    let att: AttachmentData = serde_json::from_str(json).unwrap();
+    assert_eq!(att.base64, "xyz");
+    assert_eq!(att.mime_type, "image/jpeg");
+    assert_eq!(att.name, None);
 }

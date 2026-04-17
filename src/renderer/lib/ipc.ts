@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
-import type { AgentTask, AppSettings, KiroConfig, ToolCall, PlanStep, DebugLogEntry, ProjectFile } from '@/types'
+import type { AgentTask, AppSettings, KiroConfig, ToolCall, PlanStep, DebugLogEntry, ProjectFile, IpcAttachment } from '@/types'
 
 type UnsubscribeFn = () => void
 
@@ -33,12 +33,12 @@ const tauriListen = <T>(event: string, cb: (payload: T) => void): UnsubscribeFn 
 }
 
 export const ipc = {
-  createTask: (params: { name: string; workspace: string; prompt: string; autoApprove?: boolean; modeId?: string }): Promise<AgentTask> =>
+  createTask: (params: { name: string; workspace: string; prompt: string; autoApprove?: boolean; modeId?: string; attachments?: IpcAttachment[] }): Promise<AgentTask> =>
     invoke('task_create', { params }),
   listTasks: (): Promise<AgentTask[]> =>
     invoke('task_list'),
-  sendMessage: (taskId: string, message: string): Promise<void> =>
-    invoke('task_send_message', { taskId, message }),
+  sendMessage: (taskId: string, message: string, attachments?: IpcAttachment[]): Promise<void> =>
+    invoke('task_send_message', { taskId, message, attachments }),
   pauseTask: (taskId: string): Promise<void> =>
     invoke('task_pause', { taskId }),
   resumeTask: (taskId: string): Promise<void> =>

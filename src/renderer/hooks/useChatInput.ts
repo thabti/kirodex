@@ -4,7 +4,8 @@ import { useTaskStore } from '@/stores/taskStore'
 import { useSlashAction } from '@/hooks/useSlashAction'
 import { useAttachments } from '@/hooks/useAttachments'
 import { useFileMention } from '@/hooks/useFileMention'
-import { buildMessageWithInlineImages } from '@/components/chat/attachment-utils'
+import { buildMessageWithInlineImages, extractIpcAttachments } from '@/components/chat/attachment-utils'
+import type { IpcAttachment } from '@/types'
 
 export interface PastedChunk {
   id: number
@@ -31,7 +32,7 @@ interface UseChatInputOptions {
   disabled?: boolean
   isRunning?: boolean
   initialValue?: string
-  onSendMessage: (message: string) => void
+  onSendMessage: (message: string, attachments?: IpcAttachment[]) => void
   onPause?: () => void
   onDraftChange?: (value: string) => void
 }
@@ -267,12 +268,13 @@ export function useChatInput({ disabled, isRunning, initialValue, onSendMessage,
     if (hasAttachments) {
       message = buildMessageWithInlineImages(message, attachmentsBag.attachments)
     }
+    const ipcAttachments = hasAttachments ? extractIpcAttachments(attachmentsBag.attachments) : undefined
     setValue('')
     setSlashIndex(0)
     setPastedChunks([])
     mentionBag.clearMentions()
     attachmentsBag.clearAttachments()
-    onSendMessage(message)
+    onSendMessage(message, ipcAttachments)
     if (textareaRef.current) textareaRef.current.style.height = 'auto'
     textareaRef.current?.focus()
   }, [value, disabled, onSendMessage, dismissPanel, mentionBag, attachmentsBag, expandChunks, executeFullInput])

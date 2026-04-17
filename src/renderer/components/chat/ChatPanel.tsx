@@ -15,7 +15,7 @@ import { SearchQueryContext } from './HighlightText'
 import { BtwOverlay } from './BtwOverlay'
 import { useMessageSearch } from '@/hooks/useMessageSearch'
 import { ipc } from '@/lib/ipc'
-import type { TaskMessage, ToolCall } from '@/types'
+import type { TaskMessage, ToolCall, IpcAttachment } from '@/types'
 import type { TimelineRow } from '@/lib/timeline'
 
 const EMPTY_MESSAGES: TaskMessage[] = []
@@ -58,7 +58,7 @@ const StreamingMessageList = memo(function StreamingMessageList({
 })
 
 /** Send a message directly to the backend (shared by initial send and queue drain). */
-async function sendMessageDirect(msg: string): Promise<void> {
+async function sendMessageDirect(msg: string, attachments?: IpcAttachment[]): Promise<void> {
   const state = useTaskStore.getState()
   const id = state.selectedTaskId
   const task = id ? state.tasks[id] : null
@@ -75,7 +75,7 @@ async function sendMessageDirect(msg: string): Promise<void> {
     const projectPrefs = projectRoot ? settings.projectPrefs?.[projectRoot] : undefined
     const autoApprove = projectPrefs?.autoApprove !== undefined ? projectPrefs.autoApprove : settings.autoApprove
     const modeId = currentModeId && currentModeId !== 'kiro_default' ? currentModeId : undefined
-    const created = await ipc.createTask({ name: task.name, workspace: task.workspace, prompt: msg, autoApprove, modeId })
+    const created = await ipc.createTask({ name: task.name, workspace: task.workspace, prompt: msg, autoApprove, modeId, attachments })
     const draft = useTaskStore.getState().tasks[task.id]
     const messages = draft?.messages.length ? draft.messages : [userMsg]
     state.upsertTask({ ...created, messages })
@@ -84,7 +84,7 @@ async function sendMessageDirect(msg: string): Promise<void> {
     }
     state.setSelectedTask(created.id)
   } else {
-    ipc.sendMessage(task.id, msg)
+    ipc.sendMessage(task.id, msg, attachments)
   }
 }
 
@@ -163,7 +163,7 @@ export const ChatPanel = memo(function ChatPanel() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [search])
 
-  const handleSendMessage = useCallback(async (msg: string) => {
+  const handleSendMessage = useCallback(async (msg: string, attachments?: IpcAttachment[]) => {
     const state = useTaskStore.getState()
     const id = state.selectedTaskId
     const task = id ? state.tasks[id] : null
@@ -176,7 +176,7 @@ export const ChatPanel = memo(function ChatPanel() {
       return
     }
 
-    await sendMessageDirect(msg)
+    await sendMessageDirect(msg, attachments)
   }, [])
 
   const handleRemoveQueued = useCallback((index: number) => {

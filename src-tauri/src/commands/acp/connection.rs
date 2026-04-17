@@ -11,8 +11,59 @@ use tokio_util::compat::{TokioAsyncReadCompatExt, TokioAsyncWriteCompatExt};
 use super::client::KirodexClient;
 use super::sandbox::{extract_paths_from_message, friendly_prompt_error};
 use super::types::{
-    AcpCommand, AcpState, ConnectionHandle, PendingPermission, PermissionOption, PermissionReply,
+    AcpCommand, AcpState, AttachmentData, ConnectionHandle, PendingPermission, PermissionOption, PermissionReply,
 };
+
+/// Strip embedded `<image src="data:..." />` tags and their `[Attached image: ...]` prefixes
+/// from the text so the model doesn't receive raw base64 in the text content block.
+pub(crate) fn strip_image_tags(text: &str) -> String {
+    let mut result = String::with_capacity(text.len());
+    let mut i = 0;
+    let bytes = text.as_bytes();
+    while i < bytes.len() {
+        // Try to match [Attached image: ...]\n<image src="data:..." />
+        if bytes[i] == b'[' && text[i..].starts_with("[Attached image: ") {
+            if let Some(bracket_end) = text[i..].find("]\n<image src=\"data:") {
+                let tag_start = i + bracket_end + 1; // skip past ']'
+                if text[tag_start..].starts_with("\n<image src=\"data:") {
+                    if let Some(tag_end) = text[tag_start..].find(" />") {
+                        i = tag_start + tag_end + 3; // skip past ' />'
+                        // Skip trailing newlines
+                        while i < bytes.len() && bytes[i] == b'\n' { i += 1; }
+                        continue;
+                    }
+                }
+            }
+        }
+        // Try to match standalone <image src="data:..." />
+        if bytes[i] == b'<' && text[i..].starts_with("<image src=\"data:") {
+            if let Some(tag_end) = text[i..].find(" />") {
+                i += tag_end + 3;
+                while i < bytes.len() && bytes[i] == b'\n' { i += 1; }
+                continue;
+            }
+        }
+        result.push(bytes[i] as char);
+        i += 1;
+    }
+    // Collapse multiple consecutive newlines into at most two
+    while result.contains("\n\n\n") {
+        result = result.replace("\n\n\n", "\n\n");
+    }
+    result.trim().to_string()
+}
+
+/// Build the content blocks for a PromptRequest: text (with image tags stripped) + image blocks.
+pub(crate) fn build_content_blocks(text: String, attachments: &[AttachmentData]) -> Vec<acp::ContentBlock> {
+    let clean_text = if attachments.is_empty() { text } else { strip_image_tags(&text) };
+    let mut blocks: Vec<acp::ContentBlock> = vec![clean_text.into()];
+    for att in attachments {
+        blocks.push(acp::ContentBlock::Image(
+            acp::ImageContent::new(&att.base64, &att.mime_type),
+        ));
+    }
+    blocks
+}
 
 // ── Spawn a kiro-cli ACP connection on a dedicated thread ──────────────
 
@@ -264,7 +315,7 @@ pub(crate) async fn run_acp_connection(
     let mut killed = false;
     while let Some(cmd) = cmd_rx.recv().await {
         match cmd {
-            AcpCommand::Prompt(text) => {
+            AcpCommand::Prompt(text, attachments) => {
                 // Extract absolute paths from user message to allow through the sandbox
                 let external_paths = extract_paths_from_message(&text);
                 if !external_paths.is_empty() {
@@ -275,7 +326,7 @@ pub(crate) async fn run_acp_connection(
                 }
                 let prompt_req = acp::PromptRequest::new(
                     session_id.clone(),
-                    vec![text.into()],
+                    build_content_blocks(text, &attachments),
                 );
                 // Race the prompt against incoming commands so Cancel arrives immediately
                 let prompt_fut = conn.prompt(prompt_req);
@@ -357,7 +408,7 @@ pub(crate) async fn run_acp_connection(
                         AcpCommand::Cancel => {
                             let _ = conn.cancel(acp::CancelNotification::new(session_id.clone())).await;
                         }
-                        AcpCommand::Prompt(_) => {} // discard stale prompts during active prompt
+                        AcpCommand::Prompt(..) => {} // discard stale prompts during active prompt
                         AcpCommand::Kill => { killed = true; }
                     }
                 }
