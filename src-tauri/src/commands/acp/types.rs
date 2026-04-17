@@ -94,10 +94,20 @@ pub struct ContextUsage {
     pub size: u64,
 }
 
+// ── Image attachment data sent from the frontend (fix #14) ─────────────
+
+#[derive(Deserialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct AttachmentData {
+    pub base64: String,
+    pub mime_type: String,
+    pub name: Option<String>,
+}
+
 // ── Commands sent to the ACP connection thread ─────────────────────────
 
 pub enum AcpCommand {
-    Prompt(String),
+    Prompt(String, Vec<AttachmentData>),
     Cancel,
     SetMode(String),
     ForkSession(oneshot::Sender<Result<String, String>>),
@@ -145,6 +155,7 @@ pub struct CreateTaskParams {
     pub prompt: String,
     pub auto_approve: Option<bool>,
     pub mode_id: Option<String>,
+    pub attachments: Option<Vec<AttachmentData>>,
 }
 
 #[derive(Deserialize)]

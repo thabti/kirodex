@@ -112,7 +112,7 @@ pub fn task_create(
         ""
     };
     let full_prompt = format!("{system_prefix}{}{json_report_suffix}", params.prompt);
-    let _ = handle.cmd_tx.send(AcpCommand::Prompt(full_prompt));
+    let _ = handle.cmd_tx.send(AcpCommand::Prompt(full_prompt, params.attachments.unwrap_or_default()));
 
     state.connections.lock().insert(id, handle);
 
@@ -132,6 +132,7 @@ pub fn task_send_message(
     settings_state: tauri::State<'_, crate::commands::settings::SettingsState>,
     task_id: String,
     message: String,
+    attachments: Option<Vec<AttachmentData>>,
 ) -> Result<Task, String> {
     // Push user message
     {
@@ -184,12 +185,12 @@ pub fn task_send_message(
             task_id.clone(), workspace, kiro_bin, task_auto_approve,
             app.clone(), None, tight_sandbox,
         )?;
-        let _ = handle.cmd_tx.send(AcpCommand::Prompt(message));
+        let _ = handle.cmd_tx.send(AcpCommand::Prompt(message, attachments.unwrap_or_default()));
         state.connections.lock().insert(task_id.clone(), handle);
     } else {
         let conns = state.connections.lock();
         if let Some(h) = conns.get(&task_id) {
-            let _ = h.cmd_tx.send(AcpCommand::Prompt(message));
+            let _ = h.cmd_tx.send(AcpCommand::Prompt(message, attachments.unwrap_or_default()));
         }
     }
 
@@ -222,7 +223,7 @@ pub fn task_resume(
     task_id: String,
 ) -> Result<Task, String> {
     if let Some(h) = state.connections.lock().get(&task_id) {
-        let _ = h.cmd_tx.send(AcpCommand::Prompt("continue".to_string()));
+        let _ = h.cmd_tx.send(AcpCommand::Prompt("continue".to_string(), vec![]));
     }
     let mut tasks = state.tasks.lock();
     let task = tasks.get_mut(&task_id).ok_or("Task not found")?;
