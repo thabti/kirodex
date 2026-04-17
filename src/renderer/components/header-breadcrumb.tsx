@@ -167,10 +167,15 @@ export const HeaderBreadcrumb = memo(function HeaderBreadcrumb({
             </span>
           )}
           {isWorktree && (
-            <IconGitBranch
-              className="size-3.5 shrink-0 text-violet-500 dark:text-violet-400"
-              aria-label="Worktree thread"
-            />
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <IconGitBranch
+                  className="size-3.5 shrink-0 text-violet-500 dark:text-violet-400"
+                  aria-label="Worktree thread"
+                />
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Worktree</TooltipContent>
+            </Tooltip>
           )}
         </>
       ) : pendingWorkspace ? (

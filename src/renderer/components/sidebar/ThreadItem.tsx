@@ -115,7 +115,12 @@ export const ThreadItem = memo(function ThreadItem({ task, isActive, onSelect, o
           <IconArchive className="size-3 shrink-0 text-muted-foreground/70" aria-label="View-only thread" />
         )}
         {task.worktreePath && !task.isArchived && (
-          <IconGitBranch className="size-3 shrink-0 text-violet-500 dark:text-violet-400" aria-label="Worktree thread" />
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <IconGitBranch className="size-3 shrink-0 text-violet-500 dark:text-violet-400" aria-label="Worktree thread" />
+            </TooltipTrigger>
+            <TooltipContent side="top">Worktree</TooltipContent>
+          </Tooltip>
         )}
         {editing ? (
           <input

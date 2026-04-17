@@ -38,8 +38,10 @@ function getOrderedThreadIds(): string[] {
 export function useKeyboardShortcuts() {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      // ── Escape → Stop running agent ────────────────────────
+      // ── Escape → Stop running agent (skip when terminal has focus) ──
       if (e.key === 'Escape') {
+        const isTerminalFocused = !!(e.target as HTMLElement)?.closest('[data-testid="terminal-drawer"]')
+        if (isTerminalFocused) return
         const state = useTaskStore.getState()
         const id = state.selectedTaskId
         const task = id ? state.tasks[id] : null
