@@ -902,14 +902,19 @@ pub struct SmallImageInfo {
     pub height: usize,
 }
 
-const ICON_IMAGE_EXTENSIONS: &[&str] = &["png", "ico", "svg", "jpg", "jpeg", "gif", "webp"];
+const ICON_IMAGE_EXTENSIONS: &[&str] = &[".png", ".ico", ".svg", ".jpg", ".jpeg", ".gif", ".webp"];
 
 fn is_icon_image(name: &str) -> bool {
     let lower = name.to_lowercase();
     ICON_IMAGE_EXTENSIONS.iter().any(|ext| lower.ends_with(ext))
 }
 
+fn is_svg(name: &str) -> bool {
+    name.to_lowercase().ends_with(".svg")
+}
+
 /// List image files in a project that are ≤ max_size pixels in both dimensions.
+/// SVG files are always included (vector format, no pixel dimensions).
 /// Reads only file headers for dimensions (fast, no full decode).
 #[tauri::command]
 pub fn list_small_images(cwd: String, max_size: usize) -> Vec<SmallImageInfo> {
@@ -937,16 +942,25 @@ pub fn list_small_images(cwd: String, max_size: usize) -> Vec<SmallImageInfo> {
         let name = path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
         if !is_icon_image(&name) { continue; }
 
-        // Read dimensions from file header
+        let rel = match path.strip_prefix(root) {
+            Ok(r) => r.to_string_lossy().replace('\\', "/"),
+            Err(_) => continue,
+        };
+
+        // SVG files are vector; include them without dimension checks
+        if is_svg(&name) {
+            results.push(SmallImageInfo { path: rel, width: 0, height: 0 });
+            continue;
+        }
+
+        // Read dimensions from file header for raster images
         if let Ok(size) = imagesize::size(path) {
-            if size.width <= max_size && size.height <= max_size {
-                if let Ok(rel) = path.strip_prefix(root) {
-                    results.push(SmallImageInfo {
-                        path: rel.to_string_lossy().replace('\\', "/"),
-                        width: size.width,
-                        height: size.height,
-                    });
-                }
+            if max_size == 0 || (size.width <= max_size && size.height <= max_size) {
+                results.push(SmallImageInfo {
+                    path: rel,
+                    width: size.width,
+                    height: size.height,
+                });
             }
         }
     }

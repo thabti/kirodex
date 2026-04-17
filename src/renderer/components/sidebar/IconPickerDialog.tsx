@@ -18,8 +18,7 @@ interface IconPickerDialogProps {
   readonly onReset: () => void
 }
 
-const IMAGE_EXTENSIONS = new Set(['png', 'ico', 'svg', 'jpg', 'jpeg', 'gif', 'webp'])
-const MAX_IMAGE_SIZE_PX = 100
+const MAX_IMAGE_SIZE_PX = 0
 
 const FRAMEWORK_IDS = [
   'nextjs', 'react', 'vue', 'svelte', 'angular',
@@ -227,7 +226,7 @@ export const IconPickerDialog = memo(function IconPickerDialog({
                 <IconSearch className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" aria-hidden />
                 <input
                   type="text"
-                  placeholder="Search images (≤100px)..."
+                  placeholder="Search images..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   aria-label="Search project image files"
@@ -257,7 +256,7 @@ export const IconPickerDialog = memo(function IconPickerDialog({
                           >
                             <IconPhoto className="size-3 shrink-0 text-muted-foreground/50" aria-hidden />
                             <span className="truncate text-foreground/80">{file.path}</span>
-                            <span className="shrink-0 text-[9px] text-muted-foreground/50 ml-auto">{file.width}×{file.height}</span>
+                            <span className="shrink-0 text-[9px] text-muted-foreground/50 ml-auto">{file.width === 0 && file.height === 0 ? 'SVG' : `${file.width}×${file.height}`}</span>
                           </button>
                         </li>
                       ))}
@@ -279,7 +278,7 @@ export const IconPickerDialog = memo(function IconPickerDialog({
                       </div>
                       <span className="text-[10px] text-muted-foreground text-center truncate w-full">{selectedFile.split('/').pop()}</span>
                       {selectedImage && (
-                        <span className="text-[9px] text-muted-foreground/60">{selectedImage.width}×{selectedImage.height}px</span>
+                        <span className="text-[9px] text-muted-foreground/60">{selectedImage.width === 0 && selectedImage.height === 0 ? 'SVG (vector)' : `${selectedImage.width}×${selectedImage.height}px`}</span>
                       )}
                     </div>
                   ) : (
