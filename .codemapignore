@@ -1,0 +1,186 @@
+# ============================================================
+# .codemapignore — files excluded from codemap indexing
+# Syntax: same as .gitignore (glob patterns, # comments)
+# Note: .gitignore is already respected via git ls-files
+# ============================================================
+
+# -----------------------------------------------------------
+# Build output
+# -----------------------------------------------------------
+dist/
+build/
+out/
+*.tsbuildinfo
+
+# -----------------------------------------------------------
+# Dependencies
+# -----------------------------------------------------------
+node_modules/
+vendor/
+.pnp.*
+
+# -----------------------------------------------------------
+# Lock files (large, low signal)
+# -----------------------------------------------------------
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+composer.lock
+Gemfile.lock
+Pipfile.lock
+poetry.lock
+go.sum
+Cargo.lock
+
+# -----------------------------------------------------------
+# Static assets
+# -----------------------------------------------------------
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.ico
+*.webp
+*.avif
+*.bmp
+*.tiff
+*.woff
+*.woff2
+*.ttf
+*.otf
+*.eot
+*.mp3
+*.mp4
+*.wav
+*.webm
+*.pdf
+
+# -----------------------------------------------------------
+# Generated / minified
+# -----------------------------------------------------------
+*.min.js
+*.min.css
+*.map
+*.bundle.js
+*.chunk.js
+
+# -----------------------------------------------------------
+# Test artifacts
+# -----------------------------------------------------------
+__snapshots__/
+*.snap
+coverage/
+.nyc_output/
+lcov.info
+
+# -----------------------------------------------------------
+# Cache
+# -----------------------------------------------------------
+.cache/
+*.cache
+.eslintcache
+.stylelintcache
+.parcel-cache/
+
+# -----------------------------------------------------------
+# Environment & secrets
+# -----------------------------------------------------------
+.env
+.env.*
+
+# -----------------------------------------------------------
+# AI agent config (prompts, not code)
+# -----------------------------------------------------------
+.claude/
+.codex/
+.kiro/
+.gemini/
+.factory/
+.opencode/
+AGENTS.md
+CLAUDE.md
+
+# -----------------------------------------------------------
+# OS / editor
+# -----------------------------------------------------------
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/settings.json
+*.swp
+*.swo
+
+# -----------------------------------------------------------
+# Monorepo / project config (low signal)
+# -----------------------------------------------------------
+.editorconfig
+.npmrc
+.nvmrc
+.node-version
+turbo.json
+nx.json
+lerna.json
+
+# -----------------------------------------------------------
+# Next.js
+# -----------------------------------------------------------
+.next/
+_buildManifest.js
+_ssgManifest.js
+
+# -----------------------------------------------------------
+# Nuxt / Vue
+# -----------------------------------------------------------
+.nuxt/
+.output/
+
+# -----------------------------------------------------------
+# Svelte
+# -----------------------------------------------------------
+.svelte-kit/
+
+# -----------------------------------------------------------
+# Vite / Turbopack
+# -----------------------------------------------------------
+.turbo/
+
+# -----------------------------------------------------------
+# React Native / Expo
+# -----------------------------------------------------------
+ios/Pods/
+ios/build/
+android/.gradle/
+android/build/
+android/app/build/
+.expo/
+*.jsbundle
+*.hbc
+
+# -----------------------------------------------------------
+# Laravel / PHP
+# -----------------------------------------------------------
+bootstrap/cache/
+storage/framework/
+storage/logs/
+public/
+_ide_helper*.php
+.phpstorm.meta.php
+.php-cs-fixer.cache
+
+# -----------------------------------------------------------
+# Magento 2
+# -----------------------------------------------------------
+generated/
+pub/static/
+var/cache/
+var/page_cache/
+var/view_preprocessed/
+var/generation/
+var/di/
+var/log/
+var/report/
+setup/src/
+lib/internal/
+dev/tests/
+*.less.css
