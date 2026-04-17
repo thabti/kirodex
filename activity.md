@@ -1,5 +1,17 @@
 # Activity Log
 
+## 2026-04-18 02:12 GST (Dubai)
+### Shortcuts: Ignore Escape key when terminal is focused
+Added a guard to the global Escape keyboard shortcut so it doesn't stop the running agent when the user is typing in the terminal. Uses `closest('[data-testid="terminal-drawer"]')` to detect terminal focus.
+
+**Modified:** src/renderer/hooks/useKeyboardShortcuts.ts
+
+## 2026-04-18 02:00 GST (Dubai)
+### Worktree: Add tooltip to worktree icons
+Added "Worktree" tooltips to the git branch icons that indicate worktree threads in both the sidebar thread list and the header breadcrumb.
+
+**Modified:** `src/renderer/components/sidebar/ThreadItem.tsx`, `src/renderer/components/header-breadcrumb.tsx`
+
 ## 2026-04-18 01:53 GST (Dubai)
 ### IconPicker: Fix file tab not showing project images
 The icon picker's "Project File" tab showed "No image files found" due to three issues: the extension check matched without a dot prefix (e.g., `png` instead of `.png`), SVG files were silently dropped because the `imagesize` crate doesn't support vector formats, and the 100px max size filter was too restrictive. Fixed by adding dot prefixes to extensions, including SVGs with 0×0 dimensions, and making `max_size=0` mean "no limit." Frontend now passes 0 and displays "SVG" for vector files.
