@@ -6,6 +6,7 @@ interface DiffToolbarProps {
   fileCount: number
   totalAdditions: number
   totalDeletions: number
+  stagedFileCount: number
   diffStyle: 'unified' | 'split'
   wordWrap: boolean
   isSidebarCollapsed: boolean
@@ -15,7 +16,7 @@ interface DiffToolbarProps {
 }
 
 export const DiffToolbar = ({
-  fileCount, totalAdditions, totalDeletions,
+  fileCount, totalAdditions, totalDeletions, stagedFileCount,
   diffStyle, wordWrap, isSidebarCollapsed,
   onDiffStyleChange, onWordWrapToggle, onSidebarToggle,
 }: DiffToolbarProps) => (
@@ -25,6 +26,9 @@ export const DiffToolbar = ({
     </span>
     <span className="text-[10px] text-emerald-600 dark:text-emerald-400">+{totalAdditions}</span>
     <span className="text-[10px] text-red-600 dark:text-red-400">-{totalDeletions}</span>
+    {stagedFileCount > 0 && (
+      <span className="text-[10px] text-blue-600 dark:text-blue-400">{stagedFileCount} staged</span>
+    )}
     <div className="flex-1" />
     <Tooltip>
       <TooltipTrigger asChild>

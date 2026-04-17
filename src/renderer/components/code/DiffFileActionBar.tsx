@@ -1,4 +1,5 @@
-import { IconChevronDown, IconChevronRight, IconPlus, IconArrowBackUp, IconExternalLink } from '@tabler/icons-react'
+import { useState, useCallback, useRef } from 'react'
+import { IconChevronDown, IconChevronRight, IconPlus, IconCheck, IconArrowBackUp, IconExternalLink } from '@tabler/icons-react'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
 interface DiffFileActionBarProps {
@@ -7,7 +8,7 @@ interface DiffFileActionBarProps {
   deletions: number
   collapsed: boolean
   onToggleCollapse: () => void
-  onStage: () => void
+  onStage: () => Promise<void> | void
   onRevert: () => void
   onOpenInEditor: () => void
   revertPending: boolean
@@ -21,6 +22,16 @@ export const DiffFileActionBar = ({
   revertPending, onConfirmRevert, onCancelRevert,
 }: DiffFileActionBarProps) => {
   const shortName = name.split('/').pop() ?? name
+  const [isStaged, setIsStaged] = useState(false)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const handleStageClick = useCallback(async () => {
+    try {
+      await onStage()
+      setIsStaged(true)
+      if (timerRef.current) clearTimeout(timerRef.current)
+      timerRef.current = setTimeout(() => setIsStaged(false), 1500)
+    } catch { /* stage failed, keep + icon */ }
+  }, [onStage])
 
   return (
     <div className="border-b border-border bg-muted/50">
@@ -44,12 +55,15 @@ export const DiffFileActionBar = ({
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
-              <button type="button" onClick={onStage} aria-label="Stage file"
-                className="flex size-5 items-center justify-center rounded text-muted-foreground/70 transition-colors hover:bg-emerald-500/10 hover:text-emerald-500">
-                <IconPlus className="size-3" />
+              <button type="button" onClick={handleStageClick} aria-label={isStaged ? 'File staged' : 'Stage file'}
+                className={isStaged
+                  ? 'flex size-5 items-center justify-center rounded text-emerald-500 transition-colors'
+                  : 'flex size-5 items-center justify-center rounded text-muted-foreground/70 transition-colors hover:bg-emerald-500/10 hover:text-emerald-500'
+                }>
+                {isStaged ? <IconCheck className="size-3" /> : <IconPlus className="size-3" />}
               </button>
             </TooltipTrigger>
-            <TooltipContent side="top">Stage file</TooltipContent>
+            <TooltipContent side="top">{isStaged ? 'Staged' : 'Stage file'}</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>

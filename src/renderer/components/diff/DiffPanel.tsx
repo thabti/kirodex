@@ -1,7 +1,7 @@
 import { memo, useCallback, useEffect, useRef, useState, useMemo } from 'react'
 import { parsePatchFiles, type FileDiffMetadata } from '@pierre/diffs'
 import { FileDiff, Virtualizer } from '@pierre/diffs/react'
-import { IconX, IconGripHorizontal, IconColumns, IconLayoutRows, IconTextWrap, IconFileCode, IconRefresh, IconPlus, IconArrowBackUp } from '@tabler/icons-react'
+import { IconX, IconGripHorizontal, IconColumns, IconLayoutRows, IconTextWrap, IconFileCode, IconRefresh, IconPlus, IconCheck, IconArrowBackUp } from '@tabler/icons-react'
 import { useDiffStore } from '@/stores/diffStore'
 import { useTaskStore } from '@/stores/taskStore'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -114,13 +114,21 @@ export const DiffPanel = memo(function DiffPanel() {
   const isDark = typeof document !== 'undefined' && document.documentElement.classList.contains('dark')
 
   const hasSelection = selectedFiles.size > 0
+  const [isStaged, setIsStaged] = useState(false)
+  const stageTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const handleRefresh = useCallback(() => {
     if (selectedTaskId) void fetchDiff(selectedTaskId)
   }, [selectedTaskId, fetchDiff])
 
-  const handleStageSelected = useCallback(() => {
-    if (selectedTaskId) void stageSelected(selectedTaskId)
+  const handleStageSelected = useCallback(async () => {
+    if (!selectedTaskId) return
+    try {
+      await stageSelected(selectedTaskId)
+      setIsStaged(true)
+      if (stageTimerRef.current) clearTimeout(stageTimerRef.current)
+      stageTimerRef.current = setTimeout(() => setIsStaged(false), 1500)
+    } catch { /* stage failed */ }
   }, [selectedTaskId, stageSelected])
 
   const handleRevertSelected = useCallback(() => {
@@ -313,14 +321,19 @@ export const DiffPanel = memo(function DiffPanel() {
                     type="button"
                     onClick={handleStageSelected}
                     data-testid="diff-stage-button"
-                    className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-400/10 transition-colors"
-                    aria-label="Stage selected files"
+                    className={cn(
+                      'flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors',
+                      isStaged
+                        ? 'text-emerald-500'
+                        : 'text-emerald-600 dark:text-emerald-400 hover:bg-emerald-400/10',
+                    )}
+                    aria-label={isStaged ? 'Files staged' : 'Stage selected files'}
                   >
-                    <IconPlus className="size-3" />
-                    Stage ({selectedFiles.size})
+                    {isStaged ? <IconCheck className="size-3" /> : <IconPlus className="size-3" />}
+                    {isStaged ? 'Staged' : `Stage (${selectedFiles.size})`}
                   </button>
                 </TooltipTrigger>
-                <TooltipContent side="top">Stage selected files</TooltipContent>
+                <TooltipContent side="top">{isStaged ? 'Staged' : 'Stage selected files'}</TooltipContent>
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>

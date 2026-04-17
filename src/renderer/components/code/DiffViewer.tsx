@@ -25,6 +25,12 @@ export function DiffViewer({ diff, taskId, workspace, onRefreshDiff }: DiffViewe
   const [revertIdx, setRevertIdx] = useState<number | null>(null)
   const [sidebarWidth, setSidebarWidth] = useState(176)
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true)
+  const [stagedFileCount, setStagedFileCount] = useState(0)
+
+  useEffect(() => {
+    if (!workspace) return
+    ipc.gitStagedStats(workspace).then((s) => setStagedFileCount(s.fileCount)).catch(() => {})
+  }, [workspace, diff])
 
   const handleSidebarDragStart = useResizeHandle({
     axis: 'horizontal', size: sidebarWidth, onResize: (w) => {
@@ -91,6 +97,7 @@ export function DiffViewer({ diff, taskId, workspace, onRefreshDiff }: DiffViewe
         fileCount={parsedFiles.length}
         totalAdditions={totalAdditions}
         totalDeletions={totalDeletions}
+        stagedFileCount={stagedFileCount}
         diffStyle={diffStyle}
         wordWrap={wordWrap}
         isSidebarCollapsed={isSidebarCollapsed}
@@ -123,7 +130,7 @@ export function DiffViewer({ diff, taskId, workspace, onRefreshDiff }: DiffViewe
                     deletions={stats.deletions}
                     collapsed={isCollapsed}
                     onToggleCollapse={() => toggleCollapse(fileIdx)}
-                    onStage={() => void handleStage(stats.name)}
+                    onStage={() => handleStage(stats.name)}
                     onRevert={() => setRevertIdx(fileIdx)}
                     onOpenInEditor={() => handleOpenInEditor(stats.name)}
                     revertPending={revertIdx === fileIdx}
