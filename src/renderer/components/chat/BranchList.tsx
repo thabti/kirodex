@@ -24,12 +24,12 @@ interface BranchListProps {
 }
 
 const BranchItem = ({ name, isCurrent, badge, disabled, onClick, onDelete }: { name: string; isCurrent: boolean; badge?: string; disabled?: boolean; onClick: () => void; onDelete?: () => void }) => (
-  <div className="group flex w-full items-center">
+  <div className="group relative flex w-full items-center transition-colors hover:bg-accent">
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={cn('flex min-w-0 flex-1 items-center gap-2 px-3 py-1.5 text-left text-sm transition-colors hover:bg-accent disabled:opacity-50', isCurrent ? 'text-foreground' : 'text-muted-foreground')}
+      className={cn('flex min-w-0 flex-1 items-center gap-2 px-3 py-1.5 text-left text-sm disabled:opacity-50', isCurrent ? 'text-foreground' : 'text-muted-foreground')}
     >
       <IconGitBranch className="size-3.5 shrink-0 text-muted-foreground/70" />
       <span className="min-w-0 flex-1 truncate">{name}</span>
@@ -44,7 +44,7 @@ const BranchItem = ({ name, isCurrent, badge, disabled, onClick, onDelete }: { n
         onClick={(e) => { e.stopPropagation(); onDelete() }}
         aria-label={`Delete branch ${name}`}
         tabIndex={0}
-        className="mr-1.5 flex size-5 shrink-0 items-center justify-center rounded-md text-muted-foreground/50 opacity-0 transition-all hover:bg-destructive/15 hover:text-destructive group-hover:opacity-100"
+        className="absolute right-1 flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground/0 transition-colors group-hover:text-muted-foreground/60 hover:!bg-destructive/15 hover:!text-destructive"
       >
         <IconTrash className="size-3" />
       </button>
