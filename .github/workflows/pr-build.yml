@@ -22,11 +22,9 @@ jobs:
           - platform: macos-14
             args: '--target aarch64-apple-darwin'
             name: macOS
-            artifact-glob: '**/*.dmg'
           - platform: windows-latest
             args: ''
             name: Windows
-            artifact-glob: '**/*.exe'
 
     runs-on: ${{ matrix.platform }}
     name: Build (${{ matrix.name }})
@@ -63,10 +61,22 @@ jobs:
         with:
           args: --config src-tauri/tauri.ci.conf.json ${{ matrix.args }}
 
+      - name: Find installer
+        id: installer
+        shell: bash
+        run: |
+          if [ "${{ matrix.name }}" = "macOS" ]; then
+            FILE=$(find src-tauri/target -name '*.dmg' -type f | head -1)
+          else
+            FILE=$(find src-tauri/target -name '*.exe' -path '*/nsis/*' -type f | head -1)
+          fi
+          echo "path=$FILE" >> "$GITHUB_OUTPUT"
+          echo "dir=$(dirname "$FILE")" >> "$GITHUB_OUTPUT"
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: kirodex-pr-${{ github.event.pull_request.number }}-${{ matrix.name == 'macOS' && 'macos' || 'windows' }}
-          path: ${{ matrix.artifact-glob }}
+          path: ${{ steps.installer.outputs.path }}
           retention-days: 7
           if-no-files-found: error
