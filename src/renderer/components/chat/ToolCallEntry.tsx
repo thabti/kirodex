@@ -143,29 +143,98 @@ export const ToolCallEntry = memo(function ToolCallEntry({ toolCall }: { toolCal
             </div>
           ))}
 
-          {toolCall.rawInput !== undefined && (
-            <div>
-              <p className="mb-1 text-muted-foreground">Input</p>
-              <pre className="max-h-32 overflow-auto rounded-md bg-background p-2 font-mono text-[12px] leading-[1.6]">
-                {typeof toolCall.rawInput === 'string'
-                  ? toolCall.rawInput.slice(0, 1500)
-                  : JSON.stringify(toolCall.rawInput, null, 2)?.slice(0, 1500)}
-              </pre>
-            </div>
-          )}
-
-          {toolCall.rawOutput !== undefined && (
-            <div>
-              <p className="mb-1 text-muted-foreground">Output</p>
-              <pre className="max-h-32 overflow-auto rounded-md bg-background p-2 font-mono text-[12px] leading-[1.6]">
-                {typeof toolCall.rawOutput === 'string'
-                  ? toolCall.rawOutput.slice(0, 1500)
-                  : JSON.stringify(toolCall.rawOutput, null, 2)?.slice(0, 1500)}
-              </pre>
-            </div>
-          )}
+          <RawInputOutput rawInput={toolCall.rawInput} rawOutput={toolCall.rawOutput} filePath={firstPath} />
         </div>
       )}
+    </div>
+  )
+})
+
+// ── Smarter rendering for rawInput / rawOutput ───────────────────
+
+/** Parse rawInput as an object if possible */
+const parseRaw = (raw: unknown): Record<string, unknown> | null => {
+  if (raw && typeof raw === 'object' && !Array.isArray(raw)) return raw as Record<string, unknown>
+  if (typeof raw === 'string') {
+    try { const parsed = JSON.parse(raw); if (parsed && typeof parsed === 'object') return parsed } catch { /* not JSON */ }
+  }
+  return null
+}
+
+/** Check if rawOutput is a simple one-line success/status message */
+const isSimpleMessage = (raw: unknown): string | null => {
+  if (typeof raw !== 'string') return null
+  const trimmed = raw.trim()
+  if (trimmed.length < 200 && !trimmed.includes('\n')) return trimmed
+  return null
+}
+
+const RawInputOutput = memo(function RawInputOutput({
+  rawInput,
+  rawOutput,
+  filePath,
+}: {
+  rawInput?: unknown
+  rawOutput?: unknown
+  filePath?: string | null
+}) {
+  if (rawInput === undefined && rawOutput === undefined) return null
+
+  const inputObj = rawInput !== undefined ? parseRaw(rawInput) : null
+  const hasStrReplace = inputObj && typeof inputObj.oldStr === 'string' && typeof inputObj.newStr === 'string'
+
+  // For strReplace-style edits, render a diff instead of raw JSON
+  if (hasStrReplace) {
+    const oldStr = inputObj.oldStr as string
+    const newStr = inputObj.newStr as string
+    const path = (inputObj.path as string) ?? filePath ?? 'file'
+    const diffText = createPatch(path, oldStr, newStr, '', '', { context: 3 })
+    const simpleOut = rawOutput !== undefined ? isSimpleMessage(rawOutput) : null
+
+    return (
+      <>
+        <InlineDiff diffText={diffText} />
+        {simpleOut && (
+          <p className="flex items-center gap-1.5 text-[12px] text-emerald-600 dark:text-emerald-400">
+            <IconCheck className="size-3 shrink-0" />
+            {simpleOut}
+          </p>
+        )}
+        {rawOutput !== undefined && !simpleOut && (
+          <FallbackRaw label="Output" raw={rawOutput} />
+        )}
+      </>
+    )
+  }
+
+  // Default: render input and output with fallback formatting
+  return (
+    <>
+      {rawInput !== undefined && <FallbackRaw label="Input" raw={rawInput} />}
+      {rawOutput !== undefined && (() => {
+        const simpleOut = isSimpleMessage(rawOutput)
+        if (simpleOut) {
+          return (
+            <p className="flex items-center gap-1.5 text-[12px] text-emerald-600 dark:text-emerald-400">
+              <IconCheck className="size-3 shrink-0" />
+              {simpleOut}
+            </p>
+          )
+        }
+        return <FallbackRaw label="Output" raw={rawOutput} />
+      })()}
+    </>
+  )
+})
+
+const FallbackRaw = memo(function FallbackRaw({ label, raw }: { label: string; raw: unknown }) {
+  const text = typeof raw === 'string' ? raw : JSON.stringify(raw, null, 2) ?? ''
+  return (
+    <div>
+      <p className="mb-1 text-[11px] font-medium text-muted-foreground">{label}</p>
+      <pre className="max-h-32 overflow-auto rounded-md bg-background p-2 font-mono text-[12px] leading-[1.6] text-foreground/70">
+        {text.slice(0, 1500)}{text.length > 1500 ? '\n…(truncated)' : ''}
+      </pre>
     </div>
   )
 })
