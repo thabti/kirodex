@@ -2,7 +2,7 @@ import { memo, useCallback, useEffect, useRef, useState, type ReactNode } from '
 import { IconChevronDown, IconChevronUp } from '@tabler/icons-react'
 
 /** Max collapsed height in pixels before truncation kicks in */
-const COLLAPSED_HEIGHT = 400
+const COLLAPSED_HEIGHT = 600
 
 interface CollapsibleContentProps {
   children: ReactNode
@@ -49,7 +49,7 @@ export const CollapsibleContent = memo(function CollapsibleContent({ children }:
         {children}
       </div>
       {isTruncated && (
-        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-background to-transparent" />
+        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-card to-transparent" />
       )}
       {isOverflowing && (
         <button
@@ -58,7 +58,7 @@ export const CollapsibleContent = memo(function CollapsibleContent({ children }:
           onKeyDown={handleKeyDown}
           aria-expanded={isExpanded}
           aria-label={isExpanded ? 'Show less' : 'Show more'}
-          className="mt-1 flex w-full items-center justify-center gap-1 rounded-md border border-border/50 bg-accent/30 py-1.5 text-[13px] font-semibold text-foreground/80 transition-colors hover:bg-accent/60 hover:text-foreground"
+          className="mt-1 flex w-full items-center justify-center gap-1 rounded-md border border-border/50 bg-muted py-1.5 text-[13px] font-semibold text-foreground transition-colors hover:bg-muted/80"
         >
           {isExpanded ? (
             <>
