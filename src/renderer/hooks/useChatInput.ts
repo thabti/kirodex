@@ -14,8 +14,8 @@ export interface PastedChunk {
   chars: number
 }
 
-const PASTE_WORD_THRESHOLD = 4
-const PASTE_LINE_THRESHOLD = 1
+const PASTE_WORD_THRESHOLD = 100
+const PASTE_LINE_THRESHOLD = 10
 
 function isLargePaste(text: string): boolean {
   if (text.split('\n').length > PASTE_LINE_THRESHOLD) return true
