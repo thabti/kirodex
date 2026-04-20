@@ -107,6 +107,16 @@ export const TaskSidebar = memo(function TaskSidebar({ width, onResize, position
     }))
   )
 
+  // Derive the active project workspace from the selected task or pending workspace
+  const activeProjectCwd = useTaskStore((s) => {
+    if (s.selectedTaskId) {
+      const task = s.tasks[s.selectedTaskId]
+      if (!task) return null
+      return task.originalWorkspace ?? task.workspace
+    }
+    return s.pendingWorkspace
+  })
+
   const handleSelectTask = useCallback((id: string) => {
     if (id.startsWith('draft:')) {
       useTaskStore.getState().setPendingWorkspace(id.slice(6))
@@ -217,6 +227,7 @@ export const TaskSidebar = memo(function TaskSidebar({ width, onResize, position
                   cwd={project.cwd}
                   tasks={project.tasks}
                   selectedTaskId={selectedTaskId ?? (pendingWorkspace ? `draft:${pendingWorkspace}` : null)}
+                  isActiveProject={project.cwd === activeProjectCwd}
                   isDragOver={dragOverIdx === idx && dragSrcIdx.current !== idx}
                   onSelectTask={handleSelectTask}
                   onNewThread={() => handleNewThread(project.cwd)}

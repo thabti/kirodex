@@ -6,6 +6,17 @@
 Fixed issue #17 — when a user removes a project and re-imports the same workspace, old threads are now automatically restored from the soft-deleted pool. The `addProject()` method filters `softDeleted` entries by workspace match, moves them back to `tasks` (as archived), removes their IDs from the `deletedTaskIds` blocklist, and persists the change.
 
 **Modified:** `src/renderer/stores/taskStore.ts`
+## 2026-04-19 11:02 GST (Dubai)
+### Sidebar: Active project focus indicator
+Added a visual indicator to the sidebar so the focused project is easy to identify when multiple projects are open. The active project gets a 3px primary-colored left accent bar and a subtle background tint. Active project is derived from the selected task's workspace or the pending workspace.
+
+**Modified:** src/renderer/components/sidebar/ProjectItem.tsx, src/renderer/components/sidebar/TaskSidebar.tsx
+
+## 2026-04-19 03:09 GST (Dubai)
+### Docs: Update README.md to reflect v0.13.0 feature set
+Updated the README with all features added since the last update: analytics dashboard with redb + recharts, Ghostty WASM terminal, AI commit message generation, strReplace git-style diffs, image attachments as ContentBlock::Image, emoji icon picker, subagent display, quit confirmation dialog, thread persistence with backups, onboarding wizard, open in editor, staged file count, branch delete, and expanded slash commands (/data, /fork, /branch, /worktree). Removed completed items from feature requests (git worktree, UI improvements). Added MCP server management as a new request.
+
+**Modified:** README.md
 
 ## 2026-04-19 02:56 GST (Dubai)
 ### Analytics: Full analytics dashboard with redb backend and recharts frontend

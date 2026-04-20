@@ -14,6 +14,7 @@ interface ProjectItemProps {
   cwd: string
   tasks: readonly SidebarTask[]
   selectedTaskId: string | null
+  isActiveProject: boolean
   isDragOver: boolean
   onSelectTask: (id: string) => void
   onNewThread: () => void
@@ -28,7 +29,7 @@ interface ProjectItemProps {
 }
 
 export const ProjectItem = memo(function ProjectItem({
-  name, cwd, tasks, selectedTaskId, isDragOver,
+  name, cwd, tasks, selectedTaskId, isActiveProject, isDragOver,
   onSelectTask, onNewThread, onDeleteTask, onRenameTask,
   onRemoveProject, onArchiveThreads,
   onDragStart, onDragOver, onDrop, onDragEnd,
@@ -53,6 +54,7 @@ export const ProjectItem = memo(function ProjectItem({
       className={cn(
         'group/menu-item relative min-w-0 rounded-md transition-colors',
         isDragOver && 'ring-1 ring-primary/40 bg-primary/5',
+        isActiveProject && 'bg-accent/30',
       )}
       draggable
       onDragStart={(e) => {
@@ -65,6 +67,9 @@ export const ProjectItem = memo(function ProjectItem({
       onDragEnd={onDragEnd}
     >
       <div className="relative">
+        {isActiveProject && (
+          <div className="absolute left-0 top-1 bottom-1 w-[3px] rounded-full bg-primary" aria-hidden />
+        )}
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}
@@ -80,7 +85,7 @@ export const ProjectItem = memo(function ProjectItem({
             : <IconChevronRight className="size-3.5 shrink-0 text-muted-foreground/70" aria-hidden />
           }
           <ProjectIcon icon={projectIcon} />
-          <span className="flex-1 truncate text-[13px] font-normal text-foreground/85">{name}</span>
+          <span className={cn('flex-1 truncate text-[13px] text-foreground/85', isActiveProject ? 'font-semibold' : 'font-normal')}>{name}</span>
         </button>
 
         {/* Always-visible action buttons with gradient fade */}
