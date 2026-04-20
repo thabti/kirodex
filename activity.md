@@ -1,5 +1,18 @@
 # Activity Log
 
+## 2026-04-21 01:05 GST (Dubai)
+### Chat: Retain file/agent/skill mentions in draft threads on switch
+Added `draftMentionedFiles: Record<string, ProjectFile[]>` to the zustand store so that `@file`, `@agent:name`, and `@skill:name` mentions persist when switching between draft threads. Same pattern as the earlier attachments/pasted chunks fix: store saves on change, restores on remount.
+
+**Modified:** `src/renderer/stores/task-store-types.ts`, `src/renderer/stores/taskStore.ts`, `src/renderer/hooks/useFileMention.ts`, `src/renderer/hooks/useChatInput.ts`, `src/renderer/components/chat/ChatInput.tsx`, `src/renderer/components/chat/PendingChat.tsx`
+
+## 2026-04-21 01:05 GST (Dubai)
+### DiffPanel: Remove @pierre/diffs file header
+Added `disableFileHeader: true` to the `FileDiff` options in `DiffPanel.tsx` to hide the built-in file header bar (showing filename, +/- counts, and change icon). The panel's own file sidebar already provides this information.
+
+**Modified:**
+- `src/renderer/components/diff/DiffPanel.tsx`
+
 ## 2026-04-21 00:35 GST (Dubai)
 ### Multi-window: Add Cmd+Shift+N new window support and File menu commands
 Added multi-window support to Kirodex. Built a custom native menu in Rust replacing the auto-generated default, with New Window (⇧⌘N), New Thread (⌘N), and New Project (⌘O) in the File submenu. New windows share the same projects/threads via tauri-plugin-store's shared backend, with cross-window sync using LazyStore.onKeyChange and a 300ms debounce. Secondary windows close without quit confirmation; only the last window triggers the shutdown dialog. Removed conflicting Cmd+N/Cmd+O JS handlers since native menu accelerators now handle those keys.

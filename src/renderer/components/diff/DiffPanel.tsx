@@ -377,6 +377,7 @@ export const DiffPanel = memo(function DiffPanel() {
                     theme: isDark ? 'pierre-dark' : 'pierre-light',
                     themeType: isDark ? 'dark' : 'light',
                     unsafeCSS: UNSAFE_CSS,
+                    disableFileHeader: true,
                   }}
                 />
               ))}
