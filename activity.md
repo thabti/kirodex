@@ -1,5 +1,11 @@
 # Activity Log
 
+
+## 2026-04-20 14:20 GST (Dubai)
+### TaskStore: Restore soft-deleted threads when re-importing the same project
+Fixed issue #17 — when a user removes a project and re-imports the same workspace, old threads are now automatically restored from the soft-deleted pool. The `addProject()` method filters `softDeleted` entries by workspace match, moves them back to `tasks` (as archived), removes their IDs from the `deletedTaskIds` blocklist, and persists the change.
+
+**Modified:** `src/renderer/stores/taskStore.ts`
 ## 2026-04-19 11:02 GST (Dubai)
 ### Sidebar: Active project focus indicator
 Added a visual indicator to the sidebar so the focused project is easy to identify when multiple projects are open. The active project gets a 3px primary-colored left accent bar and a subtle background tint. Active project is derived from the selected task's workspace or the pending workspace.
