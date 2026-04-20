@@ -1,0 +1,60 @@
+name: Build Windows
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: build-windows
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    name: Windows Build
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: oven-sh/setup-bun@v2
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - run: bun install --frozen-lockfile
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          args: --config src-tauri/tauri.ci.conf.json
+
+      - name: Find installer
+        id: installer
+        shell: bash
+        run: |
+          EXE=$(find src-tauri/target -name '*.exe' -path '*/nsis/*' -type f | head -1)
+          MSI=$(find src-tauri/target -name '*.msi' -type f | head -1)
+          echo "exe=$EXE" >> "$GITHUB_OUTPUT"
+          echo "msi=$MSI" >> "$GITHUB_OUTPUT"
+
+      - name: Upload EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: kirodex-windows-exe
+          path: ${{ steps.installer.outputs.exe }}
+          retention-days: 14
+          if-no-files-found: warn
+
+      - name: Upload MSI
+        uses: actions/upload-artifact@v4
+        with:
+          name: kirodex-windows-msi
+          path: ${{ steps.installer.outputs.msi }}
+          retention-days: 14
+          if-no-files-found: warn
