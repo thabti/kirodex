@@ -63,7 +63,7 @@ export const parseReport = (text: string): KirodexReport | null => {
 
 /** Whether a parsed report should render as a rich component (vs raw markdown). */
 export const shouldRenderReportCard = (report: KirodexReport): boolean =>
-  report.status === 'done' && !!report.filesChanged && report.filesChanged.length > 0
+  VALID_STATUSES.has(report.status) && report.summary.length > 0
 
 /** Strip the report block from message text so ChatMarkdown doesn't render it.
  *  Strips any report-like JSON regardless of whether it parses into a valid report. */
