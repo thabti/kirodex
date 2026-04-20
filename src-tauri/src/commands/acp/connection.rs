@@ -196,9 +196,10 @@ pub(crate) async fn run_acp_connection(
     initial_mode_id: Option<String>,
     tight_sandbox: bool,
 ) -> Result<(), String> {
-    // Spawn kiro-cli acp subprocess
+    // Spawn kiro-cli acp subprocess in the project workspace directory
     let mut child = tokio::process::Command::new(&kiro_bin)
         .arg("acp")
+        .current_dir(&workspace)
         .stdin(std::process::Stdio::piped())
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())

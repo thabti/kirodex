@@ -508,7 +508,9 @@ pub fn list_models(
                 ).await.map_err(|e| format!("Init failed: {e}"))?;
 
                 let session = conn.new_session(
-                    acp::NewSessionRequest::new(std::env::current_dir().unwrap_or_default())
+                    acp::NewSessionRequest::new(std::path::PathBuf::from(
+                        std::env::var("HOME").unwrap_or_else(|_| "/tmp".to_string())
+                    ))
                 ).await.map_err(|e| format!("Session failed: {e}"))?;
 
                 let session_val = serde_json::to_value(&session).unwrap_or_default();

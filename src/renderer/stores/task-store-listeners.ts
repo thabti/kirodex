@@ -43,9 +43,6 @@ export const applyTurnEnd = (
   const liveTools = s.liveToolCalls[taskId] ?? []
   const task = s.tasks[taskId]
   if (!task) return {}
-  // If the task is already running again (e.g. steering started a new turn
-  // before this turn_end arrived), skip — the new turn owns the live state.
-  if (task.status === 'running') return {}
   const fallbackStatus = stopReason === 'refusal' ? 'failed' as const : 'completed' as const
   const finalizedTools = liveTools.map((tc) =>
     tc.status === 'completed' || tc.status === 'failed' ? tc : { ...tc, status: fallbackStatus },

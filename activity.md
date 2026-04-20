@@ -1,5 +1,47 @@
 # Activity Log
 
+## 2026-04-21 02:00 GST (Dubai)
+### ACP: Fix kiro-cli spawning in src-tauri instead of the selected project directory
+Added `.current_dir(&workspace)` to the kiro-cli process spawn in `connection.rs` so the agent runs in the user's project directory, not the Tauri dev directory. Also fixed the `list_models` probe to use `$HOME` instead of `std::env::current_dir()` for consistency with `probe_capabilities`.
+
+**Modified:** `src-tauri/src/commands/acp/connection.rs`, `src-tauri/src/commands/acp/commands.rs`
+
+## 2026-04-21 01:55 GST (Dubai)
+### Chat: Render TaskCompletionCard for all valid reports, not just file changes
+Fixed `shouldRenderReportCard` to return true for any valid report with a status and summary, instead of requiring `filesChanged` to have items. Previously, no-file reports (e.g. answering a question) had their JSON stripped but no card rendered, leaving the summary invisible.
+
+**Modified:** `src/renderer/components/chat/TaskCompletionCard.tsx`
+
+## 2026-04-21 01:56 GST (Dubai)
+### Stores: Fix task status always showing as "running" (green dot)
+Removed a broken guard in `applyTurnEnd` that was added in commit 7b10772. The guard `if (task.status === 'running') return {}` was intended to handle a steering race condition, but it prevented ALL turn_end processing since the task is always `'running'` when `turn_end` fires. This caused every thread in the sidebar to permanently show a green pulsing dot.
+
+**Modified:** `src/renderer/stores/task-store-listeners.ts`
+
+## 2026-04-21 01:55 GST (Dubai)
+### Sidebar: Add "Copy Path" to project right-click context menu
+Added a "Copy Path" option to the project name context menu in the sidebar. Uses `navigator.clipboard.writeText(cwd)` to copy the project's full path. Placed right after "Open in Finder" for logical grouping.
+
+**Modified:** `src/renderer/components/sidebar/ProjectItem.tsx`
+
+## 2026-04-21 01:47 GST (Dubai)
+### Persistence: Fix app close data loss and add UI state restoration
+Fixed critical bug where all projects and threads were lost on app quit. Root cause: the `beforeunload` handler used an async dynamic `import()` that never completed before the process exited, and the Rust quit flow called `app.exit(0)` immediately without giving the frontend time to flush. Fix: (1) Rust now emits `app://flush-before-quit` event and sleeps 500ms before exit. (2) Frontend listens for this event and calls `persistHistory()` + `flush()`. (3) `beforeunload` handler now uses a pre-cached module reference instead of async import. (4) Added `saveUiState`/`loadUiState` to persist selected thread, view, and panel state across restarts. (5) Added 30-second auto-save interval as a safety net.
+
+**Modified:** `src-tauri/src/lib.rs`, `src/renderer/App.tsx`, `src/renderer/lib/history-store.ts`, `src/renderer/main.tsx`
+
+## 2026-04-21 01:37 GST (Dubai)
+### Menu: Fix review issues in Recent Projects feature
+Applied 5 fixes from Claude Code review: (1) Menu IDs now use `recent:{path}` format instead of index-based, eliminating a TOCTOU race where reordering between menu build and click could open the wrong project. (2) `clear_recent` handler uses `persist_store()` instead of direct `confy::store`. (3) Label extraction uses `std::path::Path::file_name()` for cross-platform correctness. (4) `add_recent_project` early-returns when project is already at position 0, avoiding unnecessary disk writes and menu rebuilds. (5) Ambiguous basenames show `parent/basename` format for disambiguation.
+
+**Modified:** `src-tauri/src/commands/settings.rs`, `src-tauri/src/lib.rs`
+
+## 2026-04-21 01:29 GST (Dubai)
+### Menu: Add File → Recent Projects submenu
+Added a native "Recent Projects" submenu under File in the macOS/Windows/Linux menu bar. The list persists up to 10 recently opened projects via confy, updates dynamically when projects are opened, and includes a "Clear Recent Projects" option. Clicking a recent project opens it in the app. The menu rebuilds automatically after each project open.
+
+**Modified:** `src-tauri/src/commands/settings.rs`, `src-tauri/src/lib.rs`, `src/renderer/App.tsx`, `src/renderer/lib/ipc.ts`, `src/renderer/stores/taskStore.ts`
+
 ## 2026-04-21 01:22 GST (Dubai)
 ### Updater: Fix "Restart now" button blocked by quit confirmation dialog
 The "Restart now" button in the update-ready dialog (and the restart buttons in Settings and About) did nothing because `relaunch()` triggers a `CloseRequested` window event, which was unconditionally calling `api.prevent_close()` and showing a quit confirmation dialog. Added a `RelaunchFlag` (`AtomicBool`) to Rust managed state with a `set_relaunch_flag` Tauri command. `prepareForRelaunch()` now sets this flag before calling `relaunch()`. The `CloseRequested` handler checks the flag and skips the confirmation dialog when a relaunch is in progress, calling `shutdown_app()` for cleanup instead.
