@@ -89,7 +89,8 @@ describe('deriveTimeline', () => {
 
   it('combines persisted messages with live state', () => {
     const msgs = [makeMsg('user', 'hi')]
+    // 'working' row is suppressed when there's live text or tool calls (they already signal activity)
     const rows = deriveTimeline(msgs, 'responding...', [makeTool()], undefined, true)
-    expect(rows.map((r) => r.kind)).toEqual(['user-message', 'assistant-text', 'working', 'work'])
+    expect(rows.map((r) => r.kind)).toEqual(['user-message', 'assistant-text', 'work'])
   })
 })

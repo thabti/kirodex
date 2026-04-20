@@ -1,5 +1,11 @@
 # Activity Log
 
+## 2026-04-21 00:21 GST (Dubai)
+### Tests: Fix 9 failing Vitest unit tests from CI #108
+Fixed 9 failing tests across `taskStore.test.ts` and `timeline.test.ts`. Root causes: (1) `applyTurnEnd` tests used `status:'running'` but the function now has a guard that returns `{}` for running tasks to prevent clobbering new turns; changed test base state to `status:'paused'` to match production flow. (2) `deriveTimeline` now suppresses the `working` row when there's live activity; updated test expectation. Added a new test for the running guard.
+
+**Modified:** `src/renderer/stores/taskStore.test.ts`, `src/renderer/lib/timeline.test.ts`
+
 ## 2026-04-20 23:39 GST (Dubai)
 ### Chat: Open links in OS default browser
 Clicking links in chat messages, settings, about dialog, onboarding, and kiro file viewer now opens them in the OS default browser via Tauri's `open_url` command instead of failing silently with `target="_blank"`. Created a shared `open-external.ts` helper and applied it to all anchor elements across the app.

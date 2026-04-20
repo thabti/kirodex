@@ -490,8 +490,11 @@ describe('removeProject cleans up taskModes', () => {
 })
 
 describe('applyTurnEnd', () => {
+  // In production, the ACP task_update event sets the task to 'paused' before
+  // turn_end fires, so applyTurnEnd never sees status === 'running' (it has a
+  // guard that returns {} for running tasks to avoid clobbering a new turn).
   const baseState = (overrides?: Partial<Parameters<typeof applyTurnEnd>[0]>) => ({
-    tasks: { 't1': makeTask({ id: 't1', status: 'running' }) },
+    tasks: { 't1': makeTask({ id: 't1', status: 'paused' }) },
     streamingChunks: {} as Record<string, string>,
     thinkingChunks: {} as Record<string, string>,
     liveToolCalls: {} as Record<string, import('@/types').ToolCall[]>,
@@ -571,6 +574,14 @@ describe('applyTurnEnd', () => {
 
   it('returns empty object for unknown task', () => {
     const result = applyTurnEnd(baseState(), 'unknown', 'end_turn')
+    expect(result).toEqual({})
+  })
+
+  it('skips processing when task is still running (new turn started)', () => {
+    const state = baseState({
+      tasks: { 't1': makeTask({ id: 't1', status: 'running' }) },
+    })
+    const result = applyTurnEnd(state, 't1', 'end_turn')
     expect(result).toEqual({})
   })
 
