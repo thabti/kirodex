@@ -113,7 +113,12 @@ impl Default for AppSettings {
 #[serde(rename_all = "camelCase")]
 pub struct StoreData {
     pub settings: AppSettings,
+    #[serde(default)]
+    pub recent_projects: Vec<String>,
 }
+
+/// Maximum number of recent projects to keep.
+const MAX_RECENT_PROJECTS: usize = 10;
 
 pub struct SettingsState(pub Mutex<StoreData>);
 
@@ -126,7 +131,7 @@ impl Default for SettingsState {
     }
 }
 
-fn persist_store(data: &StoreData) -> Result<(), AppError> {
+pub fn persist_store(data: &StoreData) -> Result<(), AppError> {
     confy::store(APP_NAME, None, data)?;
     Ok(())
 }
@@ -144,6 +149,34 @@ pub fn save_settings(
 ) -> Result<(), AppError> {
     let mut store = state.0.lock();
     store.settings = settings;
+    persist_store(&store)
+}
+
+#[tauri::command]
+pub fn get_recent_projects(state: tauri::State<'_, SettingsState>) -> Result<Vec<String>, AppError> {
+    let store = state.0.lock();
+    Ok(store.recent_projects.clone())
+}
+
+#[tauri::command]
+pub fn add_recent_project(
+    state: tauri::State<'_, SettingsState>,
+    path: String,
+) -> Result<(), AppError> {
+    let mut store = state.0.lock();
+    if store.recent_projects.first() == Some(&path) {
+        return Ok(());
+    }
+    store.recent_projects.retain(|p| p != &path);
+    store.recent_projects.insert(0, path);
+    store.recent_projects.truncate(MAX_RECENT_PROJECTS);
+    persist_store(&store)
+}
+
+#[tauri::command]
+pub fn clear_recent_projects(state: tauri::State<'_, SettingsState>) -> Result<(), AppError> {
+    let mut store = state.0.lock();
+    store.recent_projects.clear();
     persist_store(&store)
 }
 

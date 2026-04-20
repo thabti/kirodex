@@ -26,6 +26,11 @@ fn set_relaunch_flag(flag: tauri::State<'_, RelaunchFlag>) {
     flag.0.store(true, Ordering::Release);
 }
 
+#[tauri::command]
+fn rebuild_recent_menu(app: tauri::AppHandle) {
+    rebuild_menu(&app);
+}
+
 /// Install a global panic hook that logs the panic message and backtrace.
 /// This catches panics on *any* thread (background ACP, probe, PTY reader)
 /// that would otherwise vanish silently.
@@ -183,7 +188,7 @@ fn create_new_window(app: &tauri::AppHandle) {
 }
 
 /// Build the native application menu with custom File items.
-fn build_app_menu(app: &tauri::App) -> tauri::Result<tauri::menu::Menu<tauri::Wry>> {
+fn build_app_menu(app: &tauri::AppHandle) -> tauri::Result<tauri::menu::Menu<tauri::Wry>> {
     use tauri::menu::{MenuBuilder, MenuItemBuilder, SubmenuBuilder};
 
     let new_window = MenuItemBuilder::new("New Window")
@@ -198,6 +203,56 @@ fn build_app_menu(app: &tauri::App) -> tauri::Result<tauri::menu::Menu<tauri::Wr
         .id("new_project")
         .accelerator("CmdOrCtrl+O")
         .build(app)?;
+
+    // Build "Recent Projects" submenu from persisted data
+    let recent_projects: Vec<String> = app
+        .try_state::<settings::SettingsState>()
+        .map(|s| s.0.lock().recent_projects.clone())
+        .unwrap_or_default();
+
+    let mut recent_submenu = SubmenuBuilder::new(app, "Recent Projects");
+    if recent_projects.is_empty() {
+        let no_recent = MenuItemBuilder::new("No Recent Projects")
+            .id("recent_none")
+            .enabled(false)
+            .build(app)?;
+        recent_submenu = recent_submenu.item(&no_recent);
+    } else {
+        // Detect ambiguous basenames so we can show parent/basename
+        let basenames: Vec<&str> = recent_projects
+            .iter()
+            .map(|p| {
+                std::path::Path::new(p)
+                    .file_name()
+                    .and_then(|n| n.to_str())
+                    .unwrap_or(p)
+            })
+            .collect();
+        for (i, path) in recent_projects.iter().enumerate() {
+            let basename = basenames[i];
+            let is_ambiguous = basenames.iter().filter(|&&b| b == basename).count() > 1;
+            let label = if is_ambiguous {
+                // Show parent/basename for disambiguation
+                let p = std::path::Path::new(path);
+                match p.parent().and_then(|par| par.file_name()).and_then(|n| n.to_str()) {
+                    Some(parent) => format!("{}/{}", parent, basename),
+                    None => path.to_string(),
+                }
+            } else {
+                basename.to_string()
+            };
+            let item = MenuItemBuilder::new(&label)
+                .id(format!("recent:{}", path))
+                .build(app)?;
+            recent_submenu = recent_submenu.item(&item);
+        }
+        let separator_item = tauri::menu::PredefinedMenuItem::separator(app)?;
+        let clear_recent = MenuItemBuilder::new("Clear Recent Projects")
+            .id("clear_recent")
+            .build(app)?;
+        recent_submenu = recent_submenu.item(&separator_item).item(&clear_recent);
+    }
+    let recent_submenu = recent_submenu.build()?;
 
     let app_submenu = SubmenuBuilder::new(app, "Kirodex")
         .about(None)
@@ -215,6 +270,8 @@ fn build_app_menu(app: &tauri::App) -> tauri::Result<tauri::menu::Menu<tauri::Wr
         .item(&new_window)
         .item(&new_thread)
         .item(&new_project)
+        .separator()
+        .item(&recent_submenu)
         .separator()
         .close_window()
         .build()?;
@@ -255,6 +312,18 @@ fn build_app_menu(app: &tauri::App) -> tauri::Result<tauri::menu::Menu<tauri::Wr
         .build()
 }
 
+/// Rebuild the native menu to reflect updated recent projects.
+fn rebuild_menu(app: &tauri::AppHandle) {
+    match build_app_menu(app) {
+        Ok(menu) => {
+            if let Err(e) = app.set_menu(menu) {
+                log::error!("Failed to set menu: {e}");
+            }
+        }
+        Err(e) => log::error!("Failed to build menu: {e}"),
+    }
+}
+
 pub fn run() {
     install_panic_hook();
 
@@ -290,18 +359,33 @@ pub fn run() {
                 .ok_or_else(|| "main window not found".to_string())?;
 
             // Build and set the custom native menu
-            let menu = build_app_menu(app)?;
+            let menu = build_app_menu(app.handle())?;
             app.set_menu(menu)?;
 
             // Handle custom menu item clicks
             app.on_menu_event(|app_handle, event| {
-                match event.id().0.as_str() {
+                let id = event.id().0.as_str();
+                match id {
                     "new_window" => create_new_window(app_handle),
                     "new_thread" => {
                         let _ = app_handle.emit("menu-new-thread", ());
                     }
                     "new_project" => {
                         let _ = app_handle.emit("menu-new-project", ());
+                    }
+                    "clear_recent" => {
+                        if let Some(state) = app_handle.try_state::<settings::SettingsState>() {
+                            let mut store = state.0.lock();
+                            store.recent_projects.clear();
+                            let _ = settings::persist_store(&store);
+                        }
+                        rebuild_menu(app_handle);
+                    }
+                    _ if id.starts_with("recent:") => {
+                        let path = &id["recent:".len()..];
+                        if !path.is_empty() {
+                            let _ = app_handle.emit("menu-open-recent-project", path);
+                        }
                     }
                     _ => {}
                 }
@@ -341,6 +425,8 @@ pub fn run() {
                     // and let the close proceed so `relaunch()` can restart the app.
                     if let Some(flag) = app.try_state::<RelaunchFlag>() {
                         if flag.0.load(Ordering::Acquire) {
+                            let _ = app.emit("app://flush-before-quit", ());
+                            std::thread::sleep(std::time::Duration::from_millis(300));
                             shutdown_app(&app);
                             return;
                         }
@@ -361,6 +447,10 @@ pub fn run() {
                         .buttons(MessageDialogButtons::OkCancelCustom("Quit".to_string(), "Cancel".to_string()))
                         .show(move |confirmed| {
                             if confirmed {
+                                // Tell the frontend to flush persisted state to disk
+                                let _ = app.emit("app://flush-before-quit", ());
+                                // Give the LazyStore time to write (autoSave + flush)
+                                std::thread::sleep(std::time::Duration::from_millis(500));
                                 shutdown_app(&app);
                                 app.exit(0);
                             }
@@ -447,6 +537,11 @@ pub fn run() {
             analytics::analytics_db_size,
             // Relaunch
             set_relaunch_flag,
+            // Recent projects
+            settings::get_recent_projects,
+            settings::add_recent_project,
+            settings::clear_recent_projects,
+            rebuild_recent_menu,
         ])
         .run(tauri::generate_context!())
         .unwrap_or_else(|e| {

@@ -155,6 +155,15 @@ export const ipc = {
   // Relaunch
   setRelaunchFlag: (): Promise<void> =>
     invoke('set_relaunch_flag'),
+  // Recent projects
+  getRecentProjects: (): Promise<string[]> =>
+    invoke('get_recent_projects'),
+  addRecentProject: (path: string): Promise<void> =>
+    invoke('add_recent_project', { path }),
+  clearRecentProjects: (): Promise<void> =>
+    invoke('clear_recent_projects'),
+  rebuildRecentMenu: (): Promise<void> =>
+    invoke('rebuild_recent_menu'),
   // Analytics
   analyticsSave: (events: import('@/types/analytics').AnalyticsEvent[]): Promise<void> =>
     invoke('analytics_save', { events }),

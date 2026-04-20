@@ -144,6 +144,27 @@ export async function flush(): Promise<void> {
   await store.save()
 }
 
+// ── UI State Persistence ─────────────────────────────────────────
+
+export interface PersistedUiState {
+  selectedTaskId: string | null
+  view: string
+  sidePanelOpen: boolean
+  sidebarCollapsed: boolean
+}
+
+/** Save the current UI state so it can be restored on next launch */
+export async function saveUiState(state: PersistedUiState): Promise<void> {
+  const store = await getStore()
+  await store.set('uiState', state)
+}
+
+/** Load the persisted UI state (returns null if nothing saved) */
+export async function loadUiState(): Promise<PersistedUiState | null> {
+  const store = await getStore()
+  return (await store.get<PersistedUiState>('uiState')) ?? null
+}
+
 /** Backup store singleton (separate file from primary) */
 let _backupStore: LazyStore | null = null
 

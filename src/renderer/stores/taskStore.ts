@@ -550,6 +550,10 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     })
     useSettingsStore.getState().setActiveWorkspace(workspace, workspace)
     useSettingsStore.setState({ currentModeId: 'kiro_default' })
+    // Track in native Recent Projects menu
+    if (workspace) {
+      ipc.addRecentProject(workspace).then(() => ipc.rebuildRecentMenu()).catch(() => {})
+    }
   },
 
   renameTask: (taskId, name) => {

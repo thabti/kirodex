@@ -79,9 +79,15 @@ window.addEventListener('keydown', (e) => {
 import { installJsInterceptors } from './lib/jsInterceptors'
 installJsInterceptors()
 
-// Safety net: persist thread history before the window closes (best-effort, synchronous)
+// Safety net: persist thread history before the window closes.
+// We eagerly import the store module so the reference is available synchronously
+// in the beforeunload handler (dynamic import() would be async and never complete).
+let _persistHistory: (() => void) | null = null
+import('./stores/taskStore').then((m) => {
+  _persistHistory = () => m.useTaskStore.getState().persistHistory()
+})
 window.addEventListener('beforeunload', () => {
-  try { import('./stores/taskStore').then((m) => m.useTaskStore.getState().persistHistory()) } catch { /* ignore */ }
+  try { _persistHistory?.() } catch { /* ignore */ }
 })
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

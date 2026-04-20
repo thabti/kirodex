@@ -256,6 +256,12 @@ export function App() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(240);
 
+  // Refs to expose current values to the flush-before-quit event listener
+  const sidePanelOpenRef = useRef(sidePanelOpen);
+  sidePanelOpenRef.current = sidePanelOpen;
+  const sidebarCollapsedRef = useRef(isSidebarCollapsed);
+  sidebarCollapsedRef.current = isSidebarCollapsed;
+
   // Sync diffStore.isOpen → sidePanelOpen (for openToFile)
   const diffIsOpen = useDiffStore((s) => s.isOpen);
   useEffect(() => {
@@ -265,6 +271,22 @@ export function App() {
   useEffect(() => {
     useTaskStore.getState().loadTasks().then(() => {
       useTaskStore.getState().purgeExpiredSoftDeletes();
+      // Restore persisted UI state (selected thread, view, panels)
+      import('@/lib/history-store').then(({ loadUiState }) => {
+        loadUiState().then((ui) => {
+          if (!ui) return
+          const tasks = useTaskStore.getState().tasks
+          if (ui.selectedTaskId && tasks[ui.selectedTaskId]) {
+            useTaskStore.getState().setSelectedTask(ui.selectedTaskId)
+            const validViews = ['chat', 'dashboard', 'analytics'] as const
+            if (validViews.includes(ui.view as typeof validViews[number])) {
+              useTaskStore.getState().setView(ui.view as typeof validViews[number])
+            }
+          }
+          setSidePanelOpen(ui.sidePanelOpen ?? false)
+          setIsSidebarCollapsed(ui.sidebarCollapsed ?? false)
+        }).catch(() => {})
+      })
     });
     useSettingsStore.getState().loadSettings().then(() => {
       useSettingsStore.getState().checkAuth();
@@ -275,6 +297,10 @@ export function App() {
     const purgeInterval = setInterval(() => {
       useTaskStore.getState().purgeExpiredSoftDeletes();
     }, 60 * 60 * 1000);
+    // Auto-save thread history every 30s as a safety net
+    const autoSaveInterval = setInterval(() => {
+      useTaskStore.getState().persistHistory()
+    }, 30_000);
     // Request notification permission so end_turn alerts work
     import("@tauri-apps/plugin-notification").then(({ isPermissionGranted, requestPermission, onAction }) => {
       isPermissionGranted().then((granted) => {
@@ -298,7 +324,23 @@ export function App() {
     // Listen for native menu events
     let unlistenNewThread: (() => void) | null = null
     let unlistenNewProject: (() => void) | null = null
+    let unlistenRecentProject: (() => void) | null = null
+    let unlistenFlushBeforeQuit: (() => void) | null = null
     import('@tauri-apps/api/event').then(({ listen }) => {
+      // Rust emits this right before app.exit(0) — flush all state to disk
+      listen('app://flush-before-quit', () => {
+        useTaskStore.getState().persistHistory()
+        import('@/lib/history-store').then((hs) => {
+          const { selectedTaskId, view } = useTaskStore.getState()
+          hs.saveUiState({
+            selectedTaskId,
+            view,
+            sidePanelOpen: sidePanelOpenRef.current,
+            sidebarCollapsed: sidebarCollapsedRef.current,
+          }).catch(() => {})
+          hs.flush().catch(() => {})
+        }).catch(() => {})
+      }).then((fn) => { unlistenFlushBeforeQuit = fn })
       listen('menu-new-thread', () => {
         const state = useTaskStore.getState()
         const task = state.selectedTaskId ? state.tasks[state.selectedTaskId] : null
@@ -312,6 +354,13 @@ export function App() {
       listen('menu-new-project', () => {
         useTaskStore.getState().setNewProjectOpen(true)
       }).then((fn) => { unlistenNewProject = fn })
+      listen<string>('menu-open-recent-project', (event) => {
+        const path = event.payload
+        if (!path) return
+        const state = useTaskStore.getState()
+        state.addProject(path)
+        state.setPendingWorkspace(path)
+      }).then((fn) => { unlistenRecentProject = fn })
     })
     // Cross-window state sync — reload when another window persists changes
     let unsubSync: (() => void) | null = null
@@ -335,11 +384,14 @@ export function App() {
     return () => {
       window.removeEventListener("focus", handleWindowFocus);
       clearInterval(purgeInterval);
+      clearInterval(autoSaveInterval);
       stopAutoFlush();
       cleanupTask();
       cleanupKiro();
       if (unlistenNewThread) unlistenNewThread()
       if (unlistenNewProject) unlistenNewProject()
+      if (unlistenRecentProject) unlistenRecentProject()
+      if (unlistenFlushBeforeQuit) unlistenFlushBeforeQuit()
       if (unsubSync) unsubSync()
       if (syncDebounce) clearTimeout(syncDebounce)
     };
