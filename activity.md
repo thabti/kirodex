@@ -1,5 +1,12 @@
 # Activity Log
 
+
+## 2026-04-20 14:20 GST (Dubai)
+### TaskStore: Restore soft-deleted threads when re-importing the same project
+Fixed issue #17 — when a user removes a project and re-imports the same workspace, old threads are now automatically restored from the soft-deleted pool. The `addProject()` method filters `softDeleted` entries by workspace match, moves them back to `tasks` (as archived), removes their IDs from the `deletedTaskIds` blocklist, and persists the change.
+
+**Modified:** `src/renderer/stores/taskStore.ts`
+
 ## 2026-04-19 02:56 GST (Dubai)
 ### Analytics: Full analytics dashboard with redb backend and recharts frontend
 Built a complete analytics dashboard accessible via `/data` or `/usage` slash commands. Tracks coding hours (session focus/blur), message counts with input/output word counts, token usage, tool calls, edited files, cumulative diff stats (+/-), model popularity, plan vs code mode usage, slash command frequency, and project stats. Backend uses redb (pure-Rust embedded KV store) for ACID-compliant persistence. Frontend uses recharts for 9 chart types (4 time-series bar charts + 5 categorical breakdowns). Events are collected in-memory and batch-flushed to Rust every 60 seconds. Settings page shows analytics file size and a clear button. All 182 Rust tests + 731 frontend tests pass.

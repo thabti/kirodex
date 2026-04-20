@@ -60,10 +60,31 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     if (get().projects.includes(workspace)) return
     if (workspace.includes('/.kiro/worktrees/')) return
     const id = crypto.randomUUID()
-    set((s) => ({
-      projects: [...s.projects, workspace],
-      projectIds: { ...s.projectIds, [workspace]: id },
-    }))
+    set((s) => {
+      // Restore soft-deleted threads that belonged to this workspace
+      const restoredIds = Object.keys(s.softDeleted).filter((tid) => {
+        const t = s.softDeleted[tid].task
+        return (t.originalWorkspace ?? t.workspace) === workspace
+      })
+      const tasks = { ...s.tasks }
+      const softDeleted = { ...s.softDeleted }
+      const deletedTaskIds = new Set(s.deletedTaskIds)
+      for (const tid of restoredIds) {
+        tasks[tid] = { ...softDeleted[tid].task, isArchived: true }
+        delete softDeleted[tid]
+        deletedTaskIds.delete(tid)
+      }
+      return {
+        projects: [...s.projects, workspace],
+        projectIds: { ...s.projectIds, [workspace]: id },
+        tasks,
+        softDeleted,
+        deletedTaskIds,
+      }
+    })
+    if (Object.keys(get().softDeleted).length > 0 || Object.keys(get().tasks).length > 0) {
+      get().persistHistory()
+    }
   },
   getProjectId: (workspace) => {
     const existing = get().projectIds[workspace]
