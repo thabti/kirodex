@@ -89,12 +89,19 @@ export const useUpdateChecker = () => {
   }, [])
 
   const restart = useCallback(async () => {
-    const toVersion = pendingUpdateRef.current?.version ?? null
-    track('update_restart_clicked', { to_version: toVersion })
-    const { prepareForRelaunch } = await import('@/lib/relaunch')
-    await prepareForRelaunch()
-    const { relaunch } = await import('@tauri-apps/plugin-process')
-    await relaunch()
+    try {
+      const toVersion = pendingUpdateRef.current?.version ?? null
+      track('update_restart_clicked', { to_version: toVersion })
+      const { prepareForRelaunch } = await import('@/lib/relaunch')
+      await prepareForRelaunch()
+      const { relaunch } = await import('@tauri-apps/plugin-process')
+      await relaunch()
+    } catch (err) {
+      console.error('[updater] restart failed:', err)
+      useUpdateStore.getState().setError(
+        err instanceof Error ? err.message : 'Restart failed',
+      )
+    }
   }, [])
 
   // Auto-check on mount + periodic interval
@@ -118,7 +125,7 @@ export const useUpdateChecker = () => {
   // Expose restart to the store so the restart dialog can trigger it
   useEffect(() => {
     if (store.status === 'ready') {
-      useUpdateStore.getState().setTriggerRestart(() => { restart() })
+      useUpdateStore.getState().setTriggerRestart(() => restart())
     } else {
       useUpdateStore.getState().setTriggerRestart(null)
     }

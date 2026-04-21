@@ -1,5 +1,11 @@
 # Activity Log
 
+## 2026-04-21 15:30 GST (Dubai)
+### Updater: Fix "Restart now" button not working
+The restart callback was fire-and-forget async — errors in `prepareForRelaunch()` were silently swallowed as unhandled rejections. Made `triggerRestart` properly async, added try/catch with error surfacing to all three restart entry points (RestartPromptDialog, UpdatesCard, AboutDialog), and added loading state to the restart dialog button.
+
+**Modified:** `src/renderer/hooks/useUpdateChecker.ts`, `src/renderer/stores/updateStore.ts`, `src/renderer/components/sidebar/RestartPromptDialog.tsx`, `src/renderer/components/settings/updates-card.tsx`, `src/renderer/components/settings/AboutDialog.tsx`, `src/renderer/components/sidebar/SidebarFooter.test.tsx`
+
 ## 2026-04-21 14:15 GST (Dubai)
 ### History Store: Fix state not persisting across restarts and upgrades
 The entire save pipeline was fire-and-forget async — `persistHistory()` fired promises without awaiting, and the quit handler slept a fixed 500ms hoping they'd complete (they didn't). Made `persistHistory` async/awaitable, added `persistAndFlush` for guaranteed writes, replaced the fixed-sleep quit protocol with an acknowledgment-based `flush-complete` event from JS→Rust with a 2s safety timeout, and fixed `relaunch.ts` to properly await persistence.

@@ -55,10 +55,15 @@ export const UpdatesCard = () => {
   }
 
   const handleRestart = async () => {
-    const { prepareForRelaunch } = await import('@/lib/relaunch')
-    await prepareForRelaunch()
-    const { relaunch } = await import('@tauri-apps/plugin-process')
-    await relaunch()
+    try {
+      const { prepareForRelaunch } = await import('@/lib/relaunch')
+      await prepareForRelaunch()
+      const { relaunch } = await import('@tauri-apps/plugin-process')
+      await relaunch()
+    } catch (err) {
+      console.error('[updater] restart failed:', err)
+      useUpdateStore.getState().setError(err instanceof Error ? err.message : 'Restart failed')
+    }
   }
 
   const isCheckingState = isChecking || status === 'checking'

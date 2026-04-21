@@ -32,7 +32,7 @@ import { SidebarFooter } from './SidebarFooter'
 
 const wrap = (ui: React.ReactNode) => <TooltipProvider>{ui}</TooltipProvider>
 
-const resetUpdateStore = (overrides: Partial<{ status: UpdateStatus; triggerDownload: (() => void) | null; triggerRestart: (() => void) | null }> = {}) => {
+const resetUpdateStore = (overrides: Partial<{ status: UpdateStatus; triggerDownload: (() => void) | null; triggerRestart: (() => Promise<void>) | null }> = {}) => {
   useUpdateStore.setState({
     status: 'idle',
     updateInfo: null,
