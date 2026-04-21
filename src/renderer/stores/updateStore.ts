@@ -24,7 +24,7 @@ interface UpdateState {
   /** Callback set by useUpdateChecker so other components can trigger download */
   triggerDownload: (() => void) | null
   /** Callback set by useUpdateChecker so other components can trigger restart */
-  triggerRestart: (() => void) | null
+  triggerRestart: (() => Promise<void>) | null
 
   setStatus: (status: UpdateStatus) => void
   setUpdateInfo: (info: UpdateInfo | null) => void
@@ -32,7 +32,7 @@ interface UpdateState {
   setError: (error: string | null) => void
   dismissVersion: (version: string) => void
   setTriggerDownload: (fn: (() => void) | null) => void
-  setTriggerRestart: (fn: (() => void) | null) => void
+  setTriggerRestart: (fn: (() => Promise<void>) | null) => void
   reset: () => void
 }
 
