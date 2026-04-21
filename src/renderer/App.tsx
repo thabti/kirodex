@@ -368,12 +368,15 @@ export function App() {
     import('@/lib/history-store').then(({ subscribeToChanges }) => {
       subscribeToChanges(
         () => {
+          // Only reload from other windows — if this window has focus, the change is ours
+          if (document.hasFocus()) return
           if (syncDebounce) clearTimeout(syncDebounce)
           syncDebounce = setTimeout(() => {
             useTaskStore.getState().loadTasks()
           }, 300)
         },
         () => {
+          if (document.hasFocus()) return
           if (syncDebounce) clearTimeout(syncDebounce)
           syncDebounce = setTimeout(() => {
             useTaskStore.getState().loadTasks()

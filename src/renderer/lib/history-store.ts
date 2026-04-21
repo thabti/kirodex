@@ -67,7 +67,7 @@ export async function loadProjects(): Promise<SavedProject[]> {
 /** Persist a snapshot of the current threads */
 export async function saveThreads(tasks: Record<string, AgentTask>, projectNames: Record<string, string>, projectIds: Record<string, string> = {}): Promise<void> {
   const threads: SavedThread[] = Object.values(tasks)
-    .filter((t) => !t.isArchived && t.messages.length > 0)
+    .filter((t) => t.messages.length > 0)
     .map((t) => ({
       id: t.id,
       name: t.name,

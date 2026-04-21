@@ -16,6 +16,7 @@
     "core:window:allow-is-maximized",
     "core:window:allow-set-fullscreen",
     "core:window:allow-is-fullscreen",
+    "store:allow-load",
     "store:allow-get",
     "store:allow-set",
     "store:allow-delete",
