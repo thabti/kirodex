@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.26.0] - 2026-04-21
+
+### Bug fixes
+
+- fix state not persisting across restarts ([`fb235c2`](https://github.com/thabti/kirodex/commit/fb235c20e29b5affd3cc1b911a8488e9e9958b5b))
+
 ## [v0.25.0] - 2026-04-21
 
 ### Bug fixes
