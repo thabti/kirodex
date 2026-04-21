@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.20.0] - 2026-04-21
+
+### Bug fixes
+
+- fix "Restart now" button silently failing ([`897895c`](https://github.com/thabti/kirodex/commit/897895cf5ea555e482215c248b47168ceae6b046))
+
 ## [v0.19.0] - 2026-04-21
 
 No notable changes.
