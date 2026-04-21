@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.21.0] - 2026-04-21
+
+### Bug fixes
+
+- fix imported projects disappearing and UUID display names ([`692b5dd`](https://github.com/thabti/kirodex/commit/692b5dd9cff770785bd1020647991e5a5bf8152e))
+
 ## [v0.20.0] - 2026-04-21
 
 ### Bug fixes
