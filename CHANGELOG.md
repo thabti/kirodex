@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.29.0] - 2026-04-22
+
+No notable changes.
+
 ## [v0.28.0] - 2026-04-22
 
 ### Features
