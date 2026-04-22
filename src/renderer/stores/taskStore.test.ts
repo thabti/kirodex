@@ -653,6 +653,46 @@ describe('loadTasks', () => {
     expect(useTaskStore.getState().tasks['shared-id'].status).toBe('running')
   })
 
+  it('preserves running tasks in store when loadTasks is called mid-session', async () => {
+    const { ipc } = await import('@/lib/ipc')
+    const { loadThreads, loadProjects, toArchivedTasks } = await import('@/lib/history-store')
+    // Simulate a running task already in the store with messages
+    const runningTask = makeTask({
+      id: 'active-1', status: 'running', workspace: '/ws',
+      messages: [
+        { role: 'user', content: 'hello', timestamp: '' },
+        { role: 'assistant', content: 'hi there', timestamp: '' },
+      ],
+    })
+    useTaskStore.getState().upsertTask(runningTask)
+    // loadTasks returns an empty backend list (task not visible to backend yet)
+    vi.mocked(ipc.listTasks).mockResolvedValueOnce([])
+    vi.mocked(loadThreads).mockResolvedValueOnce([])
+    vi.mocked(loadProjects).mockResolvedValueOnce([])
+    vi.mocked(toArchivedTasks).mockReturnValueOnce([])
+    await useTaskStore.getState().loadTasks()
+    // Running task must survive — messages intact
+    const preserved = useTaskStore.getState().tasks['active-1']
+    expect(preserved).toBeDefined()
+    expect(preserved.status).toBe('running')
+    expect(preserved.messages).toHaveLength(2)
+  })
+
+  it('preserves paused tasks in store when loadTasks is called', async () => {
+    const { ipc } = await import('@/lib/ipc')
+    const { loadThreads, loadProjects, toArchivedTasks } = await import('@/lib/history-store')
+    const pausedTask = makeTask({ id: 'paused-1', status: 'paused', workspace: '/ws',
+      messages: [{ role: 'user', content: 'test', timestamp: '' }],
+    })
+    useTaskStore.getState().upsertTask(pausedTask)
+    vi.mocked(ipc.listTasks).mockResolvedValueOnce([])
+    vi.mocked(loadThreads).mockResolvedValueOnce([])
+    vi.mocked(loadProjects).mockResolvedValueOnce([])
+    vi.mocked(toArchivedTasks).mockReturnValueOnce([])
+    await useTaskStore.getState().loadTasks()
+    expect(useTaskStore.getState().tasks['paused-1']?.status).toBe('paused')
+  })
+
   it('restores project display names from history', async () => {
     const { ipc } = await import('@/lib/ipc')
     const { loadThreads, loadProjects, toArchivedTasks } = await import('@/lib/history-store')

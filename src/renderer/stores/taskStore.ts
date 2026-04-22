@@ -97,76 +97,82 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     return id
   },
 
-  removeProject: (workspace) => set((s) => {
-    let taskIds = Object.keys(s.tasks).filter((id) => {
-      const t = s.tasks[id]
-      const ws = t.originalWorkspace ?? t.workspace
-      return ws === workspace
+  removeProject: (workspace) => {
+    set((s) => {
+      let taskIds = Object.keys(s.tasks).filter((id) => {
+        const t = s.tasks[id]
+        const ws = t.originalWorkspace ?? t.workspace
+        return ws === workspace
+      })
+      // If no tasks matched by workspace, try matching by projectId (orphaned UUID entries)
+      if (taskIds.length === 0) {
+        taskIds = Object.keys(s.tasks).filter((id) => s.tasks[id].projectId === workspace)
+      }
+      const tasks = { ...s.tasks }
+      const softDeleted = { ...s.softDeleted }
+      const now = new Date().toISOString()
+      taskIds.forEach((id) => {
+        softDeleted[id] = { task: { ...tasks[id], isArchived: true, status: 'completed' }, deletedAt: now }
+        delete tasks[id]
+      })
+      taskIds.forEach((id) => { void ipc.cancelTask(id).catch(() => {}) })
+      taskIds.forEach((id) => { void ipc.deleteTask(id) })
+      const selectedTaskId = taskIds.includes(s.selectedTaskId ?? '') ? null : s.selectedTaskId
+      const deletedTaskIds = new Set(s.deletedTaskIds)
+      taskIds.forEach((id) => deletedTaskIds.add(id))
+      const { [workspace]: _, ...drafts } = s.drafts
+      const taskModes = { ...s.taskModes }
+      taskIds.forEach((id) => { delete taskModes[id] })
+      // Clean up projectIds entries that point to this UUID
+      const projectIds = { ...s.projectIds }
+      for (const [ws, pid] of Object.entries(projectIds)) {
+        if (pid === workspace) delete projectIds[ws]
+      }
+      return {
+        projects: s.projects.filter((p) => p !== workspace),
+        projectIds,
+        tasks,
+        softDeleted,
+        selectedTaskId,
+        deletedTaskIds,
+        drafts,
+        taskModes,
+        pendingWorkspace: s.pendingWorkspace === workspace ? null : s.pendingWorkspace,
+        view: selectedTaskId === null && s.view === 'chat' ? 'dashboard' : s.view,
+      }
     })
-    // If no tasks matched by workspace, try matching by projectId (orphaned UUID entries)
-    if (taskIds.length === 0) {
-      taskIds = Object.keys(s.tasks).filter((id) => s.tasks[id].projectId === workspace)
-    }
-    const tasks = { ...s.tasks }
-    const softDeleted = { ...s.softDeleted }
-    const now = new Date().toISOString()
-    taskIds.forEach((id) => {
-      softDeleted[id] = { task: { ...tasks[id], isArchived: true, status: 'completed' }, deletedAt: now }
-      delete tasks[id]
-    })
-    taskIds.forEach((id) => { void ipc.cancelTask(id).catch(() => {}) })
-    taskIds.forEach((id) => { void ipc.deleteTask(id) })
-    const selectedTaskId = taskIds.includes(s.selectedTaskId ?? '') ? null : s.selectedTaskId
-    const deletedTaskIds = new Set(s.deletedTaskIds)
-    taskIds.forEach((id) => deletedTaskIds.add(id))
-    const { [workspace]: _, ...drafts } = s.drafts
-    const taskModes = { ...s.taskModes }
-    taskIds.forEach((id) => { delete taskModes[id] })
-    // Clean up projectIds entries that point to this UUID
-    const projectIds = { ...s.projectIds }
-    for (const [ws, pid] of Object.entries(projectIds)) {
-      if (pid === workspace) delete projectIds[ws]
-    }
-    return {
-      projects: s.projects.filter((p) => p !== workspace),
-      projectIds,
-      tasks,
-      softDeleted,
-      selectedTaskId,
-      deletedTaskIds,
-      drafts,
-      taskModes,
-      pendingWorkspace: s.pendingWorkspace === workspace ? null : s.pendingWorkspace,
-      view: selectedTaskId === null && s.view === 'chat' ? 'dashboard' : s.view,
-    }
-  }),
+    get().persistHistory()
+  },
 
-  archiveThreads: (workspace) => set((s) => {
-    const taskIds = Object.keys(s.tasks).filter((id) => {
-      const t = s.tasks[id]
-      const ws = t.originalWorkspace ?? t.workspace
-      return ws === workspace
+  archiveThreads: (workspace) => {
+    set((s) => {
+      const taskIds = Object.keys(s.tasks).filter((id) => {
+        const t = s.tasks[id]
+        const ws = t.originalWorkspace ?? t.workspace
+        return ws === workspace
+      })
+      const tasks = { ...s.tasks }
+      const softDeleted = { ...s.softDeleted }
+      const now = new Date().toISOString()
+      taskIds.forEach((id) => {
+        softDeleted[id] = { task: { ...tasks[id], isArchived: true, status: 'completed' }, deletedAt: now }
+        delete tasks[id]
+      })
+      taskIds.forEach((id) => { void ipc.cancelTask(id).catch(() => {}) })
+      taskIds.forEach((id) => { void ipc.deleteTask(id) })
+      const selectedTaskId = taskIds.includes(s.selectedTaskId ?? '') ? null : s.selectedTaskId
+      const deletedTaskIds = new Set(s.deletedTaskIds)
+      taskIds.forEach((id) => deletedTaskIds.add(id))
+      return {
+        tasks,
+        softDeleted,
+        selectedTaskId,
+        deletedTaskIds,
+        view: selectedTaskId === null && s.view === 'chat' ? 'dashboard' : s.view,
+      }
     })
-    const tasks = { ...s.tasks }
-    const softDeleted = { ...s.softDeleted }
-    const now = new Date().toISOString()
-    taskIds.forEach((id) => {
-      softDeleted[id] = { task: { ...tasks[id], isArchived: true, status: 'completed' }, deletedAt: now }
-      delete tasks[id]
-    })
-    taskIds.forEach((id) => { void ipc.cancelTask(id).catch(() => {}) })
-    taskIds.forEach((id) => { void ipc.deleteTask(id) })
-    const selectedTaskId = taskIds.includes(s.selectedTaskId ?? '') ? null : s.selectedTaskId
-    const deletedTaskIds = new Set(s.deletedTaskIds)
-    taskIds.forEach((id) => deletedTaskIds.add(id))
-    return {
-      tasks,
-      softDeleted,
-      selectedTaskId,
-      deletedTaskIds,
-      view: selectedTaskId === null && s.view === 'chat' ? 'dashboard' : s.view,
-    }
-  }),
+    get().persistHistory()
+  },
 
   upsertTask: (task) => {
     set((state) => {
@@ -434,7 +440,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
       }
     }),
 
-  updateCompactionStatus: (taskId, status, summary) =>
+  updateCompactionStatus: (taskId, status, summary) => {
     set((state) => {
       const task = state.tasks[taskId]
       if (!task) return state
@@ -473,7 +479,9 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
       return {
         tasks: { ...state.tasks, [taskId]: { ...task, compactionStatus: status, messages } },
       }
-    }),
+    })
+    get().persistHistory()
+  },
 
   clearTurn: (taskId) =>
     set((state) => {
@@ -549,6 +557,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
       ].slice(0, 20),
     }))
     track('task_created', { has_prompt: false })
+    get().persistHistory()
     return id
   },
 
@@ -615,14 +624,16 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     }
   },
 
-  reorderProject: (from, to) =>
+  reorderProject: (from, to) => {
+    if (from === to) return
     set((state) => {
-      if (from === to) return state
       const arr = [...state.projects]
       const [item] = arr.splice(from, 1)
       arr.splice(to, 0, item)
       return { projects: arr }
-    }),
+    })
+    get().persistHistory()
+  },
 
   setDraft: (workspace, content) => {
     // Skip save if this workspace was just explicitly deleted (unmount flush guard)
@@ -735,11 +746,15 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
             tasks[t.id] = t
           } else {
             // Live task exists — merge worktree metadata the backend doesn't track
+            // Create a new object to preserve Zustand reactivity (don't mutate in place)
             const live = tasks[t.id]
-            if (!live.worktreePath && t.worktreePath) live.worktreePath = t.worktreePath
-            if (!live.originalWorkspace && t.originalWorkspace) live.originalWorkspace = t.originalWorkspace
-            if (!live.projectId && t.projectId) live.projectId = t.projectId
-            if (!live.parentTaskId && t.parentTaskId) live.parentTaskId = t.parentTaskId
+            tasks[t.id] = {
+              ...live,
+              ...(!live.worktreePath && t.worktreePath ? { worktreePath: t.worktreePath } : {}),
+              ...(!live.originalWorkspace && t.originalWorkspace ? { originalWorkspace: t.originalWorkspace } : {}),
+              ...(!live.projectId && t.projectId ? { projectId: t.projectId } : {}),
+              ...(!live.parentTaskId && t.parentTaskId ? { parentTaskId: t.parentTaskId } : {}),
+            }
           }
         }
         // Derive projects AFTER merge so worktree tasks use restored originalWorkspace
@@ -789,6 +804,14 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
             }
           }
         } catch { /* backup load is best-effort */ }
+        // Never overwrite tasks that have an active session (running/paused) —
+        // they have live messages, streaming chunks, and tool calls that would be lost.
+        const existing = get().tasks
+        for (const [id, t] of Object.entries(existing)) {
+          if (t.status === 'running' || t.status === 'paused') {
+            tasks[id] = t
+          }
+        }
         set({ tasks, projects, projectIds, projectNames, softDeleted, deletedTaskIds, connected: true })
       } catch {
         // History load failed — derive projects from live tasks, filtering worktree paths
@@ -842,6 +865,13 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
             }
           }
         } catch { /* backup load is best-effort */ }
+        // Preserve live tasks (same guard as the primary path above)
+        const existing = get().tasks
+        for (const [id, t] of Object.entries(existing)) {
+          if (t.status === 'running' || t.status === 'paused') {
+            tasks[id] = t
+          }
+        }
         set({ tasks, projects, projectIds, projectNames, softDeleted, deletedTaskIds, connected: false })
       } catch {
         set({ connected: false })
@@ -856,8 +886,12 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
 
   persistHistory: () => {
     const { tasks, projectNames, projectIds, softDeleted } = get()
-    historyStore.saveThreads(tasks, projectNames, projectIds).catch(() => {})
-    historyStore.saveSoftDeleted(Object.values(softDeleted)).catch(() => {})
+    historyStore.saveThreads(tasks, projectNames, projectIds).catch((err) => {
+      console.warn('[persistHistory] saveThreads failed:', err)
+    })
+    historyStore.saveSoftDeleted(Object.values(softDeleted)).catch((err) => {
+      console.warn('[persistHistory] saveSoftDeleted failed:', err)
+    })
   },
 
   clearHistory: async () => {
@@ -889,11 +923,13 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
       drafts: {},
       _suppressDraftSave: null,
       notifiedTaskIds: [],
+      activityFeed: [],
     })
-    // Reset settings to defaults and go back to onboarding
-    const defaultSettings = { ...useSettingsStore.getState().settings, hasOnboardedV2: false, projectPrefs: {} }
-    await useSettingsStore.getState().saveSettings(defaultSettings)
-    useSettingsStore.setState({ settings: defaultSettings })
+    // Clear project-specific preferences but preserve core settings (onboarding, CLI path, model, etc.)
+    const currentSettings = useSettingsStore.getState().settings
+    const updatedSettings = { ...currentSettings, projectPrefs: {} }
+    await useSettingsStore.getState().saveSettings(updatedSettings)
+    useSettingsStore.setState({ settings: updatedSettings })
   },
 
   resolveWorktreeCleanup: (removeWorktree) => {

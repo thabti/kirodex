@@ -236,6 +236,26 @@ When deleting a thread or removing a project, call `ipc.cancelTask()` before `ip
 
 `confy` stores config at its own XDG/macOS-standard path (e.g., `~/Library/Application Support/rs.kirodex/default-config.toml` on macOS), not the previous custom path. If migrating from hand-rolled persistence, existing settings at the old path won't be found. Consider a one-time migration or document the new location.
 
+### LazyStore autoSave creates a self-write race
+
+`tauri-plugin-store`'s `LazyStore` with `autoSave: 500` fires `onKeyChange` for same-window writes 500ms after `store.set()`. If `subscribeToChanges` triggers `loadTasks` on every `onKeyChange`, the window reloads its own writes, overwriting in-flight state. Fix: maintain a `_selfWriteCount` counter in `history-store.ts`. Increment before `store.set()`, decrement 600ms later (past the autoSave window). Check `isSelfWriting()` in the `subscribeToChanges` handler to skip self-triggered reloads.
+
+### Every state-changing action must call persistHistory
+
+Any Zustand action that modifies persisted data (`tasks`, `projects`, `softDeleted`, `projectIds`) must call `persistHistory()` after `set()`. Missing calls cause data loss on crash or reload. Audit checklist: `createDraftThread`, `updateCompactionStatus`, `reorderProject`, `renameTask`, `forkTask`, `removeProject`, `archiveThreads`, `softDeleteTask`, `restoreTask`, `permanentlyDeleteTask`, `resolveWorktreeCleanup`, `addProject` (conditional).
+
+### Silent .catch(() => {}) hides persistence failures
+
+Fire-and-forget `.catch(() => {})` on `persistHistory` calls silently swallows write errors. The user sees no indication that their data wasn't saved. Replace with `.catch((err) => console.warn(...))` so failures appear in the debug log. This applies to `saveThreads`, `saveSoftDeleted`, and any other async persistence call.
+
+### Ack-based flush beats sleep-based flush on quit
+
+The Rust quit handler originally used `sleep(300ms)` / `sleep(500ms)` to wait for the frontend to flush state. This is unreliable: slow machines miss the window, fast machines waste time. Replace with an ack-based protocol: Rust emits `app://flush-before-quit`, frontend flushes and emits `app://flush-ack`, Rust waits on an `mpsc::channel` with a 2-second timeout. This guarantees the flush completes or times out gracefully.
+
+### Arrow function store actions can't have side effects
+
+Zustand store actions defined as `action: (args) => set(...)` (arrow returning `set()`) can't call `persistHistory()` after the `set()`. Convert to `action: (args) => { set(...); get().persistHistory() }` when side effects are needed. Watch for this when adding persistence to existing actions.
+
 ## Activity log
 
 After completing any task, update `activity.md` at the project root before finishing.

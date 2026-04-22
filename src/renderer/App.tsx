@@ -338,8 +338,22 @@ export function App() {
             sidePanelOpen: sidePanelOpenRef.current,
             sidebarCollapsed: sidebarCollapsedRef.current,
           }).catch(() => {})
-          hs.flush().catch(() => {})
-        }).catch(() => {})
+          hs.flush().then(() => {
+            // Ack the flush so Rust can proceed with shutdown
+            import('@tauri-apps/api/event').then(({ emit }) => {
+              emit('app://flush-ack').catch(() => {})
+            })
+          }).catch(() => {
+            // Ack even on failure so Rust doesn't hang
+            import('@tauri-apps/api/event').then(({ emit }) => {
+              emit('app://flush-ack').catch(() => {})
+            })
+          })
+        }).catch(() => {
+          import('@tauri-apps/api/event').then(({ emit }) => {
+            emit('app://flush-ack').catch(() => {})
+          })
+        })
       }).then((fn) => { unlistenFlushBeforeQuit = fn })
       listen('menu-new-thread', () => {
         const state = useTaskStore.getState()
@@ -365,24 +379,21 @@ export function App() {
     // Cross-window state sync — reload when another window persists changes
     let unsubSync: (() => void) | null = null
     let syncDebounce: ReturnType<typeof setTimeout> | null = null
-    import('@/lib/history-store').then(({ subscribeToChanges }) => {
-      subscribeToChanges(
-        () => {
-          // Only reload from other windows — if this window has focus, the change is ours
-          if (document.hasFocus()) return
-          if (syncDebounce) clearTimeout(syncDebounce)
-          syncDebounce = setTimeout(() => {
-            useTaskStore.getState().loadTasks()
-          }, 300)
-        },
-        () => {
-          if (document.hasFocus()) return
-          if (syncDebounce) clearTimeout(syncDebounce)
-          syncDebounce = setTimeout(() => {
-            useTaskStore.getState().loadTasks()
-          }, 300)
-        },
-      ).then((fn) => { unsubSync = fn })
+    import('@/lib/history-store').then(({ subscribeToChanges, isSelfWriting }) => {
+      // Skip sync reloads when:
+      // 1. This window wrote the change (isSelfWriting) — avoids reloading our own saves
+      // 2. This window has live ACP sessions — loadTasks would overwrite running/paused tasks
+      const shouldSkipSync = () => isSelfWriting() || Object.values(useTaskStore.getState().tasks).some(
+        (t) => t.status === 'running' || t.status === 'paused',
+      )
+      const handleChange = () => {
+        if (shouldSkipSync()) return
+        if (syncDebounce) clearTimeout(syncDebounce)
+        syncDebounce = setTimeout(() => {
+          useTaskStore.getState().loadTasks()
+        }, 300)
+      }
+      subscribeToChanges(handleChange, handleChange).then((fn) => { unsubSync = fn })
     })
     return () => {
       window.removeEventListener("focus", handleWindowFocus);

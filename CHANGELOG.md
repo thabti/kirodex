@@ -1,5 +1,26 @@
 # Changelog
 
+## [v0.29.0] - 2026-04-22
+
+No notable changes.
+
+## [v0.28.0] - 2026-04-22
+
+### Features
+
+- overhaul settings panel UI/UX ([`9f6a0f8`](https://github.com/thabti/kirodex/commit/9f6a0f8dee5268ce7009f26f3999da67f1052232))
+
+### Bug fixes
+
+- add missing persistHistory calls, ack-based quit flush, warn on failures ([`f68dcd8`](https://github.com/thabti/kirodex/commit/f68dcd85f7cc43b13b3d1d8702491ffc6e012e8a))
+- persist history after removeProject/archiveThreads and fix merge mutation ([`0c6da34`](https://github.com/thabti/kirodex/commit/0c6da34cb83f1bc1f979eab5af12eaf1db5afd6f))
+- preserve live tasks when loadTasks is called mid-session ([`95d6958`](https://github.com/thabti/kirodex/commit/95d69581c4a5b112a3a2d7abb35e8d628e8cab4c))
+- use live task check instead of document.hasFocus for sync guard ([`c3f9eda`](https://github.com/thabti/kirodex/commit/c3f9eda080853fb760e3bc3056f78d353f0eba56))
+
+### Tests
+
+- add tests for live task preservation during loadTasks ([`14f322b`](https://github.com/thabti/kirodex/commit/14f322b2dbfb5696c0441f50b04f911970a32556))
+
 ## [v0.27.0] - 2026-04-22
 
 ### Bug fixes

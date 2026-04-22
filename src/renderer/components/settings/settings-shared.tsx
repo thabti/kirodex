@@ -1,18 +1,30 @@
+import { useState } from 'react'
 import {
   IconUser, IconSettings2, IconPaint, IconKeyboard, IconTool, IconArchive,
 } from '@tabler/icons-react'
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 
 // ── Navigation ───────────────────────────────────────────────────
 
 export type Section = 'account' | 'general' | 'appearance' | 'keymap' | 'advanced' | 'archives'
 
-export const NAV: { id: Section; label: string; icon: typeof IconSettings2; description: string; sectionDescription: string; group?: string }[] = [
+export type NavGroup = 'account' | 'settings' | 'data'
+
+export const NAV_GROUP_LABELS: Record<NavGroup, string> = {
+  account: 'Account',
+  settings: 'Settings',
+  data: 'Data',
+}
+
+export const NAV: { id: Section; label: string; icon: typeof IconSettings2; description: string; sectionDescription: string; group: NavGroup }[] = [
   { id: 'account', label: 'Account', icon: IconUser, description: 'Auth status, login', sectionDescription: 'Manage your authentication and account preferences.', group: 'account' },
   { id: 'general', label: 'General', icon: IconSettings2, description: 'CLI path, model, permissions', sectionDescription: 'Configure the CLI, default model, and permission behavior.', group: 'settings' },
   { id: 'appearance', label: 'Appearance', icon: IconPaint, description: 'Theme, font size', sectionDescription: 'Customize the look and feel of Kirodex.', group: 'settings' },
   { id: 'keymap', label: 'Keyboard', icon: IconKeyboard, description: 'Shortcuts reference', sectionDescription: 'View all available keyboard shortcuts.', group: 'settings' },
-  { id: 'advanced', label: 'Advanced', icon: IconTool, description: 'Privacy, git integration, and data management.', sectionDescription: 'Privacy, git integration, and data management.', group: 'settings' },
+  { id: 'advanced', label: 'Advanced', icon: IconTool, description: 'Privacy, git, data', sectionDescription: 'Privacy, git integration, and data management.', group: 'settings' },
   { id: 'archives', label: 'Archives', icon: IconArchive, description: 'Deleted threads', sectionDescription: 'Restore or permanently remove deleted threads.', group: 'data' },
 ]
 
@@ -42,7 +54,7 @@ export const SEARCHABLE_SETTINGS: readonly SearchableItem[] = [
   { label: 'Co-authored-by', description: 'Append Kirodex trailer to every commit', section: 'advanced', keywords: 'git commit co-author trailer' },
   { label: 'Task completion report', description: 'Summary card when a task finishes', section: 'advanced', keywords: 'report summary task completion' },
   { label: 'Max question length', description: 'Character limit for /btw and /tangent questions', section: 'advanced', keywords: 'btw tangent question limit characters' },
-  { label: 'Clear history', description: 'Delete all conversation threads', section: 'advanced', keywords: 'clear history delete conversations data' },
+  { label: 'Clear history', description: 'Clear all threads without resetting settings', section: 'advanced', keywords: 'clear history delete conversations data threads' },
   { label: 'Replay onboarding', description: 'Run the setup wizard again', section: 'advanced', keywords: 'onboarding wizard setup replay' },
   { label: 'Account', description: 'Authentication status and sign in', section: 'account', keywords: 'account login sign auth email' },
   { label: 'Deleted threads', description: 'Restore or permanently remove deleted threads', section: 'archives', keywords: 'deleted threads restore archive trash' },
@@ -58,7 +70,7 @@ interface SettingRowProps {
 }
 
 export const SettingRow = ({ label, description, children, className }: SettingRowProps) => (
-  <div className={cn('flex items-center justify-between gap-4 py-3 transition-colors hover:bg-muted/5 -mx-5 px-5 rounded-lg', className)}>
+  <div className={cn('flex items-center justify-between gap-4 py-3.5', className)}>
     <div className="min-w-0 flex-1">
       <p className="text-[13px] font-medium text-foreground">{label}</p>
       <p className="text-[11.5px] leading-relaxed text-muted-foreground">{description}</p>
@@ -87,11 +99,78 @@ export const SectionHeader = ({ section }: { section: Section }) => {
 
 export const SettingsCard = ({ children, className }: { children: React.ReactNode; className?: string }) => (
   <div className={cn(
-    'rounded-xl border border-border/50 bg-card/70 px-5 py-1 shadow-sm transition-colors',
+    'rounded-xl border border-border/50 bg-card/70 px-5 py-3 shadow-sm',
     className,
   )}>
     {children}
   </div>
 )
 
-export const Divider = () => <div className="border-t border-border/70" />
+export const Divider = () => <div className="border-t border-border/40" />
+
+// ── Confirm dialog for destructive actions ───────────────────────
+
+interface ConfirmDialogProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  title: string
+  description: string
+  confirmLabel?: string
+  onConfirm: () => void
+  isDestructive?: boolean
+}
+
+export const ConfirmDialog = ({
+  open,
+  onOpenChange,
+  title,
+  description,
+  confirmLabel = 'Confirm',
+  onConfirm,
+  isDestructive = true,
+}: ConfirmDialogProps) => {
+  const [isLoading, setIsLoading] = useState(false)
+
+  const handleConfirm = async () => {
+    setIsLoading(true)
+    try {
+      onConfirm()
+      onOpenChange(false)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="text-base">{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <button
+            type="button"
+            onClick={() => onOpenChange(false)}
+            className="rounded-lg border border-input px-4 py-2 text-[13px] font-medium transition-colors hover:bg-accent"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            disabled={isLoading}
+            onClick={handleConfirm}
+            className={cn(
+              'rounded-lg px-4 py-2 text-[13px] font-medium transition-colors disabled:opacity-50',
+              isDestructive
+                ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90'
+                : 'bg-primary text-primary-foreground hover:bg-primary/90',
+            )}
+          >
+            {confirmLabel}
+          </button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}

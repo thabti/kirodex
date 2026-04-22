@@ -42,6 +42,16 @@ const BACKUP_FILE = import.meta.env.DEV ? 'history-dev.backup.json' : 'history.b
 
 let _store: LazyStore | null = null
 
+/**
+ * Guard flag: true while this window is writing to the store.
+ * Prevents onKeyChange from triggering a loadTasks reload for our own writes.
+ * Uses a counter (not boolean) because multiple saves can overlap due to autoSave.
+ */
+let _selfWriteCount = 0
+
+/** Returns true if this window is currently writing to the store. */
+export const isSelfWriting = (): boolean => _selfWriteCount > 0
+
 const getStore = async (): Promise<LazyStore> => {
   if (!_store) {
     const { LazyStore } = await import('@tauri-apps/plugin-store')
@@ -97,8 +107,15 @@ export async function saveThreads(tasks: Record<string, AgentTask>, projectNames
     threadIds: threadsByWorkspace.get(ws) ?? [],
   }))
 
-  await (await getStore()).set('threads', threads)
-  await (await getStore()).set('projects', projects)
+  const store = await getStore()
+  _selfWriteCount++
+  try {
+    await store.set('threads', threads)
+    await store.set('projects', projects)
+  } finally {
+    // Delay decrement past autoSave window (500ms) so onKeyChange sees the flag
+    setTimeout(() => { _selfWriteCount-- }, 600)
+  }
 }
 
 /** Convert persisted threads into archived AgentTasks */
@@ -127,7 +144,12 @@ export async function loadSoftDeleted(): Promise<SoftDeletedThread[]> {
 /** Persist soft-deleted threads */
 export async function saveSoftDeleted(items: SoftDeletedThread[]): Promise<void> {
   const store = await getStore()
-  await store.set('softDeleted', items)
+  _selfWriteCount++
+  try {
+    await store.set('softDeleted', items)
+  } finally {
+    setTimeout(() => { _selfWriteCount-- }, 600)
+  }
 }
 
 /** Clear all persisted history */
@@ -159,7 +181,12 @@ export interface PersistedUiState {
 /** Save the current UI state so it can be restored on next launch */
 export async function saveUiState(state: PersistedUiState): Promise<void> {
   const store = await getStore()
-  await store.set('uiState', state)
+  _selfWriteCount++
+  try {
+    await store.set('uiState', state)
+  } finally {
+    setTimeout(() => { _selfWriteCount-- }, 600)
+  }
 }
 
 /** Load the persisted UI state (returns null if nothing saved) */
