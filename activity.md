@@ -1,5 +1,23 @@
 # Activity Log
 
+## 2026-04-22 15:39 GST (Dubai)
+### Settings: Full UI/UX overhaul of the settings panel
+Overhauled the entire settings panel across 6 files. Added grouped sidebar nav labels (ACCOUNT, SETTINGS, DATA) inspired by reference design. Added dirty state indicator (amber dot on Save button). Fixed SettingsCard default padding from py-1 to py-3, eliminating all !py-4 overrides. Merged Permissions + Worktrees + Sandbox into a single "Workspace" card in General, reducing from 7 sub-sections to 5. Added ConfirmDialog for destructive actions (Clear history, Clear analytics). Expanded font size range from 14-18 to 12-22 with editable number input. Improved keymap search input consistency. Added ARIA roles and labels throughout.
+
+**Modified:** settings-shared.tsx, SettingsPanel.tsx, general-section.tsx, appearance-section.tsx, advanced-section.tsx, keymap-section.tsx
+
+## 2026-04-22 10:41 GST (Dubai)
+### Store/Persistence: Fix self-write race, missing persistHistory calls, ack-based quit flush
+Audited the entire store/persistence layer. Added `_selfWriteCount` guard to `history-store.ts` so `onKeyChange` skips same-window writes (600ms delay past autoSave). Added missing `persistHistory()` calls to `createDraftThread`, `updateCompactionStatus`, and `reorderProject`. Replaced silent `.catch(() => {})` with `console.warn` in `persistHistory`. Replaced sleep-based quit flush in `lib.rs` with ack-based `mpsc::channel` + 2s timeout. Updated `App.tsx` to check `isSelfWriting()` in cross-window sync and emit `flush-ack` after flushing. Added 6 new engineering learnings to AGENTS.md.
+
+**Modified:** src/renderer/lib/history-store.ts, src/renderer/App.tsx, src/renderer/stores/taskStore.ts, src-tauri/src/lib.rs, AGENTS.md
+
+## 2026-04-22 10:24 GST (Dubai)
+### Settings: Clear history preserves core system setup
+Modified `clearHistory` in taskStore to only clear conversation threads, projects, and soft-deleted items from history.json without resetting onboarding status, CLI path, model, or other core settings. Previously it reset `hasOnboardedV2: false` which forced users back through the setup wizard. Updated the button description in advanced-section and search index to reflect the new behavior.
+
+**Modified:** src/renderer/stores/taskStore.ts, src/renderer/components/settings/advanced-section.tsx, src/renderer/components/settings/settings-shared.tsx
+
 ## 2026-04-22 08:31 GST (Dubai)
 ### Steering Queue: Preserve image attachments in queued messages
 Queued messages while the agent was running dropped image attachments; only the text string was stored. Changed `queuedMessages` from `Record<string, string[]>` to `Record<string, QueuedMessage[]>` where each entry carries `text` + optional `attachments`. The QueuedMessages component now shows an `IconPhoto` indicator with count tooltip, and displays "Image attachment" as fallback text for image-only messages. Attachments flow through enqueue, steer, and auto-drain paths.

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { getVersion } from '@tauri-apps/api/app'
-import { IconX, IconArrowLeft, IconBrandGithub, IconSearch, IconRotate } from '@tabler/icons-react'
+import { IconX, IconArrowLeft, IconBrandGithub, IconSearch, IconRotate, IconCircleFilled } from '@tabler/icons-react'
 import { useTaskStore } from '@/stores/taskStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -9,7 +9,7 @@ import { handleExternalLinkClick, handleExternalLinkKeyDown } from '@/lib/open-e
 import type { AppSettings } from '@/types'
 import { applyTheme, persistTheme } from '@/lib/theme'
 import { AboutDialog } from './AboutDialog'
-import { NAV, SEARCHABLE_SETTINGS, type Section } from './settings-shared'
+import { NAV, NAV_GROUP_LABELS, SEARCHABLE_SETTINGS, type Section, type NavGroup } from './settings-shared'
 import { AccountSection } from './account-section'
 import { GeneralSection } from './general-section'
 import { AppearanceSection } from './appearance-section'
@@ -25,6 +25,10 @@ const defaultSettings: AppSettings = {
   analyticsEnabled: true,
 }
 
+/** Shallow compare two AppSettings objects to detect unsaved changes */
+const isDirty = (draft: AppSettings, saved: AppSettings): boolean =>
+  JSON.stringify(draft) !== JSON.stringify(saved)
+
 export const SettingsPanel = () => {
   const open = useTaskStore((s) => s.isSettingsOpen)
   const setOpen = useTaskStore((s) => s.setSettingsOpen)
@@ -36,6 +40,8 @@ export const SettingsPanel = () => {
   const [appVersion, setAppVersion] = useState('')
   const [isAboutOpen, setIsAboutOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+
+  const hasDirtyState = useMemo(() => isDirty(draft, settings), [draft, settings])
 
   useEffect(() => { getVersion().then(setAppVersion).catch(() => {}) }, [])
   useEffect(() => { if (open && !kiroAuthChecked) checkAuth() }, [open, kiroAuthChecked, checkAuth])
@@ -95,6 +101,17 @@ export const SettingsPanel = () => {
 
   if (!open) return null
 
+  // Group nav items for rendering with labels
+  const navGroups = NAV.reduce<Array<{ group: NavGroup; items: typeof NAV }>>((acc, item) => {
+    const last = acc[acc.length - 1]
+    if (last && last.group === item.group) {
+      last.items.push(item)
+    } else {
+      acc.push({ group: item.group, items: [item] })
+    }
+    return acc
+  }, [])
+
   return (
     <div data-testid="settings-panel" className="fixed inset-0 z-50 flex animate-in fade-in-0 duration-150">
       <div className="absolute inset-0 bg-background/95 backdrop-blur-xl" />
@@ -102,13 +119,13 @@ export const SettingsPanel = () => {
       <div className="relative z-10 flex w-full">
         {/* Sidebar */}
         <nav data-testid="settings-nav" className="flex w-56 shrink-0 flex-col border-r border-border/60 px-3 pt-16 pb-4">
-          <div className="mb-4 px-3">
+          <div className="mb-5 px-3">
             <h2 className="text-lg font-semibold text-foreground">Settings</h2>
             <p className="mt-0.5 text-[11px] text-muted-foreground">Configure Kirodex</p>
           </div>
 
           {/* Search */}
-          <div className="relative mb-3 px-3">
+          <div className="relative mb-4 px-3">
             <IconSearch className="pointer-events-none absolute left-5.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground/60" />
             <input
               value={searchQuery}
@@ -140,31 +157,33 @@ export const SettingsPanel = () => {
               })}
             </div>
           ) : (
-            /* Normal nav */
-            <div className="flex flex-1 flex-col gap-0.5">
-              {NAV.map((item, idx) => (
-                <div key={item.id}>
-                  {idx > 0 && NAV[idx - 1].group !== item.group && (
-                    <div className="my-2 border-t border-border/50" />
-                  )}
-                  <button
-                    onClick={() => setSection(item.id)}
-                    className={cn(
-                      'relative flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left transition-all',
-                      section === item.id
-                        ? 'bg-primary/10 text-foreground shadow-sm'
-                        : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground',
-                    )}
-                  >
-                    {section === item.id && (
-                      <div className="absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-r-full bg-primary" />
-                    )}
-                    <item.icon className={cn('size-4 shrink-0', section === item.id ? 'text-primary' : 'opacity-60')} />
-                    <div className="min-w-0">
-                      <p className="text-[13px] font-medium leading-tight">{item.label}</p>
-                      <p className="truncate text-[10px] opacity-50">{item.description}</p>
-                    </div>
-                  </button>
+            /* Grouped nav */
+            <div className="flex flex-1 flex-col gap-0.5 overflow-y-auto" role="tablist" aria-label="Settings sections">
+              {navGroups.map(({ group, items }, groupIdx) => (
+                <div key={group} className={cn(groupIdx > 0 && 'mt-3')}>
+                  <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50">
+                    {NAV_GROUP_LABELS[group]}
+                  </p>
+                  {items.map((item) => (
+                    <button
+                      key={item.id}
+                      role="tab"
+                      aria-selected={section === item.id}
+                      onClick={() => setSection(item.id)}
+                      className={cn(
+                        'relative flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left transition-all',
+                        section === item.id
+                          ? 'bg-primary/10 text-foreground shadow-sm'
+                          : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground',
+                      )}
+                    >
+                      {section === item.id && (
+                        <div className="absolute left-0 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-r-full bg-primary" />
+                      )}
+                      <item.icon className={cn('size-4 shrink-0', section === item.id ? 'text-primary' : 'opacity-60')} />
+                      <span className="text-[13px] font-medium leading-tight">{item.label}</span>
+                    </button>
+                  ))}
                 </div>
               ))}
             </div>
@@ -194,7 +213,7 @@ export const SettingsPanel = () => {
           <div className="flex h-14 shrink-0 items-center justify-between border-b border-border/60 px-6">
             <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
               <span>Settings</span>
-              <span>/</span>
+              <span className="text-muted-foreground/40">/</span>
               <span className="text-foreground/80 font-medium">{searchResults !== null ? 'Search' : NAV.find((n) => n.id === section)?.label}</span>
             </div>
             <div className="flex items-center gap-2">
@@ -212,7 +231,21 @@ export const SettingsPanel = () => {
                 <TooltipContent side="bottom">Restore all settings to defaults</TooltipContent>
               </Tooltip>
               <button onClick={handleClose} className="rounded-lg border border-border/50 px-3 py-1.5 text-[12px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">Cancel</button>
-              <button onClick={handleSave} data-testid="settings-save-button" className="rounded-lg bg-primary px-4 py-1.5 text-[12px] font-medium text-primary-foreground transition-colors hover:bg-primary/90">Save changes</button>
+              <button
+                onClick={handleSave}
+                data-testid="settings-save-button"
+                className={cn(
+                  'relative rounded-lg px-4 py-1.5 text-[12px] font-medium transition-colors',
+                  hasDirtyState
+                    ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                    : 'bg-primary/60 text-primary-foreground/70 cursor-default',
+                )}
+              >
+                {hasDirtyState && (
+                  <IconCircleFilled className="absolute -right-1 -top-1 size-2.5 text-amber-400" />
+                )}
+                Save changes
+              </button>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button onClick={handleClose} data-testid="settings-close-button" className="ml-1 flex size-7 items-center justify-center rounded-md text-muted-foreground/70 transition-colors hover:bg-accent hover:text-foreground">

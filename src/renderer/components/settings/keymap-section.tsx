@@ -40,31 +40,29 @@ export const KeymapSection = () => {
       <SectionHeader section="keymap" />
 
       <div className="relative">
-        <IconSearch className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+        <IconSearch className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground/60" />
         <input
           value={keymapFilter}
           onChange={(e) => setKeymapFilter(e.target.value)}
           placeholder="Search shortcuts…"
-          className="flex h-10 w-full rounded-xl border border-input bg-background/50 pl-10 pr-4 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          aria-label="Search keyboard shortcuts"
+          className="flex h-9 w-full rounded-lg border border-input bg-background/50 pl-9 pr-4 text-[12px] placeholder:text-muted-foreground/50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
         />
       </div>
 
       {groups.length === 0 && (
         <div className="flex flex-col items-center gap-2 py-12">
-          <IconSearch className="size-8 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">No matching shortcuts</p>
+          <IconSearch className="size-5 text-muted-foreground/40" />
+          <p className="text-[13px] text-muted-foreground">No matching shortcuts</p>
         </div>
       )}
 
       {groups.map((group) => (
-        <div key={group} className="space-y-2">
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">{group}</span>
-            <div className="flex-1 border-t border-border/50" />
-          </div>
-          <SettingsCard className="divide-y divide-border/30 !p-0 overflow-hidden">
+        <div key={group}>
+          <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{group}</p>
+          <SettingsCard className="divide-y divide-border/30 !py-0 overflow-hidden">
             {filtered.filter((e) => e.group === group).map((entry) => (
-              <div key={entry.command} className="flex items-center justify-between px-5 py-2.5 transition-colors hover:bg-muted/15">
+              <div key={entry.command} className="flex items-center justify-between px-5 py-3 transition-colors hover:bg-muted/10">
                 <span className="text-[13px] text-foreground/90">{entry.command}</span>
                 <kbd className="shrink-0 rounded-md border border-border/60 bg-muted/50 px-2 py-1 font-mono text-[11px] text-muted-foreground shadow-sm">
                   {entry.keys}
