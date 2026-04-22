@@ -1,5 +1,17 @@
 # Changelog
 
+## [v0.27.0] - 2026-04-22
+
+### Bug fixes
+
+- preserve image attachments in steering queue ([`3065af5`](https://github.com/thabti/kirodex/commit/3065af53b511a537a4d99226fc3873b9b5094263))
+- resolve orphaned UUID project entries on re-add ([`8612b64`](https://github.com/thabti/kirodex/commit/8612b640057ed7fae2739c4dca2051cd22d79b99))
+- align tests with history persistence changes ([`f22deff`](https://github.com/thabti/kirodex/commit/f22deff65da84470779bd22c049c5e248aeb0482))
+
+### Chores
+
+- update changelog for v0.26.0 ([`de12f4a`](https://github.com/thabti/kirodex/commit/de12f4a989a564a1d5930c59bc563ca2731b6b24))
+
 ## [v0.26.0] - 2026-04-21
 
 ### Bug fixes
