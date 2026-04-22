@@ -1,5 +1,11 @@
 # Activity Log
 
+## 2026-04-22 13:06 GST (Dubai)
+### Docs: Fix first-contribution onboarding
+Reordered CONTRIBUTING.md's Getting started so the prereq list (Rust, Bun, kiro-cli) appears before the copy-paste block — previously a new contributor would paste `cargo install tauri-cli` before `rustup` was installed. Pinned `cargo install tauri-cli` to `--locked --version "^2.0.0"` so it doesn't drift across majors. Added a "Frontend-only contributions" note clarifying that `bun run check:ts` + `bun run test:ui` are sufficient without Rust. Clarified in README that kiro-cli is required at runtime (not just setup) and that agent actions fail without it. Added `analytics` to the `src-tauri/src/commands/` module list in the project-layout table.
+
+**Modified:** CONTRIBUTING.md, README.md
+
 ## 2026-04-22 08:31 GST (Dubai)
 ### Steering Queue: Preserve image attachments in queued messages
 Queued messages while the agent was running dropped image attachments; only the text string was stored. Changed `queuedMessages` from `Record<string, string[]>` to `Record<string, QueuedMessage[]>` where each entry carries `text` + optional `attachments`. The QueuedMessages component now shows an `IconPhoto` indicator with count tooltip, and displays "Image attachment" as fallback text for image-only messages. Attachments flow through enqueue, steer, and auto-drain paths.

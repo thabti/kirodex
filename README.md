@@ -85,7 +85,7 @@ chmod +x Kirodex_*.AppImage && ./Kirodex_*.AppImage
 # winget and scoop support coming soon
 ```
 
-> Requires [kiro-cli](https://kiro.dev) installed and in your PATH.
+> Requires [kiro-cli](https://kiro.dev) installed and in your PATH. Without it, Kirodex will launch but every agent action fails with "Failed to spawn kiro-cli" — see [Troubleshooting](#troubleshooting).
 
 ---
 
@@ -156,15 +156,15 @@ chmod +x Kirodex_*.AppImage && ./Kirodex_*.AppImage
 - macOS, Linux, or Windows
 - [Rust](https://rustup.rs) >= 1.78
 - [Bun](https://bun.sh) >= 1.0 (or Node >= 20)
-- [Tauri CLI](https://v2.tauri.app/start/create-project/#cargo): `cargo install tauri-cli`
-- [kiro-cli](https://kiro.dev) installed and in your PATH
+- [Tauri CLI](https://v2.tauri.app/start/create-project/#cargo): `cargo install tauri-cli --locked --version "^2.0.0"`
+- [kiro-cli](https://kiro.dev) installed and in your PATH — required at runtime; `bun run dev` will open without it but agent actions fail
 
 ### Clone and run
 
 ```bash
 git clone https://github.com/thabti/kirodex.git
 cd kirodex
-cargo install tauri-cli  # if not already installed
+cargo install tauri-cli --locked --version "^2.0.0"   # if not already installed
 bun install
 bun run dev
 ```
