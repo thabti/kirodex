@@ -789,6 +789,14 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
             }
           }
         } catch { /* backup load is best-effort */ }
+        // Never overwrite tasks that have an active session (running/paused) —
+        // they have live messages, streaming chunks, and tool calls that would be lost.
+        const existing = get().tasks
+        for (const [id, t] of Object.entries(existing)) {
+          if (t.status === 'running' || t.status === 'paused') {
+            tasks[id] = t
+          }
+        }
         set({ tasks, projects, projectIds, projectNames, softDeleted, deletedTaskIds, connected: true })
       } catch {
         // History load failed — derive projects from live tasks, filtering worktree paths
@@ -842,6 +850,13 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
             }
           }
         } catch { /* backup load is best-effort */ }
+        // Preserve live tasks (same guard as the primary path above)
+        const existing = get().tasks
+        for (const [id, t] of Object.entries(existing)) {
+          if (t.status === 'running' || t.status === 'paused') {
+            tasks[id] = t
+          }
+        }
         set({ tasks, projects, projectIds, projectNames, softDeleted, deletedTaskIds, connected: false })
       } catch {
         set({ connected: false })
