@@ -255,6 +255,20 @@ describe('projects', () => {
     expect(useTaskStore.getState().projectIds['/ws']).toBe(pid)
   })
 
+  it('addProject updates projectId on restored soft-deleted tasks', () => {
+    useTaskStore.getState().addProject('/ws')
+    const oldPid = useTaskStore.getState().projectIds['/ws']
+    useTaskStore.getState().upsertTask(makeTask({ id: 't1', workspace: '/ws', projectId: oldPid }))
+    useTaskStore.getState().removeProject('/ws')
+    expect(useTaskStore.getState().softDeleted['t1']).toBeDefined()
+    // Re-add the same project — should restore the task with the NEW projectId
+    useTaskStore.getState().addProject('/ws')
+    const newPid = useTaskStore.getState().projectIds['/ws']
+    expect(newPid).not.toBe(oldPid)
+    expect(useTaskStore.getState().tasks['t1']).toBeDefined()
+    expect(useTaskStore.getState().tasks['t1'].projectId).toBe(newPid)
+  })
+
   it('addProject rejects worktree paths', () => {
     useTaskStore.getState().addProject('/project/.kiro/worktrees/feat')
     expect(useTaskStore.getState().projects).toHaveLength(0)
@@ -919,6 +933,26 @@ describe('removeProject', () => {
     useTaskStore.setState({ selectedTaskId: 't1', view: 'chat' })
     useTaskStore.getState().removeProject('/ws')
     expect(useTaskStore.getState().view).toBe('dashboard')
+  })
+
+  it('removes orphaned tasks when called with a UUID projectId as cwd', () => {
+    const orphanUuid = crypto.randomUUID()
+    useTaskStore.setState({
+      tasks: {
+        't1': makeTask({ id: 't1', workspace: '/old-project', projectId: orphanUuid }),
+        't2': makeTask({ id: 't2', workspace: '/other', projectId: 'other-pid' }),
+      },
+      projects: ['/other'],
+      projectIds: { '/old-project': orphanUuid },
+    })
+    useTaskStore.getState().removeProject(orphanUuid)
+    // t1 should be soft-deleted
+    expect(useTaskStore.getState().tasks['t1']).toBeUndefined()
+    expect(useTaskStore.getState().softDeleted['t1']).toBeDefined()
+    // t2 should be untouched
+    expect(useTaskStore.getState().tasks['t2']).toBeDefined()
+    // projectIds entry pointing to the orphan UUID should be cleaned up
+    expect(Object.values(useTaskStore.getState().projectIds)).not.toContain(orphanUuid)
   })
 })
 
@@ -1603,5 +1637,158 @@ describe('btw (tangent) mode', () => {
     }))
     // Checkpoint should still have the original
     expect(useTaskStore.getState().btwCheckpoint!.messages).toHaveLength(1)
+  })
+})
+
+describe('multi-turn message preservation', () => {
+  it('preserves messages when task_update arrives with empty messages (simulates backend strip)', () => {
+    const msgs = [
+      { role: 'user' as const, content: 'hello', timestamp: '1' },
+      { role: 'assistant' as const, content: 'hi there', timestamp: '2' },
+    ]
+    useTaskStore.getState().upsertTask(makeTask({ messages: msgs }))
+    // Simulate backend task_update with messages stripped (as listener does)
+    useTaskStore.getState().upsertTask(makeTask({ status: 'running', messages: [] }))
+    expect(useTaskStore.getState().tasks['task-1'].messages).toHaveLength(2)
+    expect(useTaskStore.getState().tasks['task-1'].messages).toBe(msgs)
+  })
+
+  it('preserves messages across multiple consecutive task_updates with empty messages', () => {
+    const msgs = [
+      { role: 'user' as const, content: 'q1', timestamp: '1' },
+      { role: 'assistant' as const, content: 'a1', timestamp: '2' },
+      { role: 'user' as const, content: 'q2', timestamp: '3' },
+      { role: 'assistant' as const, content: 'a2', timestamp: '4' },
+    ]
+    useTaskStore.getState().upsertTask(makeTask({ messages: msgs }))
+    // Multiple rapid task_updates (status changes during a turn)
+    useTaskStore.getState().upsertTask(makeTask({ status: 'running', messages: [] }))
+    useTaskStore.getState().upsertTask(makeTask({ status: 'pending_permission', messages: [] }))
+    useTaskStore.getState().upsertTask(makeTask({ status: 'running', messages: [] }))
+    expect(useTaskStore.getState().tasks['task-1'].messages).toHaveLength(4)
+  })
+
+  it('applyTurnEnd preserves existing messages and appends assistant message', () => {
+    const existingMsgs = [
+      { role: 'user' as const, content: 'first question', timestamp: '1' },
+      { role: 'assistant' as const, content: 'first answer', timestamp: '2' },
+      { role: 'user' as const, content: 'second question', timestamp: '3' },
+    ]
+    const state = {
+      tasks: { 't1': makeTask({ id: 't1', status: 'running', messages: existingMsgs }) },
+      streamingChunks: { t1: 'second answer' } as Record<string, string>,
+      thinkingChunks: {} as Record<string, string>,
+      liveToolCalls: {} as Record<string, import('@/types').ToolCall[]>,
+    }
+    const result = applyTurnEnd(state, 't1', 'end_turn')
+    const messages = result.tasks?.['t1'].messages ?? []
+    expect(messages).toHaveLength(4)
+    expect(messages[0].content).toBe('first question')
+    expect(messages[1].content).toBe('first answer')
+    expect(messages[2].content).toBe('second question')
+    expect(messages[3].content).toBe('second answer')
+    expect(messages[3].role).toBe('assistant')
+  })
+
+  it('full multi-turn cycle: send → stream → turnEnd → task_update → send again', () => {
+    // Turn 1: user sends message
+    const userMsg1 = { role: 'user' as const, content: 'hello', timestamp: '1' }
+    useTaskStore.getState().upsertTask(makeTask({ status: 'running', messages: [userMsg1] }))
+
+    // Turn 1: streaming completes, applyTurnEnd
+    useTaskStore.setState((s) => ({
+      streamingChunks: { ...s.streamingChunks, 'task-1': 'hi there' },
+    }))
+    useTaskStore.setState((s) => applyTurnEnd(s, 'task-1', 'end_turn'))
+    expect(useTaskStore.getState().tasks['task-1'].messages).toHaveLength(2)
+
+    // Backend task_update arrives with empty messages (status change)
+    useTaskStore.getState().upsertTask(makeTask({ status: 'paused', messages: [] }))
+    expect(useTaskStore.getState().tasks['task-1'].messages).toHaveLength(2)
+
+    // Turn 2: user sends another message
+    const task = useTaskStore.getState().tasks['task-1']
+    const userMsg2 = { role: 'user' as const, content: 'follow up', timestamp: '3' }
+    useTaskStore.getState().upsertTask({
+      ...task,
+      status: 'running',
+      messages: [...task.messages, userMsg2],
+    })
+    expect(useTaskStore.getState().tasks['task-1'].messages).toHaveLength(3)
+
+    // Another backend task_update with empty messages
+    useTaskStore.getState().upsertTask(makeTask({ status: 'running', messages: [] }))
+    expect(useTaskStore.getState().tasks['task-1'].messages).toHaveLength(3)
+
+    // Turn 2: streaming completes
+    useTaskStore.setState((s) => ({
+      streamingChunks: { ...s.streamingChunks, 'task-1': 'follow up answer' },
+    }))
+    useTaskStore.setState((s) => applyTurnEnd(s, 'task-1', 'end_turn'))
+    expect(useTaskStore.getState().tasks['task-1'].messages).toHaveLength(4)
+    expect(useTaskStore.getState().tasks['task-1'].messages[3].content).toBe('follow up answer')
+  })
+
+  it('messages survive when task_update arrives between applyTurnEnd and next user message', () => {
+    // Setup: task with 2 messages after first turn
+    const msgs = [
+      { role: 'user' as const, content: 'q1', timestamp: '1' },
+      { role: 'assistant' as const, content: 'a1', timestamp: '2' },
+    ]
+    useTaskStore.getState().upsertTask(makeTask({ status: 'paused', messages: msgs }))
+
+    // Backend task_update with empty messages arrives
+    useTaskStore.getState().upsertTask(makeTask({ status: 'paused', messages: [] }))
+    expect(useTaskStore.getState().tasks['task-1'].messages).toHaveLength(2)
+
+    // User sends next message
+    const task = useTaskStore.getState().tasks['task-1']
+    useTaskStore.getState().upsertTask({
+      ...task,
+      status: 'running',
+      messages: [...task.messages, { role: 'user' as const, content: 'q2', timestamp: '3' }],
+    })
+    expect(useTaskStore.getState().tasks['task-1'].messages).toHaveLength(3)
+    expect(useTaskStore.getState().tasks['task-1'].messages[2].content).toBe('q2')
+  })
+
+  it('upsertTask accepts messages when incoming has more than existing', () => {
+    const msgs1 = [{ role: 'user' as const, content: 'q1', timestamp: '1' }]
+    useTaskStore.getState().upsertTask(makeTask({ messages: msgs1 }))
+
+    const msgs2 = [
+      { role: 'user' as const, content: 'q1', timestamp: '1' },
+      { role: 'assistant' as const, content: 'a1', timestamp: '2' },
+    ]
+    useTaskStore.getState().upsertTask(makeTask({ messages: msgs2 }))
+    expect(useTaskStore.getState().tasks['task-1'].messages).toHaveLength(2)
+  })
+
+  it('upsertTask preserves name across task_update events', () => {
+    useTaskStore.getState().upsertTask(makeTask({ name: 'Original Name' }))
+    useTaskStore.getState().renameTask('task-1', 'Renamed')
+    // Backend task_update carries stale name
+    useTaskStore.getState().upsertTask(makeTask({ name: 'Original Name', status: 'running', messages: [] }))
+    expect(useTaskStore.getState().tasks['task-1'].name).toBe('Renamed')
+  })
+
+  it('preserves parentTaskId when backend update lacks it', () => {
+    useTaskStore.getState().upsertTask(makeTask({ parentTaskId: 'parent-1' }))
+    useTaskStore.getState().upsertTask(makeTask({ status: 'running', messages: [] }))
+    expect(useTaskStore.getState().tasks['task-1'].parentTaskId).toBe('parent-1')
+  })
+
+  it('bail-out guard prevents unnecessary re-renders when nothing changed', () => {
+    const msgs = [{ role: 'user' as const, content: 'hi', timestamp: '1' }]
+    useTaskStore.getState().upsertTask(makeTask({ messages: msgs }))
+    const tasksBefore = useTaskStore.getState().tasks
+
+    // Same task_update with empty messages — should bail out (messages preserved by reference)
+    useTaskStore.getState().upsertTask(makeTask({ messages: [] }))
+    const tasksAfter = useTaskStore.getState().tasks
+
+    // Since messages are preserved by reference and status hasn't changed,
+    // the bail-out guard should prevent a state update
+    expect(tasksBefore).toBe(tasksAfter)
   })
 })

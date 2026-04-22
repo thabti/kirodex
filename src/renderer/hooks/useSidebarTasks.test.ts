@@ -219,4 +219,19 @@ describe('useSidebarTasks projectId grouping', () => {
     expect(result.current).toHaveLength(1)
     expect(result.current[0].cwd).toBe('/project')
   })
+
+  it('does not create sidebar entry for orphaned UUID projectId with no workspace mapping', () => {
+    const orphanUuid = crypto.randomUUID()
+    useTaskStore.setState({
+      tasks: {
+        't1': makeTask({ id: 't1', workspace: '/old-project', projectId: orphanUuid }),
+      },
+      projects: [],
+      projectIds: {},
+    })
+    const { result } = renderHook(() => useSidebarTasks('recent'))
+    // Should not create an entry with the UUID as the project name
+    const uuidEntry = result.current.find((p) => p.cwd === orphanUuid)
+    expect(uuidEntry).toBeUndefined()
+  })
 })

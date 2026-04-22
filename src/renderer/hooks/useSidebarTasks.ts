@@ -142,6 +142,8 @@ export function useSidebarTasks(sort: SortKey): readonly SidebarProject[] {
     for (const [pid, tasks] of grouped) {
       if (seenPid.has(pid)) continue
       const ws = idToWorkspace.get(pid) ?? pid
+      // Skip orphaned UUID projectIds with no workspace mapping
+      if (!idToWorkspace.has(pid) && !pid.startsWith('/')) continue
       if (worktreeWorkspaces.has(ws)) continue
       if (seenCwd.has(ws)) continue
       result.push({
