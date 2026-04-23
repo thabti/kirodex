@@ -56,6 +56,8 @@ export interface TaskStore {
   taskModes: Record<string, string>
   /** Whether a fork operation is in progress */
   isForking: boolean
+  /** Workspace path of the most recently added project (for auto-focus) */
+  lastAddedProject: string | null
   /** Pending worktree cleanup — set when a worktree thread is being deleted/archived */
   worktreeCleanupPending: { taskId: string; worktreePath: string; branch: string; originalWorkspace: string; action: 'archive' | 'delete'; hasChanges: boolean | null } | null
   setSelectedTask: (id: string | null) => void
@@ -63,6 +65,7 @@ export interface TaskStore {
   setNewProjectOpen: (open: boolean) => void
   setSettingsOpen: (open: boolean, section?: string | null) => void
   addProject: (workspace: string) => void
+  clearLastAddedProject: () => void
   /** Returns the stable UUID for a workspace, generating one if needed */
   getProjectId: (workspace: string) => string
   removeProject: (workspace: string) => void

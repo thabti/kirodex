@@ -3,6 +3,7 @@ import { IconChevronRight, IconChevronDown, IconEdit, IconTrash, IconArchive, Ic
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { ipc } from '@/lib/ipc'
+import { useTaskStore } from '@/stores/taskStore'
 import { ThreadItem } from './ThreadItem'
 import { ProjectIcon } from './ProjectIcon'
 import { useProjectIcon, setProjectIconOverride } from '@/hooks/useProjectIcon'
@@ -16,6 +17,7 @@ interface ProjectItemProps {
   selectedTaskId: string | null
   isActiveProject: boolean
   isDragOver: boolean
+  autoFocus?: boolean
   onSelectTask: (id: string) => void
   onNewThread: () => void
   onDeleteTask: (id: string) => void
@@ -29,7 +31,7 @@ interface ProjectItemProps {
 }
 
 export const ProjectItem = memo(function ProjectItem({
-  name, cwd, tasks, selectedTaskId, isActiveProject, isDragOver,
+  name, cwd, tasks, selectedTaskId, isActiveProject, isDragOver, autoFocus,
   onSelectTask, onNewThread, onDeleteTask, onRenameTask,
   onRemoveProject, onArchiveThreads,
   onDragStart, onDragOver, onDrop, onDragEnd,
@@ -38,7 +40,14 @@ export const ProjectItem = memo(function ProjectItem({
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null)
   const [iconPickerOpen, setIconPickerOpen] = useState(false)
   const ctxRef = useRef<HTMLDivElement>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
   const projectIcon = useProjectIcon(cwd)
+
+  useEffect(() => {
+    if (!autoFocus) return
+    buttonRef.current?.focus()
+    useTaskStore.getState().clearLastAddedProject()
+  }, [autoFocus])
 
   useEffect(() => {
     if (!ctxMenu) return
@@ -71,6 +80,7 @@ export const ProjectItem = memo(function ProjectItem({
           <div className="absolute left-0 top-1 bottom-1 w-[3px] rounded-full bg-primary" aria-hidden />
         )}
         <button
+          ref={buttonRef}
           type="button"
           onClick={() => setExpanded((v) => !v)}
           onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ x: e.clientX, y: e.clientY }) }}
