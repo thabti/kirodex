@@ -89,8 +89,18 @@ describe('deriveTimeline', () => {
 
   it('combines persisted messages with live state', () => {
     const msgs = [makeMsg('user', 'hi')]
-    // 'working' row is suppressed when there's live text or tool calls (they already signal activity)
+    // 'working' row is suppressed when there's live streaming text
     const rows = deriveTimeline(msgs, 'responding...', [makeTool()], undefined, true)
     expect(rows.map((r) => r.kind)).toEqual(['user-message', 'assistant-text', 'work'])
+  })
+
+  it('shows working indicator alongside live tool calls when running', () => {
+    const rows = deriveTimeline([], undefined, [makeTool()], undefined, true)
+    expect(rows.map((r) => r.kind)).toEqual(['work', 'working'])
+  })
+
+  it('suppresses working indicator when streaming text is active', () => {
+    const rows = deriveTimeline([], 'typing...', [makeTool()], undefined, true)
+    expect(rows.map((r) => r.kind)).toEqual(['assistant-text', 'work'])
   })
 })

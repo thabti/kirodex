@@ -188,7 +188,6 @@ export function deriveTimeline(
   const hasLiveTools = liveToolCalls && liveToolCalls.length > 0
   const hasLiveText = !!streamingChunk
   const hasLiveThinking = !!liveThinking
-  const hasLiveActivity = hasLiveTools || hasLiveText || hasLiveThinking
 
   if (hasLiveText || hasLiveThinking) {
     rows.push({
@@ -202,19 +201,21 @@ export function deriveTimeline(
     })
   }
 
-  // Show "Working..." indicator only when the agent is running but hasn't
-  // produced any visible content yet. Once there's live text or tool calls,
-  // those rows already signal activity and the indicator just adds a gap.
-  if (isRunning && !hasLiveActivity) {
-    rows.push({ kind: 'working', id: 'working' })
-  }
-
   if (hasLiveTools) {
     rows.push({
       kind: 'work',
       id: 'live-work',
       toolCalls: liveToolCalls,
     })
+  }
+
+  // Show "Working..." indicator when the agent is running and there's no
+  // live streaming text. During long tool calls (e.g. subagents), the
+  // indicator appears below the tool call display so the user still sees
+  // a "Crafting..." signal. Only suppress when text is actively streaming,
+  // since the streaming text itself signals activity.
+  if (isRunning && !hasLiveText && !hasLiveThinking) {
+    rows.push({ kind: 'working', id: 'working' })
   }
 
   return rows

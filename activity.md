@@ -1,5 +1,17 @@
 # Activity Log
 
+## 2026-04-23 14:54 GST (Dubai)
+### Icons: redesign from square to squircle shape
+Replaced both dev (teal #14B8A6) and prod (blue #0000FF) app icons with a superellipse squircle shape (n=5, 360 points) on transparent background. Generated all platform formats: SVG source, 1024x1024 PNG, macOS .icns (via iconutil), and Windows .ico (via ImageMagick). No text, clean solid color fill.
+
+**Modified:** `src-tauri/icons/icon.svg`, `src-tauri/icons/icon.png`, `src-tauri/icons/icon.icns`, `src-tauri/icons/icon.ico`, `src-tauri/icons/prod/icon.svg`, `src-tauri/icons/prod/icon.png`, `src-tauri/icons/prod/icon.icns`, `src-tauri/icons/prod/icon.ico`
+
+## 2026-04-23 14:48 GST (Dubai)
+### Timeline: show "Crafting…" indicator during long tool calls and subagent runs
+Fixed the working row disappearing during long-running tool calls. The `deriveTimeline()` function suppressed the "Crafting…" indicator whenever `liveToolCalls` had entries. Changed the condition to only suppress when there's active streaming text or thinking, so the indicator now appears below tool call displays during long operations like subagents.
+
+**Modified:** src/renderer/lib/timeline.ts, src/renderer/lib/timeline.test.ts
+
 ## 2026-04-23 13:02 GST (Dubai)
 ### Crash Recovery: detect corrupted history.json, show recovery UI, reset app data
 Added three-layer crash recovery. history-store.ts now validates the store on first access and auto-resets if corrupted. main.tsx ErrorBoundary shows a recovery screen with Reload and Reset buttons (two-click confirm) instead of a blank screen. index.html has a pre-React fallback that appears after 10s if the JS bundle fails. Added `reset_app_data` Rust command that deletes all files in app_data_dir.
