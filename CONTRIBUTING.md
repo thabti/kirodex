@@ -4,15 +4,34 @@ Thanks for your interest in contributing. This guide covers everything you need 
 
 ## Getting started
 
+### Prerequisites
+
+Install these before running the commands below:
+
+- [Rust](https://rustup.rs) >= 1.78 (provides `cargo` and `rustc`)
+- [Bun](https://bun.sh) >= 1.0 (or Node >= 20)
+- [kiro-cli](https://kiro.dev) — required at runtime to spawn agents; `bun run dev` will open without it but every agent action fails with "Failed to spawn kiro-cli"
+
+### Clone and run
+
 ```bash
 git clone https://github.com/thabti/kirodex.git
 cd kirodex
-cargo install tauri-cli  # required for `bun run dev` and `bun run build`
+cargo install tauri-cli --locked --version "^2.0.0"   # provides the `cargo tauri` subcommand used by `bun run dev` / `bun run build`
 bun install
 bun run dev
 ```
 
-See the [README](README.md) for prerequisites (Rust, Bun, Tauri CLI, kiro-cli).
+### Frontend-only contributions
+
+If you only touch files under `src/` (React / Zustand / Tailwind) and leave `src-tauri/` alone, you don't need Rust or `cargo` installed. `bun install` is enough, and the only verification gates you need are:
+
+```bash
+bun run check:ts      # TypeScript
+bun run test:ui       # Vitest (frontend tests)
+```
+
+`bun run check:rust` and `bun run test` both shell out to `cargo` and will fail with `cargo: command not found` on a Rust-less machine — skip them for pure-frontend PRs.
 
 ## Development workflow
 
@@ -57,7 +76,7 @@ Include a scope when it helps: `feat(chat):`, `fix(git):`, `refactor(settings):`
 | Directory | What lives there |
 |-----------|-----------------|
 | `src/renderer/` | React frontend (components, stores, hooks, types) |
-| `src-tauri/src/commands/` | Rust backend modules (acp, git, settings, pty, fs_ops, kiro_config, error) |
+| `src-tauri/src/commands/` | Rust backend modules (acp, analytics, git, settings, pty, fs_ops, kiro_config, error) |
 | `src/tailwind.css` | Theme tokens and global styles |
 | `.kiro/steering/` | Kiro agent steering rules |
 

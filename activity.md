@@ -18,6 +18,11 @@ When a new project is added or imported, the project button in the sidebar now r
 
 **Modified:** `src/renderer/stores/task-store-types.ts`, `src/renderer/stores/taskStore.ts`, `src/renderer/components/sidebar/ProjectItem.tsx`, `src/renderer/components/sidebar/TaskSidebar.tsx`
 
+## 2026-04-22 13:06 GST (Dubai)
+### Docs: Fix first-contribution onboarding
+Reordered CONTRIBUTING.md's Getting started so the prereq list (Rust, Bun, kiro-cli) appears before the copy-paste block — previously a new contributor would paste `cargo install tauri-cli` before `rustup` was installed. Pinned `cargo install tauri-cli` to `--locked --version "^2.0.0"` so it doesn't drift across majors. Added a "Frontend-only contributions" note clarifying that `bun run check:ts` + `bun run test:ui` are sufficient without Rust. Clarified in README that kiro-cli is required at runtime (not just setup) and that agent actions fail without it. Added `analytics` to the `src-tauri/src/commands/` module list in the project-layout table.
+
+**Modified:** CONTRIBUTING.md, README.md
 ## 2026-04-22 15:39 GST (Dubai)
 ### Settings: Full UI/UX overhaul of the settings panel
 Overhauled the entire settings panel across 6 files. Added grouped sidebar nav labels (ACCOUNT, SETTINGS, DATA) inspired by reference design. Added dirty state indicator (amber dot on Save button). Fixed SettingsCard default padding from py-1 to py-3, eliminating all !py-4 overrides. Merged Permissions + Worktrees + Sandbox into a single "Workspace" card in General, reducing from 7 sub-sections to 5. Added ConfirmDialog for destructive actions (Clear history, Clear analytics). Expanded font size range from 14-18 to 12-22 with editable number input. Improved keymap search input consistency. Added ARIA roles and labels throughout.
