@@ -64,9 +64,9 @@ export const KeymapSection = () => {
             {filtered.filter((e) => e.group === group).map((entry) => (
               <div key={entry.command} className="flex items-center justify-between px-5 py-3 transition-colors hover:bg-muted/10">
                 <span className="text-[13px] text-foreground/90">{entry.command}</span>
-                <kbd className="shrink-0 rounded-md border border-border/60 bg-muted/50 px-2 py-1 font-mono text-[11px] text-muted-foreground shadow-sm">
+                <span className="shrink-0 font-mono text-[11px] text-muted-foreground/70">
                   {entry.keys}
-                </kbd>
+                </span>
               </div>
             ))}
           </SettingsCard>

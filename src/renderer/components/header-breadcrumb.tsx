@@ -105,7 +105,7 @@ export const HeaderBreadcrumb = memo(function HeaderBreadcrumb({
         </TooltipTrigger>
         <TooltipContent side="bottom">
           Toggle sidebar{" "}
-          <kbd className="ml-1 rounded bg-muted px-1 py-0.5 text-[10px]">
+          <kbd className="ml-1 rounded-sm bg-background/15 px-1 text-[10px]">
             {isMac ? "⌘" : "Ctrl+"}B
           </kbd>
         </TooltipContent>

@@ -252,7 +252,7 @@ export const SettingsPanel = () => {
                     <IconX className="size-4" />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent side="bottom">Close <kbd className="ml-1 text-[10px] opacity-50">Esc</kbd></TooltipContent>
+                <TooltipContent side="bottom">Close <kbd className="ml-1 rounded-sm bg-background/15 px-1 text-[10px]">Esc</kbd></TooltipContent>
               </Tooltip>
             </div>
           </div>
