@@ -138,7 +138,7 @@ chmod +x Kirodex_*.AppImage && ./Kirodex_*.AppImage
 - Configurable — toggle on/off in Settings > General > Permissions
 
 **Terminal and settings**
-- Integrated PTY terminal powered by [Ghostty](https://ghostty.org) WASM
+- Integrated PTY terminal ([xterm.js](https://xtermjs.org) + portable-pty)
 - `Cmd+L` shortcut to focus the chat input from anywhere
 - Open in editor — launch files in VS Code, Cursor, Zed, or your preferred terminal emulator
 - Update checker with sidebar badge when a new version is available

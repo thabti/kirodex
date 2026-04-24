@@ -14,7 +14,8 @@ Unknown commands return `handled: false` and are forwarded to ACP as regular mes
 | /agent | Open agent picker panel | Yes |
 | /settings | Open settings panel | Yes |
 | /upload | Trigger file upload dialog | Yes |
-| /usage | Toggle context usage panel | Yes |
+| /usage | Switch to analytics dashboard view | Yes |
+| /data | Alias for /usage | Yes |
 | /plan | Toggle plan mode (switches between `kiro_planner` and `kiro_default`) | No (syncs via IPC) |
 | /close or /exit | Archive current thread (preserves history in read-only view) | Yes |
 | /fork | Fork current thread into a new conversation | Yes |
@@ -29,4 +30,4 @@ Unknown commands return `handled: false` and are forwarded to ACP as regular mes
 
 `/close` and `/exit` archive the thread instead of deleting it. The conversation is preserved and accessible in a read-only view.
 
-Panel commands (`/model`, `/agent`, `/usage`, `/branch`, `/worktree`) toggle their respective panels; calling the same command again dismisses the panel.
+Panel commands (`/model`, `/agent`, `/branch`, `/worktree`) toggle their respective panels; calling the same command again dismisses the panel.
