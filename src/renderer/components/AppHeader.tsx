@@ -1,4 +1,4 @@
-import { memo } from "react"
+import { memo, useEffect, useState } from "react"
 import { getCurrentWindow } from "@tauri-apps/api/window"
 import { useTaskStore } from "@/stores/taskStore"
 import { ErrorBoundary } from "@/components/ErrorBoundary"
@@ -52,6 +52,18 @@ const AppHeaderInner = memo(function AppHeaderInner({
   onToggleSidebar,
   sidebarPosition = "left",
 }: AppHeaderProps) {
+  const [isFullscreen, setIsFullscreen] = useState(false)
+
+  useEffect(() => {
+    if (!IS_MAC) return
+    getCurrentWindow().isFullscreen().then(setIsFullscreen).catch(() => {})
+    let unlisten: (() => void) | undefined
+    getCurrentWindow().onResized(() => {
+      getCurrentWindow().isFullscreen().then(setIsFullscreen).catch(() => {})
+    }).then((fn) => { unlisten = fn })
+    return () => { unlisten?.() }
+  }, [])
+
   const taskWorkspace = useTaskStore((s) => {
     const id = s.selectedTaskId
     return id ? s.tasks[id]?.workspace : null
@@ -66,7 +78,7 @@ const AppHeaderInner = memo(function AppHeaderInner({
       onMouseDown={handleHeaderMouseDown}
       className={cn(
         "flex h-[38px] shrink-0 items-center gap-3 border-b border-border bg-background p-0 pt-1 select-none [-webkit-user-select:none]",
-        IS_MAC ? "pl-[74px] pr-2" : "pl-2 pr-[138px]",
+        IS_MAC ? (isFullscreen ? "pl-2 pr-2" : "pl-[74px] pr-2") : "pl-2 pr-[138px]",
       )}
     >
       {/* Breadcrumb left */}
