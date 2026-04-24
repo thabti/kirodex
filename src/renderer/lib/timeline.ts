@@ -203,19 +203,20 @@ export function deriveTimeline(
     })
   }
 
+  // Show activity indicator whenever the agent is running (green pause
+  // button visible). Placed above live tool calls so the dot sits at
+  // the top of the activity block. When streaming text/thinking is
+  // already on screen, the row renders as a subtle dot.
+  if (isRunning) {
+    rows.push({ kind: 'working', id: 'working', hasStreamingContent: hasLiveText || hasLiveThinking })
+  }
+
   if (hasLiveTools) {
     rows.push({
       kind: 'work',
       id: 'live-work',
       toolCalls: liveToolCalls,
     })
-  }
-
-  // Show activity indicator whenever the agent is running (green pause
-  // button visible). When streaming text/thinking is already on screen,
-  // the row renders as a subtle dot so it doesn't compete visually.
-  if (isRunning) {
-    rows.push({ kind: 'working', id: 'working', hasStreamingContent: hasLiveText || hasLiveThinking })
   }
 
   return rows
