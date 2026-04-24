@@ -1,5 +1,29 @@
 # Changelog
 
+## [v0.33.0] - 2026-04-24
+
+### Features
+
+- wire folder drag-drop pills through ChatInput and PillsRow ([`f124d59`](https://github.com/thabti/kirodex/commit/f124d59c11519ee91afbe91b2900be5ba68ec8b7))
+- folder drop support, working row streaming indicator, dev/prod icon split, and CLAUDE.md refresh ([`1d30a80`](https://github.com/thabti/kirodex/commit/1d30a803aa59f9f2b5e120bf5f9e7b41a009e55e))
+
+### Bug fixes
+
+- reconnect restored threads after soft-delete ([`a417444`](https://github.com/thabti/kirodex/commit/a41744428d4a48716c90eca1edf638433f963be6))
+- improve crash fallback with close button and timer cleanup ([`e4c7abb`](https://github.com/thabti/kirodex/commit/e4c7abb611003f255c3e49eb76cc646d387aed8d))
+- remove overflow-hidden that clipped question card options ([`206c653`](https://github.com/thabti/kirodex/commit/206c6531f2e6562dd9caa70c4734506d495a4c02))
+- improve skill mention pill text contrast ([`ca50fff`](https://github.com/thabti/kirodex/commit/ca50fffb337161fef33eb16428d4d212e752eca3))
+- show working indicator during long tool calls ([`8798d6b`](https://github.com/thabti/kirodex/commit/8798d6b5a03ae1d11b14bc05f06df188fbc737fc))
+
+### Styling
+
+- redesign app icons from square to squircle shape ([`696dbbf`](https://github.com/thabti/kirodex/commit/696dbbfcb33a628fe9cbfb0b1647a87763f0593f))
+
+### Documentation
+
+- update README terminal description and fix shortcut/command docs ([`e985fb2`](https://github.com/thabti/kirodex/commit/e985fb23922fc291e5e0b8edadeffb041fd51a02))
+- update activity log ([`3286519`](https://github.com/thabti/kirodex/commit/328651965b2aeea9d6ef030564539321cca1f51c))
+
 ## [v0.32.0] - 2026-04-23
 
 ### Bug fixes
