@@ -198,7 +198,7 @@ export const FileMentionPill = memo(function FileMentionPill({ path, onRemove }:
     pillCls = `${meta.bgCls} text-foreground/90`
   } else if (isSkill) {
     icon = <IconTool className="size-3.5 text-yellow-600 dark:text-yellow-400" />
-    pillCls = 'bg-yellow-500/15 text-yellow-300'
+    pillCls = 'bg-yellow-500/15 text-yellow-600 dark:text-yellow-400'
   } else {
     icon = <FileIcon ext={ext} isDir={false} />
     pillCls = 'bg-accent/60 text-foreground/70'
