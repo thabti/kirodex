@@ -9,7 +9,8 @@ import {
 import { useUpdateStore } from '@/stores/updateStore'
 import { cn } from '@/lib/utils'
 import { handleExternalLinkClick, handleExternalLinkKeyDown } from '@/lib/open-external'
-import appIcon from '../../../../src-tauri/icons/prod/icon.png'
+import { useSettingsStore } from '@/stores/settingsStore'
+import defaultAppIcon from '../../../../src-tauri/icons/prod/icon.png'
 
 interface AboutDialogProps {
   open: boolean
@@ -19,6 +20,8 @@ interface AboutDialogProps {
 export const AboutDialog = ({ open, onOpenChange }: AboutDialogProps) => {
   const [appVersion, setAppVersion] = useState('')
   const { status, updateInfo, progress, error, triggerDownload } = useUpdateStore()
+  const customAppIcon = useSettingsStore((s) => s.settings.customAppIcon)
+  const displayIcon = customAppIcon || defaultAppIcon
 
   useEffect(() => {
     if (open) getVersion().then(setAppVersion).catch(() => {})
@@ -73,7 +76,7 @@ export const AboutDialog = ({ open, onOpenChange }: AboutDialogProps) => {
       <DialogContent className="max-w-xs gap-0 p-0" showCloseButton={false}>
         <div className="flex flex-col items-center px-6 pt-8 pb-6">
           <img
-            src={appIcon}
+            src={displayIcon}
             alt="Kirodex"
             className="size-20 rounded-2xl shadow-lg"
             draggable={false}

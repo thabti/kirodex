@@ -8,7 +8,7 @@ import { Switch } from '@/components/ui/switch'
 import { ipc } from '@/lib/ipc'
 import { cn } from '@/lib/utils'
 import type { AppSettings } from '@/types'
-import { SectionHeader, SectionLabel, SettingsCard, SettingRow, Divider } from './settings-shared'
+import { SectionHeader, SettingsCard, SettingRow, SettingsGrid, Divider } from './settings-shared'
 import { UpdatesCard } from './updates-card'
 
 interface GeneralSectionProps {
@@ -50,45 +50,39 @@ export const GeneralSection = ({ draft, updateDraft }: GeneralSectionProps) => {
     <>
       <SectionHeader section="general" />
 
-      {/* Connection */}
-      <div>
-        <SectionLabel title="Connection" />
+      <SettingsGrid label="Connection" description="Path to the kiro-cli binary">
         <SettingsCard>
           <div className="py-1">
-            <label className="mb-1.5 block text-[12px] font-medium text-foreground/70">kiro-cli path</label>
             <div className="flex gap-2">
               <input
                 value={draft.kiroBin}
                 data-testid="settings-cli-path-input"
                 onChange={(e) => updateDraft({ kiroBin: e.target.value })}
                 placeholder="kiro-cli"
-                className="flex h-8 w-full flex-1 rounded-lg border border-input bg-background/50 px-3 font-mono text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                className="flex h-7 w-full flex-1 rounded-md border border-input bg-background/50 px-2.5 font-mono text-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               />
-              <button onClick={browseCli} className="shrink-0 rounded-lg border border-input px-2.5 py-1 text-xs font-medium transition-colors hover:bg-accent">Browse</button>
+              <button onClick={browseCli} className="shrink-0 rounded-md border border-input px-2 py-1 text-[11px] font-medium transition-colors hover:bg-accent">Browse</button>
               <button
                 onClick={handleAutoDetect}
                 disabled={isDetecting}
-                className="flex shrink-0 items-center gap-1 rounded-lg border border-input px-2.5 py-1 text-xs font-medium transition-colors hover:bg-accent disabled:pointer-events-none disabled:opacity-50"
+                className="flex shrink-0 items-center gap-1 rounded-md border border-input px-2 py-1 text-[11px] font-medium transition-colors hover:bg-accent disabled:pointer-events-none disabled:opacity-50"
               >
                 {isDetecting ? <IconLoader2 className="size-3 animate-spin" /> : <IconSearch className="size-3" />}
                 Detect
               </button>
             </div>
-            <div className="mt-2 flex items-center gap-2">
-              <button onClick={testCli} className="rounded-lg border border-input px-2.5 py-1 text-xs font-medium transition-colors hover:bg-accent">Test connection</button>
-              {cliStatus === 'ok' && <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400"><IconCheck className="size-3" /> Connected</span>}
-              {cliStatus === 'fail' && <span className="flex items-center gap-1 text-xs text-red-600 dark:text-red-400"><IconAlertCircle className="size-3" /> Failed</span>}
+            <div className="mt-1.5 flex items-center gap-2">
+              <button onClick={testCli} className="rounded-md border border-input px-2 py-0.5 text-[11px] font-medium transition-colors hover:bg-accent">Test</button>
+              {cliStatus === 'ok' && <span className="flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400"><IconCheck className="size-3" /> Connected</span>}
+              {cliStatus === 'fail' && <span className="flex items-center gap-1 text-[11px] text-red-600 dark:text-red-400"><IconAlertCircle className="size-3" /> Failed</span>}
             </div>
           </div>
         </SettingsCard>
-      </div>
+      </SettingsGrid>
 
-      {/* Model */}
-      <div>
-        <SectionLabel title="Model" />
+      <SettingsGrid label="Model" description="Default AI model for new threads">
         <SettingsCard>
           <div className="py-1">
-            <label className="mb-1.5 block text-[12px] font-medium text-foreground/70">Default model</label>
             <div className="flex gap-2">
               <div className="relative flex-1">
                 <select
@@ -96,7 +90,7 @@ export const GeneralSection = ({ draft, updateDraft }: GeneralSectionProps) => {
                   onChange={(e) => updateDraft({ defaultModel: e.target.value || null })}
                   disabled={modelsLoading || availableModels.length === 0}
                   className={cn(
-                    'flex h-8 w-full appearance-none rounded-lg border border-input bg-background/50 px-3 pr-8 text-sm',
+                    'flex h-7 w-full appearance-none rounded-md border border-input bg-background/50 px-2.5 pr-7 text-xs',
                     'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring',
                     'disabled:cursor-not-allowed disabled:opacity-50',
                   )}
@@ -105,24 +99,22 @@ export const GeneralSection = ({ draft, updateDraft }: GeneralSectionProps) => {
                   {modelsLoading && <option value="">Loading…</option>}
                   {availableModels.map((m) => <option key={m.modelId} value={m.modelId}>{m.name}</option>)}
                 </select>
-                <IconChevronDown className="pointer-events-none absolute right-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground/70" />
+                <IconChevronDown className="pointer-events-none absolute right-2 top-1/2 size-3 -translate-y-1/2 text-muted-foreground/70" />
               </div>
               <button
                 onClick={() => fetchModels(draft.kiroBin)}
                 disabled={modelsLoading}
-                className="flex shrink-0 items-center gap-1 rounded-lg border border-input px-2.5 py-1 text-xs font-medium transition-colors hover:bg-accent disabled:pointer-events-none disabled:opacity-50"
+                className="flex shrink-0 items-center gap-1 rounded-md border border-input px-2 py-1 text-[11px] font-medium transition-colors hover:bg-accent disabled:pointer-events-none disabled:opacity-50"
               >
-                {modelsLoading ? <><IconLoader2 className="size-3 animate-spin" /> Loading…</> : <><IconRefresh className="size-3" /> Refresh</>}
+                {modelsLoading ? <IconLoader2 className="size-3 animate-spin" /> : <IconRefresh className="size-3" />}
               </button>
             </div>
-            {modelsError && <span className="mt-1.5 flex items-center gap-1 text-xs text-red-600 dark:text-red-400"><IconAlertCircle className="size-3" /> {modelsError}</span>}
+            {modelsError && <span className="mt-1 flex items-center gap-1 text-[11px] text-red-600 dark:text-red-400"><IconAlertCircle className="size-3" /> {modelsError}</span>}
           </div>
         </SettingsCard>
-      </div>
+      </SettingsGrid>
 
-      {/* Workspace — merged Permissions + Worktrees + Sandbox */}
-      <div>
-        <SectionLabel title="Workspace" />
+      <SettingsGrid label="Workspace" description="Permissions, worktrees, and sandbox">
         <SettingsCard>
           <SettingRow label="Auto-approve" description="Skip permission prompts for tool calls">
             <Switch checked={draft.autoApprove ?? false} onCheckedChange={(checked) => updateDraft({ autoApprove: checked })} aria-label="Toggle auto-approve permissions" />
@@ -132,7 +124,7 @@ export const GeneralSection = ({ draft, updateDraft }: GeneralSectionProps) => {
             <Switch checked={draft.respectGitignore ?? true} onCheckedChange={(checked) => updateDraft({ respectGitignore: checked })} aria-label="Toggle respect gitignore" />
           </SettingRow>
           <Divider />
-          <SettingRow label="Use worktrees" description="Isolate each thread in its own git worktree under .kiro/worktrees/">
+          <SettingRow label="Use worktrees" description="Isolate threads in .kiro/worktrees/">
             <Switch
               checked={draft.projectPrefs?.[activeWorkspace ?? '']?.worktreeEnabled ?? false}
               onCheckedChange={(checked) => updateProjectPref('worktreeEnabled', checked)}
@@ -141,7 +133,7 @@ export const GeneralSection = ({ draft, updateDraft }: GeneralSectionProps) => {
             />
           </SettingRow>
           <Divider />
-          <SettingRow label="Tight sandbox" description="Restrict the agent to the project directory">
+          <SettingRow label="Tight sandbox" description="Restrict agent to project directory">
             <Switch
               checked={draft.projectPrefs?.[activeWorkspace ?? '']?.tightSandbox ?? true}
               onCheckedChange={(checked) => updateProjectPref('tightSandbox', checked)}
@@ -150,17 +142,15 @@ export const GeneralSection = ({ draft, updateDraft }: GeneralSectionProps) => {
             />
           </SettingRow>
         </SettingsCard>
-      </div>
+      </SettingsGrid>
 
-      {/* Notifications */}
-      <div>
-        <SectionLabel title="Notifications" />
+      <SettingsGrid label="Notifications" description="Background alerts and sounds">
         <SettingsCard>
-          <SettingRow label="Desktop notifications" description="Notify when the agent finishes, errors, or needs approval in the background">
+          <SettingRow label="Desktop notifications" description="Notify when agent finishes or needs approval">
             <Switch checked={draft.notifications ?? true} onCheckedChange={(checked) => updateDraft({ notifications: checked })} aria-label="Toggle desktop notifications" />
           </SettingRow>
           <Divider />
-          <SettingRow label="Notification sound" description="Play a chime when a notification is sent">
+          <SettingRow label="Notification sound" description="Play a chime on notification">
             <Switch
               checked={draft.soundNotifications ?? true}
               onCheckedChange={(checked) => updateDraft({ soundNotifications: checked })}
@@ -169,15 +159,13 @@ export const GeneralSection = ({ draft, updateDraft }: GeneralSectionProps) => {
             />
           </SettingRow>
         </SettingsCard>
-      </div>
+      </SettingsGrid>
 
-      {/* Updates */}
-      <div>
-        <SectionLabel title="Updates" />
+      <SettingsGrid label="Updates" description="Check for new versions">
         <SettingsCard>
           <UpdatesCard />
         </SettingsCard>
-      </div>
+      </SettingsGrid>
     </>
   )
 }

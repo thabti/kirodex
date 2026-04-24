@@ -5,7 +5,7 @@ import { useSettingsStore } from '@/stores/settingsStore'
 import { useAnalyticsStore } from '@/stores/analyticsStore'
 import { Switch } from '@/components/ui/switch'
 import type { AppSettings } from '@/types'
-import { SectionHeader, SectionLabel, SettingsCard, SettingRow, Divider, ConfirmDialog } from './settings-shared'
+import { SectionHeader, SettingsCard, SettingRow, SettingsGrid, Divider, ConfirmDialog } from './settings-shared'
 
 const formatBytes = (bytes: number): string => {
   if (bytes === 0) return '0 B'
@@ -45,13 +45,9 @@ export const AdvancedSection = ({ draft, updateDraft, onClose }: AdvancedSection
     <>
       <SectionHeader section="advanced" />
 
-      <div>
-        <SectionLabel title="Privacy" />
+      <SettingsGrid label="Privacy" description="Anonymous usage data">
         <SettingsCard>
-          <SettingRow
-            label="Share anonymous usage data"
-            description="Feature usage and app version only. No prompts, code, file paths, branch names, or commit messages are ever sent."
-          >
+          <SettingRow label="Share anonymous usage data" description="Feature usage and app version only. No code or file paths.">
             <Switch
               checked={draft.analyticsEnabled ?? true}
               onCheckedChange={(checked) => updateDraft({ analyticsEnabled: checked })}
@@ -59,10 +55,9 @@ export const AdvancedSection = ({ draft, updateDraft, onClose }: AdvancedSection
             />
           </SettingRow>
         </SettingsCard>
-      </div>
+      </SettingsGrid>
 
-      <div>
-        <SectionLabel title="Git" />
+      <SettingsGrid label="Git" description="Commit trailers and reports">
         <SettingsCard>
           <SettingRow label="Co-authored-by Kirodex" description="Append trailer to every commit">
             <Switch
@@ -80,12 +75,11 @@ export const AdvancedSection = ({ draft, updateDraft, onClose }: AdvancedSection
             />
           </SettingRow>
         </SettingsCard>
-      </div>
+      </SettingsGrid>
 
-      <div>
-        <SectionLabel title="Side questions (/btw)" />
+      <SettingsGrid label="Side questions" description="/btw character limit">
         <SettingsCard>
-          <SettingRow label="Max question length" description="Character limit for /btw and /tangent questions">
+          <SettingRow label="Max question length" description="Character limit for /btw questions">
             <input
               type="number"
               min={100}
@@ -93,40 +87,36 @@ export const AdvancedSection = ({ draft, updateDraft, onClose }: AdvancedSection
               step={100}
               value={draft.btwMaxChars ?? 1220}
               onChange={(e) => updateDraft({ btwMaxChars: Math.max(100, Math.min(10000, Number(e.target.value) || 1220)) })}
-              className="w-20 rounded-lg border border-input bg-transparent px-2 py-1 text-xs text-foreground outline-none focus:ring-1 focus:ring-ring"
+              className="w-20 rounded-md border border-input bg-transparent px-2 py-0.5 text-xs text-foreground outline-none focus:ring-1 focus:ring-ring"
               aria-label="Max btw question characters"
             />
           </SettingRow>
         </SettingsCard>
-      </div>
+      </SettingsGrid>
 
-      <div>
-        <SectionLabel title="Data" />
+      <SettingsGrid label="Data" description="Clear history and analytics">
         <SettingsCard>
-          <SettingRow label="Conversation history" description="Clear all threads without resetting settings or onboarding">
+          <SettingRow label="Conversation history" description="Clear all threads without resetting settings">
             <button
               type="button"
               onClick={() => setIsConfirmHistoryOpen(true)}
-              className="flex items-center gap-1.5 rounded-lg border border-destructive/30 px-3 py-1.5 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10"
+              className="flex items-center gap-1.5 rounded-md border border-destructive/30 px-2.5 py-1 text-[11px] font-medium text-destructive transition-colors hover:bg-destructive/10"
               aria-label="Clear chat history"
             >
               <IconTrash className="size-3" />
-              Clear history
+              Clear
             </button>
           </SettingRow>
           <Divider />
-          <SettingRow
-            label="Analytics data"
-            description={`Local usage stats stored on disk (${formatBytes(analyticsSize)})`}
-          >
+          <SettingRow label="Analytics data" description={`Local stats on disk (${formatBytes(analyticsSize)})`}>
             <button
               type="button"
               onClick={() => setIsConfirmAnalyticsOpen(true)}
-              className="flex items-center gap-1.5 rounded-lg border border-destructive/30 px-3 py-1.5 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10"
+              className="flex items-center gap-1.5 rounded-md border border-destructive/30 px-2.5 py-1 text-[11px] font-medium text-destructive transition-colors hover:bg-destructive/10"
               aria-label="Clear analytics data"
             >
               <IconChartBar className="size-3" />
-              Clear analytics
+              Clear
             </button>
           </SettingRow>
           <Divider />
@@ -138,14 +128,14 @@ export const AdvancedSection = ({ draft, updateDraft, onClose }: AdvancedSection
                 await store.saveSettings({ ...store.settings, hasOnboardedV2: false })
                 onClose()
               }}
-              className="flex items-center gap-1.5 rounded-lg border border-input px-3 py-1.5 text-xs font-medium transition-colors hover:bg-accent"
+              className="flex items-center gap-1.5 rounded-md border border-input px-2.5 py-1 text-[11px] font-medium transition-colors hover:bg-accent"
             >
               <IconRefresh className="size-3" />
               Replay
             </button>
           </SettingRow>
         </SettingsCard>
-      </div>
+      </SettingsGrid>
 
       <ConfirmDialog
         open={isConfirmHistoryOpen}
@@ -155,7 +145,6 @@ export const AdvancedSection = ({ draft, updateDraft, onClose }: AdvancedSection
         confirmLabel="Clear history"
         onConfirm={handleClearHistory}
       />
-
       <ConfirmDialog
         open={isConfirmAnalyticsOpen}
         onOpenChange={setIsConfirmAnalyticsOpen}

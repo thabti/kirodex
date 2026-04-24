@@ -52,6 +52,18 @@ pub async fn pick_folder(app: tauri::AppHandle) -> Option<String> {
 }
 
 #[tauri::command]
+pub async fn pick_image(app: tauri::AppHandle) -> Option<String> {
+    let (tx, rx) = tokio::sync::oneshot::channel();
+    app.dialog()
+        .file()
+        .add_filter("Images", &["png", "jpg", "jpeg", "webp"])
+        .pick_file(move |file| {
+            let _ = tx.send(file.map(|f| f.to_string()));
+        });
+    rx.await.ok().flatten()
+}
+
+#[tauri::command]
 pub fn open_in_editor(path: String, editor: String) -> Result<(), AppError> {
     // File manager: reveal the path
     if matches!(editor.as_str(), "finder" | "files" | "explorer") {

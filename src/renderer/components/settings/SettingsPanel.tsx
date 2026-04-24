@@ -6,6 +6,7 @@ import { useSettingsStore } from '@/stores/settingsStore'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { handleExternalLinkClick, handleExternalLinkKeyDown } from '@/lib/open-external'
+import { ipc } from '@/lib/ipc'
 import type { AppSettings } from '@/types'
 import { applyTheme, persistTheme } from '@/lib/theme'
 import { AboutDialog } from './AboutDialog'
@@ -69,6 +70,13 @@ export const SettingsPanel = () => {
     persistTheme(mode)
     applyTheme(mode)
     saveSettings(draft)
+    // Apply or reset dock icon
+    if (draft.customAppIcon) {
+      const base64 = draft.customAppIcon.replace(/^data:[^;]+;base64,/, '')
+      ipc.setDockIcon(base64).catch(() => {})
+    } else {
+      ipc.resetDockIcon().catch(() => {})
+    }
     setOpen(false)
   }, [draft, saveSettings, setOpen])
 
@@ -258,7 +266,7 @@ export const SettingsPanel = () => {
           </div>
 
           <div className="flex-1 overflow-y-auto px-8 py-6">
-            <div className="mx-auto max-w-2xl space-y-6">
+            <div className="mx-auto max-w-4xl space-y-5">
               {searchResults !== null ? (
                 searchResults.length === 0 ? (
                   <div className="flex flex-col items-center gap-2 py-16 text-center">

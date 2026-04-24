@@ -1,12 +1,11 @@
-import { SectionHeader, SectionLabel } from './settings-shared'
+import { SectionHeader, SettingsGrid } from './settings-shared'
 import { DeletedThreadsRestore } from './deleted-threads-restore'
 
 export const ArchivesSection = () => (
   <>
     <SectionHeader section="archives" />
-    <div>
-      <SectionLabel title="Deleted threads" />
+    <SettingsGrid label="Deleted threads" description="Restore or permanently remove">
       <DeletedThreadsRestore />
-    </div>
+    </SettingsGrid>
   </>
 )

@@ -157,6 +157,8 @@ export interface AppSettings {
   analyticsAnonId?: string | null
   /** Max character limit for /btw side questions. Default: 1220. */
   btwMaxChars?: number
+  /** Base64 data URL for a user-supplied app icon (About dialog + dock). */
+  customAppIcon?: string | null
 }
 
 export interface ProjectFile {

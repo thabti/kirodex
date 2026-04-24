@@ -49,6 +49,7 @@ export const SEARCHABLE_SETTINGS: readonly SearchableItem[] = [
   { label: 'Theme', description: 'Dark, light, or system theme', section: 'appearance', keywords: 'theme dark light mode' },
   { label: 'Font size', description: 'Adjust the editor font size', section: 'appearance', keywords: 'font size text' },
   { label: 'Sidebar position', description: 'Left or right sidebar placement', section: 'appearance', keywords: 'sidebar left right position layout' },
+  { label: 'App icon', description: 'Upload a custom app icon for the dock and About dialog', section: 'appearance', keywords: 'icon logo branding image upload custom dock' },
   { label: 'Keyboard shortcuts', description: 'View all available keyboard shortcuts', section: 'keymap', keywords: 'keyboard shortcuts hotkeys keybindings' },
   { label: 'Anonymous analytics', description: 'Share anonymous usage data', section: 'advanced', keywords: 'analytics privacy telemetry' },
   { label: 'Co-authored-by', description: 'Append Kirodex trailer to every commit', section: 'advanced', keywords: 'git commit co-author trailer' },
@@ -70,36 +71,36 @@ interface SettingRowProps {
 }
 
 export const SettingRow = ({ label, description, children, className }: SettingRowProps) => (
-  <div className={cn('flex items-center justify-between gap-4 py-3.5', className)}>
+  <div className={cn('flex items-center justify-between gap-4 py-2.5', className)}>
     <div className="min-w-0 flex-1">
-      <p className="text-[13px] font-medium text-foreground">{label}</p>
-      <p className="text-[11.5px] leading-relaxed text-muted-foreground">{description}</p>
+      <p className="text-[12.5px] font-medium text-foreground">{label}</p>
+      <p className="text-[11px] leading-relaxed text-muted-foreground">{description}</p>
     </div>
     <div className="shrink-0">{children}</div>
   </div>
 )
 
 export const SectionLabel = ({ title }: { title: string }) => (
-  <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{title}</p>
+  <p className="mb-2 text-[10.5px] font-semibold uppercase tracking-wider text-muted-foreground">{title}</p>
 )
 
 export const SectionHeader = ({ section }: { section: Section }) => {
   const nav = NAV.find((n) => n.id === section)
   if (!nav) return null
   return (
-    <div className="mb-6">
+    <div className="mb-4">
       <div className="flex items-center gap-2.5">
         <nav.icon className="size-5 text-primary" />
-        <h3 className="text-[17px] font-semibold text-foreground">{nav.label}</h3>
+        <h3 className="text-[16px] font-semibold text-foreground">{nav.label}</h3>
       </div>
-      <p className="mt-1 text-[12.5px] text-muted-foreground">{nav.sectionDescription}</p>
+      <p className="mt-0.5 text-[12px] text-muted-foreground">{nav.sectionDescription}</p>
     </div>
   )
 }
 
 export const SettingsCard = ({ children, className }: { children: React.ReactNode; className?: string }) => (
   <div className={cn(
-    'rounded-xl border border-border/50 bg-card/70 px-5 py-3 shadow-sm',
+    'rounded-xl border border-border/50 bg-card/70 px-4 py-2 shadow-sm',
     className,
   )}>
     {children}
@@ -107,6 +108,17 @@ export const SettingsCard = ({ children, className }: { children: React.ReactNod
 )
 
 export const Divider = () => <div className="border-t border-border/40" />
+
+/** Two-column grid: label/description on the left, controls on the right. */
+export const SettingsGrid = ({ label, description, children }: { label: string; description?: string; children: React.ReactNode }) => (
+  <div className="grid grid-cols-[200px_1fr] gap-6">
+    <div className="pt-1">
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
+      {description && <p className="mt-0.5 text-[10.5px] leading-snug text-muted-foreground/60">{description}</p>}
+    </div>
+    <div>{children}</div>
+  </div>
+)
 
 // ── Confirm dialog for destructive actions ───────────────────────
 

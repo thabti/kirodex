@@ -498,12 +498,15 @@ pub fn run() {
             // Settings
             settings::get_settings,
             settings::save_settings,
+            settings::set_dock_icon,
+            settings::reset_dock_icon,
             // File ops
             fs_ops::detect_kiro_cli,
             fs_ops::read_text_file,
             fs_ops::read_file_base64,
             fs_ops::is_directory,
             fs_ops::pick_folder,
+            fs_ops::pick_image,
             fs_ops::open_in_editor,
             fs_ops::open_url,
             fs_ops::detect_editors,

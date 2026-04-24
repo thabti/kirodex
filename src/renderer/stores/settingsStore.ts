@@ -111,7 +111,7 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
     const keys: Array<keyof AppSettings> = [
       'kiroBin', 'defaultModel', 'autoApprove', 'respectGitignore',
       'coAuthor', 'coAuthorJsonReport', 'notifications', 'fontSize',
-      'sidebarPosition', 'analyticsEnabled', 'theme',
+      'sidebarPosition', 'analyticsEnabled', 'theme', 'customAppIcon',
     ]
     for (const k of keys) {
       if (prev[k] !== settings[k]) track('settings_changed', { key: String(k) })

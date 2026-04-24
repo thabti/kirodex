@@ -72,6 +72,9 @@ pub struct AppSettings {
     /// Theme mode: "dark", "light", or "system". Default: "dark".
     #[serde(default = "default_theme")]
     pub theme: String,
+    /// Base64 data URL for a user-supplied app icon (About dialog + dock).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub custom_app_icon: Option<String>,
 }
 
 fn default_kiro_bin() -> String {
@@ -105,6 +108,7 @@ impl Default for AppSettings {
             analytics_enabled: true,
             analytics_anon_id: None,
             theme: default_theme(),
+            custom_app_icon: None,
         }
     }
 }
@@ -178,6 +182,57 @@ pub fn clear_recent_projects(state: tauri::State<'_, SettingsState>) -> Result<(
     let mut store = state.0.lock();
     store.recent_projects.clear();
     persist_store(&store)
+}
+
+/// Set the macOS dock / app icon at runtime from a base64-encoded PNG.
+/// On non-macOS platforms this is a no-op.
+#[tauri::command]
+pub fn set_dock_icon(icon_base64: String) -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    {
+        use base64::Engine;
+        use cocoa::base::{id, nil};
+        use objc::{msg_send, sel, sel_impl, class};
+
+        let bytes = base64::engine::general_purpose::STANDARD
+            .decode(&icon_base64)
+            .map_err(|e| format!("Invalid base64: {e}"))?;
+
+        unsafe {
+            let ns_data: id = msg_send![class!(NSData), alloc];
+            let ns_data: id = msg_send![ns_data, initWithBytes:bytes.as_ptr() length:bytes.len()];
+            if ns_data == nil {
+                return Err("Failed to create NSData".into());
+            }
+            let ns_image: id = msg_send![class!(NSImage), alloc];
+            let ns_image: id = msg_send![ns_image, initWithData:ns_data];
+            if ns_image == nil {
+                let _: () = msg_send![ns_data, release];
+                return Err("Failed to create NSImage from data".into());
+            }
+            let app: id = msg_send![class!(NSApplication), sharedApplication];
+            let _: () = msg_send![app, setApplicationIconImage:ns_image];
+        }
+    }
+    #[cfg(not(target_os = "macos"))]
+    let _ = icon_base64;
+    Ok(())
+}
+
+/// Reset the macOS dock / app icon to the default bundle icon.
+#[tauri::command]
+pub fn reset_dock_icon() -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    {
+        use cocoa::base::{id, nil};
+        use objc::{msg_send, sel, sel_impl, class};
+
+        unsafe {
+            let app: id = msg_send![class!(NSApplication), sharedApplication];
+            let _: () = msg_send![app, setApplicationIconImage:nil];
+        }
+    }
+    Ok(())
 }
 
 #[cfg(test)]

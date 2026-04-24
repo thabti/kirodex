@@ -59,6 +59,8 @@ export const ipc = {
     invoke('task_set_auto_approve', { taskId, autoApprove }),
   pickFolder: (): Promise<string | null> =>
     invoke('pick_folder'),
+  pickImage: (): Promise<string | null> =>
+    invoke('pick_image'),
   detectKiroCli: (): Promise<string | null> =>
     invoke('detect_kiro_cli'),
   listModels: (kiroBin?: string): Promise<{ availableModels: Array<{ modelId: string; name: string; description?: string | null }>; currentModelId: string | null }> =>
@@ -69,6 +71,10 @@ export const ipc = {
     invoke('get_settings'),
   saveSettings: (settings: AppSettings): Promise<void> =>
     invoke('save_settings', { settings }),
+  setDockIcon: (iconBase64: string): Promise<void> =>
+    invoke('set_dock_icon', { iconBase64 }),
+  resetDockIcon: (): Promise<void> =>
+    invoke('reset_dock_icon'),
   gitDetect: (path: string): Promise<boolean> =>
     invoke('git_detect', { path }),
   gitListBranches: (cwd: string): Promise<{
