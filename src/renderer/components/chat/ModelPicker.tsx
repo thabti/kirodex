@@ -1,14 +1,38 @@
 import { memo, useState, useRef, useEffect } from 'react'
-import { IconChevronDown } from '@tabler/icons-react'
+import { IconChevronDown, IconRefresh } from '@tabler/icons-react'
 import { useSettingsStore, type ModelOption } from '@/stores/settingsStore'
+import { ipc } from '@/lib/ipc'
 import { cn } from '@/lib/utils'
 import { getModelIcon } from '@/lib/model-icons'
+
+const RETRY_DELAY_MS = 10_000
 
 export const ModelPicker = memo(function ModelPicker() {
   const models = useSettingsStore((s) => s.availableModels)
   const currentId = useSettingsStore((s) => s.currentModelId)
+  const modelsError = useSettingsStore((s) => s.modelsError)
   const [open, setOpen] = useState(false)
+  const [isTimedOut, setIsTimedOut] = useState(false)
+  const [isShaking, setIsShaking] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    if (models.length > 0) {
+      setIsTimedOut(false)
+      if (timerRef.current) clearTimeout(timerRef.current)
+      return
+    }
+    timerRef.current = setTimeout(() => setIsTimedOut(true), RETRY_DELAY_MS)
+    return () => { if (timerRef.current) clearTimeout(timerRef.current) }
+  }, [models.length])
+
+  useEffect(() => {
+    if (!modelsError) return
+    setIsShaking(true)
+    const id = setTimeout(() => setIsShaking(false), 400)
+    return () => clearTimeout(id)
+  }, [modelsError])
 
   useEffect(() => {
     if (!open) return
@@ -19,15 +43,35 @@ export const ModelPicker = memo(function ModelPicker() {
     return () => document.removeEventListener('mousedown', handler)
   }, [open])
 
+  const handleRetry = () => {
+    setIsTimedOut(false)
+    ipc.probeCapabilities().catch(() => {})
+    timerRef.current = setTimeout(() => setIsTimedOut(true), RETRY_DELAY_MS)
+  }
+
   const current = models.find((m) => m.modelId === currentId)
   const label = current?.name ?? currentId ?? 'Model'
   const triggerIconKey = current?.modelId ?? current?.name ?? currentId ?? ''
 
-  if (models.length === 0) return (
-    <div className="flex items-center gap-1.5 px-1.5 py-1">
-      <div className="h-2.5 w-16 animate-pulse rounded bg-muted-foreground/15" />
-    </div>
-  )
+  if (models.length === 0) {
+    if (modelsError || isTimedOut) return (
+      <button
+        type="button"
+        onClick={handleRetry}
+        style={isShaking ? { animation: 'var(--animate-shake)' } : undefined}
+        className="flex items-center gap-1.5 rounded-lg px-1.5 py-1 text-[12px] text-destructive/80 transition-colors hover:text-destructive"
+        aria-label="Retry loading models"
+      >
+        <IconRefresh className="size-3" />
+        <span>Retry</span>
+      </button>
+    )
+    return (
+      <div className="flex items-center gap-1.5 px-1.5 py-1">
+        <div className="h-2.5 w-16 animate-pulse rounded bg-muted-foreground/15" />
+      </div>
+    )
+  }
 
   return (
     <div ref={ref} data-testid="model-picker" className="relative">
