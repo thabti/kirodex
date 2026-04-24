@@ -1,5 +1,5 @@
 import { memo, useEffect, useRef, useState, useCallback } from 'react'
-import { IconRobot, IconTool, IconCode, IconListCheck, IconX } from '@tabler/icons-react'
+import { IconRobot, IconBolt, IconCode, IconListCheck, IconX } from '@tabler/icons-react'
 import { cn } from '@/lib/utils'
 import { ipc } from '@/lib/ipc'
 import { useSettingsStore } from '@/stores/settingsStore'
@@ -187,7 +187,7 @@ export const FileMentionPill = memo(function FileMentionPill({ path, onRemove }:
   const formatName = (name: string): string =>
     name.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
 
-  const displayName = isAgent ? formatName(rawName) : rawName
+  const displayName = isAgent ? formatName(rawName) : isSkill ? `skill: ${formatName(rawName)}` : rawName
 
   let icon: React.ReactNode
   let pillCls: string
@@ -197,7 +197,7 @@ export const FileMentionPill = memo(function FileMentionPill({ path, onRemove }:
     icon = <AgentIcon className={cn('size-3.5', meta.color)} />
     pillCls = `${meta.bgCls} text-foreground/90`
   } else if (isSkill) {
-    icon = <IconTool className="size-3.5 text-yellow-600 dark:text-yellow-400" />
+    icon = <IconBolt className="size-3.5 text-yellow-600 dark:text-yellow-400" />
     pillCls = 'bg-yellow-500/15 text-yellow-600 dark:text-yellow-400'
   } else {
     icon = <FileIcon ext={ext} isDir={false} />
@@ -381,7 +381,7 @@ export const FileMentionPicker = memo(function FileMentionPicker({
           const isActive = i === activeIndex % totalItems
           const formatName = (name: string): string =>
             name.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
-          const ItemIcon = item.builtinIcon ?? (item.type === 'agent' ? IconRobot : IconTool)
+          const ItemIcon = item.builtinIcon ?? (item.type === 'agent' ? IconRobot : IconBolt)
           const iconColor = item.builtinColor ?? (item.type === 'agent' ? 'text-violet-600 dark:text-violet-400' : 'text-yellow-600 dark:text-yellow-400')
           const iconBg = item.builtinBgCls ?? (item.type === 'agent' ? 'bg-violet-500/20' : 'bg-yellow-500/20')
           const displayName = item.builtinIcon

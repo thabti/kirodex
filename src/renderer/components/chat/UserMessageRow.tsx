@@ -1,5 +1,5 @@
 import { memo, useState, useRef, useCallback, useContext, useMemo, type ReactNode } from 'react'
-import { IconCopy, IconCheck, IconPhoto, IconFileText, IconFile, IconRobot, IconTool } from '@tabler/icons-react'
+import { IconCopy, IconCheck, IconPhoto, IconFileText, IconFile, IconRobot, IconBolt } from '@tabler/icons-react'
 import {
   Tooltip,
   TooltipContent,
@@ -33,7 +33,7 @@ function renderWithMentions(text: string): ReactNode {
       const name = ref.slice(6)
       parts.push(
         <span key={idx} className="mx-0.5 inline-flex items-center gap-0.5 rounded bg-yellow-500/15 px-1 py-px align-middle text-[13px] font-medium leading-normal text-yellow-600 dark:text-yellow-400">
-          <IconTool className="size-3 shrink-0" />{name}
+          <IconBolt className="size-3 shrink-0" />{name}
         </span>
       )
     } else {
