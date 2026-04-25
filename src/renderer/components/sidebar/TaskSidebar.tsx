@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useRef, useState } from 'react'
+import { memo, useCallback, useRef, useState } from 'react'
 import { IconPlus, IconArrowsUpDown, IconCheck, IconLayoutSidebarLeftCollapse, IconLayoutSidebarRightCollapse, IconFolderOpen } from '@tabler/icons-react'
 import { useTaskStore } from '@/stores/taskStore'
 import { useSettingsStore } from '@/stores/settingsStore'
@@ -108,98 +108,13 @@ export const TaskSidebar = memo(function TaskSidebar({ width, onResize, position
     return s.pendingWorkspace
   })
 
-  // Pointer-based vertical-only drag state
-  const listRef = useRef<HTMLUListElement>(null)
-  const dragState = useRef<{
-    srcIdx: number
-    startY: number
-    clone: HTMLElement
-    itemRects: DOMRect[]
-    pointerId: number
-  } | null>(null)
-  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null)
-  const dragOverIdxRef = useRef<number | null>(null)
-  const [dragSrcIdx, setDragSrcIdx] = useState<number | null>(null)
-
-  const isCustomSort = sort === 'custom'
-
-  const handleDragPointerDown = useCallback((e: React.PointerEvent, idx: number) => {
-    if (!isCustomSort) return
-    if (e.button !== 0) return
-    const listEl = listRef.current
-    if (!listEl) return
-    const items = Array.from(listEl.children) as HTMLElement[]
-    if (!items[idx]) return
-    const srcEl = items[idx]
-    const srcRect = srcEl.getBoundingClientRect()
-    // Create a floating clone constrained to vertical movement
-    const clone = srcEl.cloneNode(true) as HTMLElement
-    clone.style.position = 'fixed'
-    clone.style.left = `${srcRect.left}px`
-    clone.style.top = `${srcRect.top}px`
-    clone.style.width = `${srcRect.width}px`
-    clone.style.height = `${srcRect.height}px`
-    clone.style.zIndex = '9999'
-    clone.style.pointerEvents = 'none'
-    clone.style.opacity = '0.85'
-    clone.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)'
-    clone.style.borderRadius = '6px'
-    clone.style.transition = 'none'
-    document.body.appendChild(clone)
-    const itemRects = items.map((el) => el.getBoundingClientRect())
-    dragState.current = { srcIdx: idx, startY: e.clientY, clone, itemRects, pointerId: e.pointerId }
-    setDragSrcIdx(idx)
-    setDragOverIdx(idx)
-    dragOverIdxRef.current = idx
-    srcEl.setPointerCapture(e.pointerId)
-    e.preventDefault()
-  }, [isCustomSort])
-
-  const handleDragPointerMove = useCallback((e: React.PointerEvent) => {
-    const ds = dragState.current
-    if (!ds || ds.itemRects.length === 0) return
-    const deltaY = e.clientY - ds.startY
-    const srcRect = ds.itemRects[ds.srcIdx]
-    ds.clone.style.top = `${srcRect.top + deltaY}px`
-    // Determine which index we're hovering over
-    const centerY = srcRect.top + deltaY + srcRect.height / 2
-    let targetIdx = ds.srcIdx
-    for (let i = 0; i < ds.itemRects.length; i++) {
-      const r = ds.itemRects[i]
-      if (centerY >= r.top && centerY < r.bottom) {
-        targetIdx = i
-        break
-      }
-    }
-    // Clamp to edges
-    if (centerY < ds.itemRects[0].top) targetIdx = 0
-    if (centerY > ds.itemRects[ds.itemRects.length - 1].bottom) targetIdx = ds.itemRects.length - 1
-    setDragOverIdx(targetIdx)
-    dragOverIdxRef.current = targetIdx
-  }, [])
-
-  const handleDragPointerUp = useCallback(() => {
-    const ds = dragState.current
-    if (!ds) return
-    ds.clone.remove()
-    const targetIdx = dragOverIdxRef.current
-    if (targetIdx !== null && targetIdx !== ds.srcIdx) {
-      reorderProject(ds.srcIdx, targetIdx)
-    }
-    dragState.current = null
-    dragOverIdxRef.current = null
-    setDragSrcIdx(null)
-    setDragOverIdx(null)
-  }, [reorderProject])
-
-  // Clean up clone on unmount
-  useEffect(() => {
-    return () => {
-      if (dragState.current?.clone) {
-        dragState.current.clone.remove()
-      }
-    }
-  }, [])
+  /** Move a project up or down, auto-switching to custom sort */
+  const handleMoveProject = useCallback((fromIdx: number, direction: 'up' | 'down') => {
+    const toIdx = direction === 'up' ? fromIdx - 1 : fromIdx + 1
+    if (toIdx < 0 || toIdx >= projectList.length) return
+    if (sort !== 'custom') setSort('custom')
+    reorderProject(fromIdx, toIdx)
+  }, [sort, projectList.length, reorderProject])
 
   const handleContextMenu = useCallback((e: React.MouseEvent) => {
     e.preventDefault()
@@ -280,11 +195,7 @@ export const TaskSidebar = memo(function TaskSidebar({ width, onResize, position
       <ScrollArea className="min-h-0 flex-1 overflow-hidden px-2">
         <div className="min-w-0 pb-2">
           <div className="relative flex min-w-0 flex-col">
-            <ul className="flex min-w-0 flex-col gap-0.5"
-              ref={listRef}
-              onPointerMove={handleDragPointerMove}
-              onPointerUp={handleDragPointerUp}
-            >
+            <ul className="flex min-w-0 flex-col gap-0.5">
               {projectList.length === 0 && (
                 <li className="flex flex-col items-center gap-3 px-3 py-8 text-center">
                   <div className="flex size-10 items-center justify-center rounded-xl bg-muted/30">
@@ -313,18 +224,19 @@ export const TaskSidebar = memo(function TaskSidebar({ width, onResize, position
                   tasks={project.tasks}
                   selectedTaskId={selectedTaskId ?? (pendingWorkspace ? `draft:${pendingWorkspace}` : null)}
                   isActiveProject={project.cwd === activeProjectCwd}
-                  isDragOver={dragOverIdx === idx && dragSrcIdx !== idx}
-                  isDragging={dragSrcIdx === idx}
-                  canDrag={isCustomSort}
+                  canMoveUp={idx > 0}
+                  canMoveDown={idx < projectList.length - 1}
                   autoFocus={project.cwd === lastAddedProject}
                   jumpLabel={isMetaHeld && idx < 9 ? `⌘${idx + 1}` : null}
+                  isMetaHeld={isMetaHeld}
                   onSelectTask={handleSelectTask}
                   onNewThread={() => handleNewThread(project.cwd)}
                   onDeleteTask={handleDeleteTask}
                   onRenameTask={renameTask}
                   onRemoveProject={() => removeProject(project.cwd)}
                   onArchiveThreads={() => archiveThreads(project.cwd)}
-                  onDragPointerDown={(e) => handleDragPointerDown(e, idx)}
+                  onMoveUp={() => handleMoveProject(idx, 'up')}
+                  onMoveDown={() => handleMoveProject(idx, 'down')}
                 />
               ))}
             </ul>

@@ -6,6 +6,7 @@ import { useTaskStore } from '@/stores/taskStore'
 import { useDebugStore } from '@/stores/debugStore'
 import { useUpdateStore, type UpdateStatus } from '@/stores/updateStore'
 import { useResizeHandle } from '@/hooks/useResizeHandle'
+import { useModifierKeys } from '@/hooks/useModifierKeys'
 import { KiroConfigPanel } from './KiroConfigPanel'
 
 const hasUpdateIndicator = (status: UpdateStatus): boolean =>
@@ -47,6 +48,7 @@ export const SidebarFooter = memo(function SidebarFooter() {
   const isUpdateAvailable = updateStatus === 'available'
   const triggerDownload = useUpdateStore((s) => s.triggerDownload)
   const isIndicatorVisible = hasUpdateIndicator(updateStatus)
+  const isMetaHeld = useModifierKeys()
 
   const handleUpdateClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
@@ -63,6 +65,9 @@ export const SidebarFooter = memo(function SidebarFooter() {
               className="flex w-full h-8 cursor-pointer items-center gap-2 overflow-hidden rounded-lg px-2 text-[13px] text-muted-foreground hover:bg-accent hover:text-foreground transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring">
               <IconBug className="size-4" aria-hidden />
               <span className="text-[13px]">Debug</span>
+              {isMetaHeld && (
+                <kbd className="pointer-events-none ml-auto shrink-0 rounded-sm bg-muted px-1 font-mono text-[10px] font-medium text-muted-foreground select-none">⌘⇧D</kbd>
+              )}
             </button>
           </TooltipTrigger>
           <TooltipContent side="top">Toggle debug panel</TooltipContent>
@@ -85,6 +90,9 @@ export const SidebarFooter = memo(function SidebarFooter() {
                 )}
               </span>
               <span className="text-[13px]">Settings</span>
+              {isMetaHeld && !isUpdateAvailable && (
+                <kbd className="pointer-events-none ml-auto shrink-0 rounded-sm bg-muted px-1 font-mono text-[10px] font-medium text-muted-foreground select-none">⌘,</kbd>
+              )}
               {isUpdateAvailable && (
                 <span
                   role="button"

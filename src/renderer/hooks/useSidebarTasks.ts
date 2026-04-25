@@ -25,7 +25,7 @@ export interface SidebarProject {
 }
 
 function sortTasks(tasks: readonly SidebarTask[], sort: SortKey): SidebarTask[] {
-  if (sort === 'created') return [...tasks]
+  if (sort === 'created' || sort === 'custom') return [...tasks]
   return [...tasks].sort((a, b) => {
     if (sort === 'name-asc') return a.name.localeCompare(b.name)
     if (sort === 'name-desc') return b.name.localeCompare(a.name)
