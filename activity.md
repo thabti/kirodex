@@ -1,5 +1,17 @@
 # Activity Log
 
+## 2026-04-26 00:06 GST (Dubai)
+### UpdateNotifier: convert toast to Radix Dialog modal
+Replaced the Sonner toast-based update notification with a proper Radix Dialog modal featuring an X close button. The new `UpdateAvailableDialog` handles all three states (available, downloading with progress bar, ready to restart) in a single component, replacing both the `UpdateNotifier` function and the `RestartPromptDialog`.
+
+**Modified:** `src/renderer/App.tsx`, `src/renderer/components/UpdateAvailableDialog.tsx`
+
+## 2026-04-26 00:01 GST (Dubai)
+### BtwOverlay: add unit tests
+Added 11 unit tests for BtwOverlay covering: null checkpoint rendering, question display, thinking state, assistant response rendering, permission banner visibility (present/absent), permission option click calling `ipc.selectPermissionOption`, dismiss button, Escape key, backdrop click, and tool name display. All 803 tests pass across 54 files.
+
+**Modified:** `src/renderer/components/chat/BtwOverlay.test.tsx`
+
 ## 2026-04-25 23:25 GST (Dubai)
 ### BtwOverlay: show permission requests inside btw side question view
 The `/btw` overlay blocked all interaction with the ChatPanel underneath, so ACP permission requests were invisible during side questions. Added `PermissionBanner` rendering inside `BtwOverlay` itself; when a `pendingPermission` exists on the selected task, the banner appears between the response area and the footer hint. Uses the same `ipc.selectPermissionOption` call as ChatPanel.
