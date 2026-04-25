@@ -1,5 +1,30 @@
 # Changelog
 
+## [v0.37.0] - 2026-04-26
+
+### Features
+
+- add light/dark/system theme toggle ([`3886608`](https://github.com/thabti/kirodex/commit/3886608b2e5ab5f30ef293704000ff5a3a368871))
+- add always-visible close button on right split panel ([`7e6a1c6`](https://github.com/thabti/kirodex/commit/7e6a1c6a1c97c7a39bc7bcea7c041cd93857f060))
+- pin threads, focus isolation, scroll fix, steer dedup ([`808b382`](https://github.com/thabti/kirodex/commit/808b382c770bfa6783cdabcb67d9b4ffe0ebde1b))
+
+### Bug fixes
+
+- show permission requests inside btw overlay ([`4da6f3d`](https://github.com/thabti/kirodex/commit/4da6f3de976ec09f2127c64a09fc5ec06c89b2d4))
+
+### Refactoring
+
+- simplify terminal toggle to use selectedTaskId ([`275a073`](https://github.com/thabti/kirodex/commit/275a07358c3d32eb655cbb052d4cd37e9b92030d))
+- replace toast notification with Radix Dialog modal ([`5ba095f`](https://github.com/thabti/kirodex/commit/5ba095fe8f32c3f4c1b7cf107096f50b9ba50391))
+
+### Documentation
+
+- update activity log ([`5ed73f7`](https://github.com/thabti/kirodex/commit/5ed73f78d8d9e7a523e933cb66e8c808b45eef4c))
+
+### Tests
+
+- add BtwOverlay component tests ([`3400c0e`](https://github.com/thabti/kirodex/commit/3400c0e70f09ea666930c5316d59db8c6ea18805))
+
 ## [v0.36.0] - 2026-04-25
 
 ### Features
