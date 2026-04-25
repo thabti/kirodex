@@ -1,5 +1,11 @@
 # Activity Log
 
+## 2026-04-26 02:55 GST (Dubai)
+### Git: commit all pending changes
+Committed three groups of changes: header-toolbar terminal toggle simplification, website light/dark/system theme toggle with full CSS overrides, and BtwOverlay component tests. Added `website/.browse/` to `.gitignore`.
+
+**Modified:** `src/renderer/components/header-toolbar.tsx`, `website/index.html`, `website/features.html`, `website/changelog.html`, `website/style.css`, `.gitignore`, `src/renderer/components/chat/BtwOverlay.test.tsx`
+
 ## 2026-04-26 02:54 GST (Dubai)
 ### SplitPanelHeader: add always-visible close button on right panel
 Added a `side` prop to `SplitPanelHeader`. The right panel now shows an always-visible `IconX` close button, while the left panel keeps the hover-only `IconTrash`. Updated `SplitChatLayout` to pass `side='left'` and `side='right'` to each header.
