@@ -1,5 +1,5 @@
 import { memo, useCallback } from 'react'
-import { IconX } from '@tabler/icons-react'
+import { IconTrash, IconX } from '@tabler/icons-react'
 import { useTaskStore } from '@/stores/taskStore'
 import { useProjectIcon } from '@/hooks/useProjectIcon'
 import { ProjectIcon } from '@/components/sidebar/ProjectIcon'
@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils'
 interface SplitPanelHeaderProps {
   readonly taskId: string
   readonly isFocused: boolean
+  readonly side: 'left' | 'right'
   readonly onClose: () => void
   readonly onFocus: () => void
 }
@@ -16,6 +17,7 @@ interface SplitPanelHeaderProps {
 export const SplitPanelHeader = memo(function SplitPanelHeader({
   taskId,
   isFocused,
+  side,
   onClose,
   onFocus,
 }: SplitPanelHeaderProps) {
@@ -56,7 +58,7 @@ export const SplitPanelHeader = memo(function SplitPanelHeader({
       </span>
       <span className="text-[11px] text-muted-foreground/30">/</span>
       <span className={cn(
-        'min-w-0 flex-1 truncate text-[12px] transition-colors',
+        'min-w-0 flex-1 truncate text-[12px] pr-6 transition-colors group-hover/header:pr-8',
         isFocused ? 'font-medium text-foreground' : 'text-muted-foreground',
       )}>
         {taskName}
@@ -67,9 +69,15 @@ export const SplitPanelHeader = memo(function SplitPanelHeader({
             type="button"
             aria-label="Close split panel"
             onClick={handleClose}
-            className="inline-flex size-5 shrink-0 items-center justify-center rounded-md text-muted-foreground/40 opacity-0 transition-all group-hover/header:opacity-100 hover:!bg-accent hover:!text-foreground"
+            className={cn(
+              'absolute right-2 inline-flex size-6 shrink-0 items-center justify-center rounded-md transition-all',
+              side === 'right'
+                ? 'text-muted-foreground/60 hover:text-destructive hover:bg-accent'
+                : 'text-muted-foreground/50 opacity-0 group-hover/header:opacity-100 hover:!text-destructive',
+              isFocused ? 'bg-background hover:bg-accent' : 'bg-card/50 hover:bg-accent group-hover/header:bg-card',
+            )}
           >
-            <IconX className="size-3" />
+            {side === 'right' ? <IconX className="size-3.5" /> : <IconTrash className="size-3.5" />}
           </button>
         </TooltipTrigger>
         <TooltipContent side="bottom">Close split</TooltipContent>

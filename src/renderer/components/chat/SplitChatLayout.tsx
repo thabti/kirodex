@@ -68,7 +68,7 @@ export const SplitChatLayout = memo(function SplitChatLayout() {
         role="region"
         aria-label="Left chat panel"
       >
-        <SplitPanelHeader taskId={left} isFocused={focusedPanel === 'left'} onClose={closeSplit} onFocus={handleFocusLeft} />
+        <SplitPanelHeader taskId={left} isFocused={focusedPanel === 'left'} side="left" onClose={closeSplit} onFocus={handleFocusLeft} />
         <ChatPanel taskId={left} />
       </div>
 
@@ -81,7 +81,7 @@ export const SplitChatLayout = memo(function SplitChatLayout() {
         role="region"
         aria-label="Right chat panel"
       >
-        <SplitPanelHeader taskId={right} isFocused={focusedPanel === 'right'} onClose={closeSplit} onFocus={handleFocusRight} />
+        <SplitPanelHeader taskId={right} isFocused={focusedPanel === 'right'} side="right" onClose={closeSplit} onFocus={handleFocusRight} />
         <ChatPanel taskId={right} />
       </div>
     </div>

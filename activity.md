@@ -1,5 +1,11 @@
 # Activity Log
 
+## 2026-04-26 02:54 GST (Dubai)
+### SplitPanelHeader: add always-visible close button on right panel
+Added a `side` prop to `SplitPanelHeader`. The right panel now shows an always-visible `IconX` close button, while the left panel keeps the hover-only `IconTrash`. Updated `SplitChatLayout` to pass `side='left'` and `side='right'` to each header.
+
+**Modified:** `src/renderer/components/chat/SplitPanelHeader.tsx`, `src/renderer/components/chat/SplitChatLayout.tsx`
+
 ## 2026-04-26 02:20 GST (Dubai)
 ### SplitPanelHeader: replace X with bin icon, fix text overlap
 Replaced the IconX close button with IconTrash in split view panel headers. Made the bin button absolutely positioned with a background color matching the panel state (bg-background for focused, bg-card/50 for unfocused) so text never shows through. Added padding-right on the task name that expands on hover, ensuring text truncates with ellipsis well before the bin icon. Bin icon turns red on hover for clear delete affordance.
