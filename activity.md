@@ -1,5 +1,11 @@
 # Activity Log
 
+## 2026-04-25 16:07 GST (Dubai)
+### Git: unit tests for git_init feature
+Added Rust tests (`git_init_creates_repo_in_empty_dir`, `git_init_succeeds_on_existing_repo`) and frontend tests for HeaderToolbar git init behavior (shows init button, shows diff stats, click transitions). All 21 Rust git tests and 3 frontend tests pass. Committed as `feat(git): add git init support for non-git projects`.
+
+**Modified:** `src-tauri/src/commands/git.rs`, `src/renderer/components/header-toolbar.test.tsx`
+
 ## 2026-04-25 16:02 GST (Dubai)
 ### Sidebar: Cmd-key keymap helper overlay for project switching
 Holding Cmd shows `⌘1`–`⌘9` kbd badges next to sidebar projects (first 9). Pressing Cmd+N jumps to the Nth project's most recent thread. Uses a `useModifierKeys` hook with 100ms delayed show / instant hide (T3 Code pattern) to prevent flicker. Replaced the previous Cmd+1-9 thread-jumping with project-jumping.

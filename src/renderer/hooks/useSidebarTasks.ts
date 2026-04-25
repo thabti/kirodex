@@ -16,7 +16,7 @@ export interface SidebarTask {
   readonly originalWorkspace?: string
 }
 
-export type SortKey = 'created' | 'recent' | 'oldest' | 'name-asc' | 'name-desc'
+export type SortKey = 'created' | 'recent' | 'oldest' | 'name-asc' | 'name-desc' | 'custom'
 
 export interface SidebarProject {
   readonly name: string
@@ -154,6 +154,7 @@ export function useSidebarTasks(sort: SortKey): readonly SidebarProject[] {
     }
 
     // Sort projects by the same key (using the most recent / oldest thread as proxy)
+    // 'custom' preserves the store's manual order — no sorting
     if (sort === 'recent' || sort === 'oldest') {
       result.sort((a, b) => {
         const aTime = a.tasks.length > 0 ? new Date(a.tasks[0].lastActivityAt).getTime() : 0

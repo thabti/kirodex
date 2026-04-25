@@ -133,13 +133,21 @@ export function useKeyboardShortcuts() {
         return
       }
 
-      // ── Cmd+1 through Cmd+9 → Jump to thread ──────────────
+      // ── Cmd+1 through Cmd+9 → Jump to project ─────────────
       if (!e.shiftKey && key >= '1' && key <= '9') {
         e.preventDefault()
-        const ids = getOrderedThreadIds()
+        const state = useTaskStore.getState()
         const jumpIdx = parseInt(key, 10) - 1
-        if (jumpIdx < ids.length) {
-          useTaskStore.getState().setSelectedTask(ids[jumpIdx])
+        if (jumpIdx >= state.projects.length) return
+        const workspace = state.projects[jumpIdx]
+        // Find the most recent thread in this project
+        const thread = Object.values(state.tasks)
+          .filter((t) => (t.originalWorkspace ?? t.workspace) === workspace)
+          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0]
+        if (thread) {
+          state.setSelectedTask(thread.id)
+        } else {
+          state.setPendingWorkspace(workspace)
         }
         return
       }

@@ -1,5 +1,5 @@
 import { memo, useState, useRef, useEffect } from 'react'
-import { IconChevronRight, IconChevronDown, IconEdit, IconTrash, IconArchive, IconMessagePlus, IconFolderOpen, IconPalette, IconMessage, IconCopy } from '@tabler/icons-react'
+import { IconChevronRight, IconChevronDown, IconEdit, IconTrash, IconArchive, IconMessagePlus, IconFolderOpen, IconPalette, IconMessage, IconCopy, IconGripVertical } from '@tabler/icons-react'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { ipc } from '@/lib/ipc'
@@ -17,24 +17,24 @@ interface ProjectItemProps {
   selectedTaskId: string | null
   isActiveProject: boolean
   isDragOver: boolean
+  isDragging: boolean
+  canDrag: boolean
   autoFocus?: boolean
+  jumpLabel?: string | null
   onSelectTask: (id: string) => void
   onNewThread: () => void
   onDeleteTask: (id: string) => void
   onRenameTask: (id: string, name: string) => void
   onRemoveProject: () => void
   onArchiveThreads: () => void
-  onDragStart: () => void
-  onDragOver: (e: React.DragEvent) => void
-  onDrop: () => void
-  onDragEnd: () => void
+  onDragPointerDown: (e: React.PointerEvent) => void
 }
 
 export const ProjectItem = memo(function ProjectItem({
-  name, cwd, tasks, selectedTaskId, isActiveProject, isDragOver, autoFocus,
+  name, cwd, tasks, selectedTaskId, isActiveProject, isDragOver, isDragging, canDrag, autoFocus, jumpLabel,
   onSelectTask, onNewThread, onDeleteTask, onRenameTask,
   onRemoveProject, onArchiveThreads,
-  onDragStart, onDragOver, onDrop, onDragEnd,
+  onDragPointerDown,
 }: ProjectItemProps) {
   const [expanded, setExpanded] = useState(true)
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null)
@@ -63,19 +63,22 @@ export const ProjectItem = memo(function ProjectItem({
       className={cn(
         'group/menu-item relative min-w-0 rounded-md transition-colors',
         isDragOver && 'ring-1 ring-primary/40 bg-primary/5',
+        isDragging && 'opacity-30',
         isActiveProject && 'bg-accent/30',
       )}
-      draggable
-      onDragStart={(e) => {
-        e.dataTransfer.effectAllowed = 'move'
-        e.dataTransfer.setData('text/plain', cwd)
-        onDragStart()
-      }}
-      onDragOver={onDragOver}
-      onDrop={(e) => { e.preventDefault(); onDrop() }}
-      onDragEnd={onDragEnd}
     >
-      <div className="relative">
+      <div className="relative flex items-center">
+        {canDrag && (
+          <div
+            role="button"
+            tabIndex={0}
+            aria-label={`Drag to reorder ${name}`}
+            onPointerDown={onDragPointerDown}
+            className="flex shrink-0 cursor-grab items-center justify-center pl-0.5 text-muted-foreground/40 hover:text-muted-foreground active:cursor-grabbing"
+          >
+            <IconGripVertical className="size-3" />
+          </div>
+        )}
         {isActiveProject && (
           <div className="absolute left-0 top-1 bottom-1 w-[3px] rounded-full bg-primary" aria-hidden />
         )}
@@ -96,6 +99,11 @@ export const ProjectItem = memo(function ProjectItem({
           }
           <ProjectIcon icon={projectIcon} />
           <span className={cn('flex-1 truncate text-[13px] text-foreground/85', isActiveProject ? 'font-semibold' : 'font-normal')}>{name}</span>
+          {jumpLabel && (
+            <kbd className="pointer-events-none ml-auto mr-1 inline-flex h-4 shrink-0 items-center rounded-sm bg-muted px-1 font-mono text-[10px] font-medium text-muted-foreground select-none">
+              {jumpLabel}
+            </kbd>
+          )}
         </button>
 
         {/* Always-visible action buttons with gradient fade */}

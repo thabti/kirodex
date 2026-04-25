@@ -1,4 +1,4 @@
-import { memo, useCallback, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import { IconPlus, IconArrowsUpDown, IconCheck, IconLayoutSidebarLeftCollapse, IconLayoutSidebarRightCollapse, IconFolderOpen } from '@tabler/icons-react'
 import { useTaskStore } from '@/stores/taskStore'
 import { useSettingsStore } from '@/stores/settingsStore'
@@ -9,10 +9,12 @@ import { cn } from '@/lib/utils'
 import { ipc } from '@/lib/ipc'
 import { useSidebarTasks, type SortKey } from '@/hooks/useSidebarTasks'
 import { useResizeHandle } from '@/hooks/useResizeHandle'
+import { useModifierKeys } from '@/hooks/useModifierKeys'
 import { ProjectItem } from './ProjectItem'
 import { SidebarFooter } from './SidebarFooter'
 
 const SORT_OPTIONS: { key: SortKey; label: string }[] = [
+  { key: 'custom', label: 'Custom' },
   { key: 'created', label: 'Created' },
   { key: 'recent', label: 'Recent' },
   { key: 'oldest', label: 'Oldest' },
@@ -76,21 +78,8 @@ export const TaskSidebar = memo(function TaskSidebar({ width, onResize, position
   const isRight = position === 'right'
   const [sort, setSort] = useState<SortKey>('created')
   const projectList = useSidebarTasks(sort)
-  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null)
-  const dragSrcIdx = useRef<number | null>(null)
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null)
-
-  const handleContextMenu = useCallback((e: React.MouseEvent) => {
-    e.preventDefault()
-    setCtxMenu({ x: e.clientX, y: e.clientY })
-  }, [])
-
-  const handleSwitchSide = useCallback(() => {
-    setCtxMenu(null)
-    const store = useSettingsStore.getState()
-    const next = position === 'left' ? 'right' : 'left'
-    store.saveSettings({ ...store.settings, sidebarPosition: next })
-  }, [position])
+  const isMetaHeld = useModifierKeys()
 
   const { selectedTaskId, pendingWorkspace, lastAddedProject, setSelectedTask, setView, setNewProjectOpen, removeTask, removeProject, archiveThreads, renameTask, reorderProject, clearLastAddedProject } = useTaskStore(
     useShallow((s) => ({
@@ -119,6 +108,111 @@ export const TaskSidebar = memo(function TaskSidebar({ width, onResize, position
     return s.pendingWorkspace
   })
 
+  // Pointer-based vertical-only drag state
+  const listRef = useRef<HTMLUListElement>(null)
+  const dragState = useRef<{
+    srcIdx: number
+    startY: number
+    clone: HTMLElement
+    itemRects: DOMRect[]
+    pointerId: number
+  } | null>(null)
+  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null)
+  const dragOverIdxRef = useRef<number | null>(null)
+  const [dragSrcIdx, setDragSrcIdx] = useState<number | null>(null)
+
+  const isCustomSort = sort === 'custom'
+
+  const handleDragPointerDown = useCallback((e: React.PointerEvent, idx: number) => {
+    if (!isCustomSort) return
+    if (e.button !== 0) return
+    const listEl = listRef.current
+    if (!listEl) return
+    const items = Array.from(listEl.children) as HTMLElement[]
+    if (!items[idx]) return
+    const srcEl = items[idx]
+    const srcRect = srcEl.getBoundingClientRect()
+    // Create a floating clone constrained to vertical movement
+    const clone = srcEl.cloneNode(true) as HTMLElement
+    clone.style.position = 'fixed'
+    clone.style.left = `${srcRect.left}px`
+    clone.style.top = `${srcRect.top}px`
+    clone.style.width = `${srcRect.width}px`
+    clone.style.height = `${srcRect.height}px`
+    clone.style.zIndex = '9999'
+    clone.style.pointerEvents = 'none'
+    clone.style.opacity = '0.85'
+    clone.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)'
+    clone.style.borderRadius = '6px'
+    clone.style.transition = 'none'
+    document.body.appendChild(clone)
+    const itemRects = items.map((el) => el.getBoundingClientRect())
+    dragState.current = { srcIdx: idx, startY: e.clientY, clone, itemRects, pointerId: e.pointerId }
+    setDragSrcIdx(idx)
+    setDragOverIdx(idx)
+    dragOverIdxRef.current = idx
+    srcEl.setPointerCapture(e.pointerId)
+    e.preventDefault()
+  }, [isCustomSort])
+
+  const handleDragPointerMove = useCallback((e: React.PointerEvent) => {
+    const ds = dragState.current
+    if (!ds || ds.itemRects.length === 0) return
+    const deltaY = e.clientY - ds.startY
+    const srcRect = ds.itemRects[ds.srcIdx]
+    ds.clone.style.top = `${srcRect.top + deltaY}px`
+    // Determine which index we're hovering over
+    const centerY = srcRect.top + deltaY + srcRect.height / 2
+    let targetIdx = ds.srcIdx
+    for (let i = 0; i < ds.itemRects.length; i++) {
+      const r = ds.itemRects[i]
+      if (centerY >= r.top && centerY < r.bottom) {
+        targetIdx = i
+        break
+      }
+    }
+    // Clamp to edges
+    if (centerY < ds.itemRects[0].top) targetIdx = 0
+    if (centerY > ds.itemRects[ds.itemRects.length - 1].bottom) targetIdx = ds.itemRects.length - 1
+    setDragOverIdx(targetIdx)
+    dragOverIdxRef.current = targetIdx
+  }, [])
+
+  const handleDragPointerUp = useCallback(() => {
+    const ds = dragState.current
+    if (!ds) return
+    ds.clone.remove()
+    const targetIdx = dragOverIdxRef.current
+    if (targetIdx !== null && targetIdx !== ds.srcIdx) {
+      reorderProject(ds.srcIdx, targetIdx)
+    }
+    dragState.current = null
+    dragOverIdxRef.current = null
+    setDragSrcIdx(null)
+    setDragOverIdx(null)
+  }, [reorderProject])
+
+  // Clean up clone on unmount
+  useEffect(() => {
+    return () => {
+      if (dragState.current?.clone) {
+        dragState.current.clone.remove()
+      }
+    }
+  }, [])
+
+  const handleContextMenu = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    setCtxMenu({ x: e.clientX, y: e.clientY })
+  }, [])
+
+  const handleSwitchSide = useCallback(() => {
+    setCtxMenu(null)
+    const store = useSettingsStore.getState()
+    const next = position === 'left' ? 'right' : 'left'
+    store.saveSettings({ ...store.settings, sidebarPosition: next })
+  }, [position])
+
   const handleSelectTask = useCallback((id: string) => {
     if (id.startsWith('draft:')) {
       useTaskStore.getState().setPendingWorkspace(id.slice(6))
@@ -141,21 +235,6 @@ export const TaskSidebar = memo(function TaskSidebar({ width, onResize, position
     }
   }, [removeTask])
   const handleNewThread = useCallback((workspace: string) => { useTaskStore.getState().setPendingWorkspace(workspace) }, [])
-
-  // Project drag-to-reorder handlers
-  const handleProjectDragStart = useCallback((idx: number) => { dragSrcIdx.current = idx }, [])
-  const handleProjectDragOver = useCallback((e: React.DragEvent, idx: number) => {
-    e.preventDefault()
-    e.dataTransfer.dropEffect = 'move'
-    setDragOverIdx(idx)
-  }, [])
-  const handleProjectDrop = useCallback((idx: number) => {
-    const from = dragSrcIdx.current
-    if (from !== null && from !== idx) reorderProject(from, idx)
-    dragSrcIdx.current = null
-    setDragOverIdx(null)
-  }, [reorderProject])
-  const handleProjectDragEnd = useCallback(() => { dragSrcIdx.current = null; setDragOverIdx(null) }, [])
 
   // Sidebar edge resize
   const handleResizeStart = useResizeHandle({
@@ -201,7 +280,11 @@ export const TaskSidebar = memo(function TaskSidebar({ width, onResize, position
       <ScrollArea className="min-h-0 flex-1 overflow-hidden px-2">
         <div className="min-w-0 pb-2">
           <div className="relative flex min-w-0 flex-col">
-            <ul className="flex min-w-0 flex-col gap-0.5">
+            <ul className="flex min-w-0 flex-col gap-0.5"
+              ref={listRef}
+              onPointerMove={handleDragPointerMove}
+              onPointerUp={handleDragPointerUp}
+            >
               {projectList.length === 0 && (
                 <li className="flex flex-col items-center gap-3 px-3 py-8 text-center">
                   <div className="flex size-10 items-center justify-center rounded-xl bg-muted/30">
@@ -230,18 +313,18 @@ export const TaskSidebar = memo(function TaskSidebar({ width, onResize, position
                   tasks={project.tasks}
                   selectedTaskId={selectedTaskId ?? (pendingWorkspace ? `draft:${pendingWorkspace}` : null)}
                   isActiveProject={project.cwd === activeProjectCwd}
-                  isDragOver={dragOverIdx === idx && dragSrcIdx.current !== idx}
+                  isDragOver={dragOverIdx === idx && dragSrcIdx !== idx}
+                  isDragging={dragSrcIdx === idx}
+                  canDrag={isCustomSort}
                   autoFocus={project.cwd === lastAddedProject}
+                  jumpLabel={isMetaHeld && idx < 9 ? `⌘${idx + 1}` : null}
                   onSelectTask={handleSelectTask}
                   onNewThread={() => handleNewThread(project.cwd)}
                   onDeleteTask={handleDeleteTask}
                   onRenameTask={renameTask}
                   onRemoveProject={() => removeProject(project.cwd)}
                   onArchiveThreads={() => archiveThreads(project.cwd)}
-                  onDragStart={() => handleProjectDragStart(idx)}
-                  onDragOver={(e) => handleProjectDragOver(e, idx)}
-                  onDrop={() => handleProjectDrop(idx)}
-                  onDragEnd={handleProjectDragEnd}
+                  onDragPointerDown={(e) => handleDragPointerDown(e, idx)}
                 />
               ))}
             </ul>
