@@ -286,6 +286,30 @@ describe('projects', () => {
     useTaskStore.getState().reorderProject(0, 2)
     expect(useTaskStore.getState().projects).toEqual(['/b', '/c', '/a'])
   })
+
+  it('reorderProject no-ops when from equals to', () => {
+    useTaskStore.setState({ projects: ['/a', '/b', '/c'] })
+    useTaskStore.getState().reorderProject(1, 1)
+    expect(useTaskStore.getState().projects).toEqual(['/a', '/b', '/c'])
+  })
+
+  it('reorderProject handles adjacent swap forward', () => {
+    useTaskStore.setState({ projects: ['/a', '/b', '/c'] })
+    useTaskStore.getState().reorderProject(0, 1)
+    expect(useTaskStore.getState().projects).toEqual(['/b', '/a', '/c'])
+  })
+
+  it('reorderProject handles adjacent swap backward', () => {
+    useTaskStore.setState({ projects: ['/a', '/b', '/c'] })
+    useTaskStore.getState().reorderProject(2, 1)
+    expect(useTaskStore.getState().projects).toEqual(['/a', '/c', '/b'])
+  })
+
+  it('reorderProject handles last-to-first', () => {
+    useTaskStore.setState({ projects: ['/a', '/b', '/c'] })
+    useTaskStore.getState().reorderProject(2, 0)
+    expect(useTaskStore.getState().projects).toEqual(['/c', '/a', '/b'])
+  })
 })
 
 describe('getProjectId', () => {
