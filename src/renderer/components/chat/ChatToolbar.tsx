@@ -28,6 +28,7 @@ interface ChatToolbarProps {
   hasQueuedMessages?: boolean
   workspace: string | null
   isWorktree?: boolean
+  isMetaHeld?: boolean
   fileInputRef: React.RefObject<HTMLInputElement | null>
   onFilePickerClick: () => void
   onFileInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void
@@ -42,6 +43,7 @@ export const ChatToolbar = memo(function ChatToolbar({
   hasQueuedMessages,
   workspace,
   isWorktree,
+  isMetaHeld,
   fileInputRef,
   onFilePickerClick,
   onFileInputChange,
@@ -51,7 +53,7 @@ export const ChatToolbar = memo(function ChatToolbar({
   const buttonBg = isPlanMode ? 'bg-teal-500/90 hover:bg-teal-500' : 'bg-blue-500/90 hover:bg-blue-500'
 
   return (
-    <div className="relative z-10 flex items-center justify-between gap-2 px-3 pb-3 sm:px-4">
+    <div className="relative z-10 flex items-center justify-between gap-2 px-3 pb-3 sm:px-4 @container/toolbar">
       {/* Left: attach + AI controls (mode + model) */}
       <div className="flex items-center gap-1.5">
         <Tooltip>
@@ -91,8 +93,10 @@ export const ChatToolbar = memo(function ChatToolbar({
           tabIndex={-1}
           aria-hidden
         />
-        {/* Focus hint */}
-        <kbd className="hidden rounded-sm bg-muted px-1 font-mono text-[10px] text-muted-foreground sm:inline">{MOD_KEY}L</kbd>
+        {/* Send hint — visible only when Cmd is held */}
+        {isMetaHeld && (
+          <kbd className="rounded-sm bg-muted px-1 font-mono text-[10px] text-muted-foreground">{MOD_KEY}⏎</kbd>
+        )}
         {isRunning ? (
           <Tooltip>
             <TooltipTrigger asChild>

@@ -68,8 +68,8 @@ export const PlanToggle = memo(function PlanToggle() {
         )}
       >
         <CurrentIcon className="size-3.5" aria-hidden />
-        <span>{current.label}</span>
-        <IconChevronDown className="size-3 shrink-0 opacity-50" aria-hidden />
+        <span className="hidden @[480px]/toolbar:inline">{current.label}</span>
+        <IconChevronDown className="hidden size-3 shrink-0 opacity-50 @[480px]/toolbar:block" aria-hidden />
       </button>
 
       {isOpen && (

@@ -16,14 +16,15 @@ import {
 const AUTO_SCROLL_THRESHOLD = 150
 
 /** Per-row-type height estimates so the virtualizer doesn't leave large gaps
- *  before measureElement fires. Closer estimates = less visual jank. */
+ *  before measureElement fires. Overestimating slightly is better than
+ *  underestimating — underestimates cause rows to overlap until measured. */
 const ROW_HEIGHT_ESTIMATES: Record<string, number> = {
-  'user-message': 60,
-  'system-message': 40,
-  'assistant-text': 80,
-  'work': 52,
-  'working': 36,
-  'changed-files': 48,
+  'user-message': 72,
+  'system-message': 44,
+  'assistant-text': 100,
+  'work': 64,
+  'working': 40,
+  'changed-files': 120,
 }
 
 interface MessageListProps {

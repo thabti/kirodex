@@ -81,8 +81,8 @@ export const ModelPicker = memo(function ModelPicker() {
         className="flex items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px] font-medium text-muted-foreground transition-colors hover:text-foreground"
       >
         <span className="shrink-0">{getModelIcon(triggerIconKey, { size: 13 })}</span>
-        <span className="max-w-[8rem] truncate">{label}</span>
-        <IconChevronDown className="size-3 shrink-0 opacity-50" aria-hidden />
+        <span className="hidden max-w-[8rem] truncate @[480px]/toolbar:inline">{label}</span>
+        <IconChevronDown className="hidden size-3 shrink-0 opacity-50 @[480px]/toolbar:block" aria-hidden />
       </button>
 
       {open && (

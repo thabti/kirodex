@@ -15,6 +15,7 @@ interface ChatTextareaProps {
   disabled?: boolean
   placeholderText: string
   textareaRef: React.RefObject<HTMLTextAreaElement | null>
+  hasContextRing?: boolean
   // Slash command picker
   showPicker: boolean
   slashQuery: string
@@ -54,6 +55,7 @@ export const ChatTextarea = memo(function ChatTextarea({
   disabled,
   placeholderText,
   textareaRef,
+  hasContextRing,
   showPicker, slashQuery, commands, slashIndex, onSelectCommand, onDismissSlash,
   showFilePicker, mentionTrigger, mentionIndex, mentionedFiles, workspace, onSelectFile, onDismissMention,
   panel, onDismissPanel,
@@ -158,6 +160,7 @@ export const ChatTextarea = memo(function ChatTextarea({
         rows={1}
         className={cn(
           'block max-h-[200px] min-h-[70px] w-full resize-none rounded-lg bg-transparent text-sm leading-[1.6] text-foreground outline-none placeholder:text-muted-foreground',
+          hasContextRing && 'pr-8',
           disabled && 'cursor-not-allowed opacity-50',
         )}
         style={{ overflow: 'auto', fontFamily: 'inherit', caretColor: 'var(--foreground)' }}

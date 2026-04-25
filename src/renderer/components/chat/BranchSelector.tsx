@@ -169,9 +169,9 @@ export const BranchSelector = memo(function BranchSelector({ workspace, isWorktr
         className={cn('flex items-center gap-1 rounded-lg px-1.5 py-1 text-[14px] font-medium transition-colors', 'text-muted-foreground hover:text-foreground/80', open && 'text-foreground/80')}
       >
         <IconGitBranch className="size-3" />
-        <span className="max-w-[120px] truncate">{currentBranch ?? 'branch'}</span>
+        <span className="hidden max-w-[120px] truncate @[480px]/toolbar:inline">{currentBranch ?? 'branch'}</span>
         {isWorktree && <span className="rounded bg-violet-500/15 px-1 py-0.5 text-[9px] font-medium text-violet-500 dark:text-violet-400">WT</span>}
-        <IconChevronDown className={cn('size-3 opacity-50 transition-transform', open && 'rotate-180')} />
+        <IconChevronDown className={cn('hidden size-3 opacity-50 transition-transform @[480px]/toolbar:block', open && 'rotate-180')} />
       </button>
       {open && (
         <div data-testid="branch-selector-popup" className="absolute bottom-full right-0 z-[9999] mb-2 w-80 overflow-hidden rounded-xl border border-border bg-popover shadow-xl">

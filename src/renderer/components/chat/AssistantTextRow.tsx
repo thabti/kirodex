@@ -14,7 +14,7 @@ export const AssistantTextRow = memo(function AssistantTextRow({ row }: { row: A
   const showReportCard = isRichReport && !row.hasChangedFiles
 
   return (
-    <div data-testid="assistant-text-row" className={row.squashed ? 'pb-1.5' : 'pb-4'} data-timeline-row-kind="assistant-text">
+    <div data-testid="assistant-text-row" className={row.squashed ? 'pb-2.5' : 'pb-4'} data-timeline-row-kind="assistant-text">
       {row.thinking && (
         <ThinkingDisplay text={row.thinking} isActive={row.isStreaming} />
       )}

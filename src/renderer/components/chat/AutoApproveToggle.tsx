@@ -83,15 +83,15 @@ export const AutoApproveToggle = memo(function AutoApproveToggle() {
         )}
       >
         <CurrentIcon className="size-3.5" aria-hidden />
-        <span>{current.label}</span>
-        <IconChevronDown className="size-3 shrink-0 opacity-50" aria-hidden />
+        <span className="hidden @[480px]/toolbar:inline">{current.label}</span>
+        <IconChevronDown className="hidden size-3 shrink-0 opacity-50 @[480px]/toolbar:block" aria-hidden />
       </button>
 
       {isOpen && (
         <div
           role="listbox"
           aria-label="Select permissions"
-          className="absolute bottom-full left-0 z-[200] mb-2 min-w-[180px] rounded-xl border border-border bg-popover py-1.5 shadow-xl"
+          className="absolute bottom-full left-0 z-[200] mb-2 rounded-lg border border-border bg-popover py-1 shadow-xl"
         >
           {PERMISSIONS.map((p) => {
             const isActive = p.id === currentId
@@ -107,16 +107,13 @@ export const AutoApproveToggle = memo(function AutoApproveToggle() {
                   handleSelect(p.id)
                 }}
                 className={cn(
-                  'flex w-full items-center gap-2 px-3 py-1.5 text-xs transition-colors hover:bg-accent',
+                  'flex w-full items-center gap-1.5 whitespace-nowrap px-2.5 py-1 text-xs transition-colors hover:bg-accent',
                   isActive ? 'font-medium text-foreground' : 'text-muted-foreground',
                   p.id === 'auto-approve' && isActive && 'text-amber-600 dark:text-amber-400',
                 )}
               >
                 <Icon className="size-3.5 shrink-0" aria-hidden />
-                <div className="flex flex-col items-start">
-                  <span>{p.label}</span>
-                  <span className="text-[10px] text-muted-foreground/70">{p.description}</span>
-                </div>
+                <span>{p.label}</span>
               </button>
             )
           })}

@@ -32,7 +32,7 @@ export const ContextRing = memo(function ContextRing({ used, size, compactionSta
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <span data-testid="context-ring" className={cn('relative flex h-7 w-7 cursor-default items-center justify-center', isCompacting && 'animate-pulse')}>
+        <span data-testid="context-ring" className={cn('relative flex h-7 w-7 cursor-default items-center justify-center rounded-full bg-card', isCompacting && 'animate-pulse')}>
           <svg viewBox="0 0 24 24" className="absolute inset-0 -rotate-90" aria-hidden>
             <circle cx="12" cy="12" r={r} fill="none" stroke="color-mix(in oklab, var(--color-muted) 70%, transparent)" strokeWidth="2.5" />
             <circle

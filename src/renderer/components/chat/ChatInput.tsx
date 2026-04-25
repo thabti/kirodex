@@ -8,6 +8,7 @@ import { ContextRing } from './ContextRing'
 import { useChatInput } from '@/hooks/useChatInput'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useTaskStore } from '@/stores/taskStore'
+import { useModifierKeys } from '@/hooks/useModifierKeys'
 
 import type { Attachment, ProjectFile } from '@/types'
 import type { PastedChunk } from '@/hooks/useChatInput'
@@ -57,6 +58,7 @@ export const ChatInput = memo(function ChatInput({ disabled, disabledReason, con
 
   const currentModeId = useSettingsStore((s) => s.currentModeId)
   const compactionStatus = useTaskStore((s) => s.selectedTaskId ? s.tasks[s.selectedTaskId]?.compactionStatus : undefined)
+  const isMetaHeld = useModifierKeys()
 
   const imageAttachments = useMemo(() => attachments.filter((a) => a.type === 'image' && a.preview), [attachments])
   const nonImageAttachments = useMemo(() => attachments.filter((a) => a.type !== 'image' || !a.preview), [attachments])
@@ -103,10 +105,10 @@ export const ChatInput = memo(function ChatInput({ disabled, disabledReason, con
     }
   }, [autoFocus, textareaRef])
 
-  // Cmd+L global shortcut to focus the chat input
+  // Cmd+Enter global shortcut to focus the chat input
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'l') {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
         e.preventDefault()
         textareaRef.current?.focus()
       }
@@ -170,6 +172,7 @@ export const ChatInput = memo(function ChatInput({ disabled, disabledReason, con
             disabled={disabled}
             placeholderText={placeholderText}
             textareaRef={textareaRef}
+            hasContextRing={!!contextRingNode}
             showPicker={showPicker}
             slashQuery={slashQuery}
             commands={commands}
@@ -205,6 +208,7 @@ export const ChatInput = memo(function ChatInput({ disabled, disabledReason, con
             hasQueuedMessages={hasQueuedMessages}
             workspace={workspace ?? null}
             isWorktree={isWorktree}
+            isMetaHeld={isMetaHeld}
             fileInputRef={fileInputRef}
             onFilePickerClick={handleFilePickerClick}
             onFileInputChange={handleFileInputChange}
