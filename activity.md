@@ -1,5 +1,95 @@
 # Activity Log
 
+## 2026-04-25 18:00 GST (Dubai)
+### Docs: update README and website with missing features
+Added /btw side questions, /tangent alias, /fork, split-screen, multi-window, message queue, folder drag-drop, crash recovery, recent projects, Cmd+B shortcut, mode dropdown, and error state with retry to README.md. Updated website index.html with a multi-window feature card and message queue mention. Updated features.html with five new Chat cards, a multi-window section, crash recovery and recent projects in Settings, and corrected Cmd+N to "New window."
+
+**Modified:** `README.md`, `website/index.html`, `website/features.html`
+
+## 2026-04-25 17:44 GST (Dubai)
+### AutoApproveToggle: make dropdown compact
+Removed description text from dropdown items so each option is a single line (icon + label). Tightened padding, gap, and border radius. Removed min-width and flex-col wrapper.
+
+**Modified:** `src/renderer/components/chat/AutoApproveToggle.tsx`
+
+## 2026-04-25 17:18 GST (Dubai)
+### Sidebar: hide disabled Move Up/Down instead of graying them out
+Move Up is hidden when the project is first; Move Down is hidden when the project is last. Only actionable options appear in the context menu.
+
+**Modified:** `src/renderer/components/sidebar/ProjectItem.tsx`
+
+## 2026-04-25 17:12 GST (Dubai)
+### Sidebar: replace drag-to-reorder with right-click Move Up/Down
+Removed all pointer-based drag code (clone, grip handle, drop indicator, drag state). Added "Move Up" and "Move Down" to the project right-click context menu with boundary guards: disabled styling when the project is already at the top or bottom. Moving a project from any sort mode auto-switches to "Custom" sort. The move options only appear when there are two or more projects.
+
+**Modified:** `src/renderer/components/sidebar/ProjectItem.tsx`, `src/renderer/components/sidebar/TaskSidebar.tsx`
+
+## 2026-04-25 17:10 GST (Dubai)
+### Sidebar: thread numbers in Cmd-key overlay + Cmd+N jumps to thread
+Each thread now shows its index (1, 2, 3...) within its project when Cmd is held. Cmd+1-9 jumps to the Nth thread in the active project instead of switching projects. Sort order in the shortcut handler matches the sidebar default (createdAt ascending).
+
+**Modified:** `src/renderer/components/sidebar/ProjectItem.tsx`, `src/renderer/hooks/useKeyboardShortcuts.ts`
+
+## 2026-04-25 17:08 GST (Dubai)
+### Split view: full width when active + blue dot indicator
+When split view is active, the CodePanel (diff side panel) is now hidden so SplitChatLayout takes the full width. Added a blue dot indicator to the right of the split toggle button icon when split mode is on.
+
+**Modified:** `src/renderer/App.tsx`, `src/renderer/components/header-toolbar.tsx`
+
+## 2026-04-25 17:04 GST (Dubai)
+### ChatInput: fix ContextRing counter overlapping textarea text
+Added `bg-card` background to the ContextRing so it doesn't float transparently over text. Added a `hasContextRing` prop to ChatTextarea that applies `pr-8` right padding to the textarea when the ring is visible, preventing placeholder and typed text from running underneath the counter.
+
+**Modified:** `src/renderer/components/chat/ContextRing.tsx`, `src/renderer/components/chat/ChatTextarea.tsx`, `src/renderer/components/chat/ChatInput.tsx`
+
+## 2026-04-25 17:08 GST (Dubai)
+### Split-screen: behavior fixes and performance audit
+Fixed behavior: new thread creation (`createDraftThread`) now exits split mode. Clicking a thread that's already in the split panel swaps it to the left panel (keeps split open). Audited all split components for memoization and selector performance. SplitChatLayout: replaced `onClick` with `onMouseDown` for focus, added bail-out guard to skip redundant `setFocusedPanel` calls. SplitPanelHeader: merged `projectNames` selector into a single selector returning only the needed string (was subscribing to the whole object). SplitDivider, ThreadItem isInSplit, ChatPanel taskId prop, SplitDropZone, SplitToggleButton: all clean, no changes needed. Fixed pre-existing missing `useEffect` import in TaskSidebar.tsx.
+
+**Modified:** `src/renderer/stores/taskStore.ts`, `src/renderer/components/chat/SplitChatLayout.tsx`, `src/renderer/components/chat/SplitPanelHeader.tsx`, `src/renderer/components/sidebar/TaskSidebar.tsx`
+
+## 2026-04-25 17:03 GST (Dubai)
+### Split-screen: redesigned divider and panel headers for subtler UX
+Redesigned the split divider and panel headers. Divider is now a single 1px border line (matching sidebar border style) with a tiny pill grip that grows on hover and turns blue on drag. Uses `before:` pseudo-element for a wider 8px hit target while keeping the visual at 1px. Panel headers are more subtle: no blue background on focus, instead a 2px accent bar at the bottom. Close button only appears on hover. Unfocused panel has dimmed `bg-card/50` background. Thread name is bold only when focused.
+
+**Modified:** `src/renderer/components/chat/SplitDivider.tsx`, `src/renderer/components/chat/SplitPanelHeader.tsx`
+
+## 2026-04-25 16:55 GST (Dubai)
+### ChatToolbar: compact icons-only mode for narrow split panels
+Added `@container/toolbar` query to ChatToolbar. When the toolbar container is narrower than 480px (typical in split-screen), PlanToggle, ModelPicker, AutoApproveToggle, and BranchSelector hide their text labels and chevrons, showing only icons. Full labels return when the panel is wide enough. Uses Tailwind CSS 4 `@container` queries with `@[480px]/toolbar:inline` and `@[480px]/toolbar:block`.
+
+**Modified:** `src/renderer/components/chat/ChatToolbar.tsx`, `src/renderer/components/chat/PlanToggle.tsx`, `src/renderer/components/chat/ModelPicker.tsx`, `src/renderer/components/chat/AutoApproveToggle.tsx`, `src/renderer/components/chat/BranchSelector.tsx`
+
+## 2026-04-25 16:52 GST (Dubai)
+### Split-screen: Chrome-style thread picker and unsplit
+Replaced "Split left" / "Split right" context menu items with Chrome-style UX. Right-clicking a thread now shows "New split view" (opens a thread picker panel with search, project icons, and thread names sorted by recency) or "Unsplit" (if the thread is already in a split). The header toolbar split button also opens the picker instead of auto-selecting. Created `SplitThreadPicker` component with search input, scrollable thread list, and outside-click dismiss.
+
+**Modified:** `src/renderer/components/sidebar/ThreadItem.tsx`, `src/renderer/components/header-toolbar.tsx`, `src/renderer/components/chat/SplitThreadPicker.tsx` (new)
+
+## 2026-04-25 16:48 GST (Dubai)
+### SplitDropZone: rewrite as hook for reliable drag detection
+Rewrote SplitDropZone from a standalone overlay component to a `useSplitDrop` hook + `SplitDropOverlay` component. The hook attaches HTML5 drag handlers directly to the container div in App.tsx, avoiding pointer-events conflicts. Thread drags (HTML5 API with `text/x-kirodex-task-id`) and file drags (Tauri native `onDragDropEvent`) use separate event systems and coexist without interference.
+
+**Modified:** `src/renderer/components/chat/SplitDropZone.tsx`, `src/renderer/App.tsx`
+
+## 2026-04-25 16:35 GST (Dubai)
+### Website: add split-screen, analytics, and recent features
+Updated index.html with two new feature cards: "Split-screen" and "Analytics dashboard". Updated features.html with full split-screen section (six feature cards covering drag-to-split, right-click split, draggable divider, focus indicators, responsive behavior, keyboard shortcut), analytics dashboard section (three cards), plus subagent pipelines, image attachments, and message queue cards in the chat section. Added Cmd+\ to the keyboard shortcuts grid.
+
+**Modified:** `website/index.html`, `website/features.html`
+
+## 2026-04-25 16:31 GST (Dubai)
+### ThreadItem: add "Split left" and "Split right" to context menu
+Added two new context menu options on thread right-click: "Split left" places the thread in the left panel (swapping the current selected thread to the right), "Split right" opens it in the right split panel. Uses IconLayoutSidebar and IconLayoutSidebarRight icons. Options appear between Rename and Delete for non-draft threads.
+
+**Modified:** `src/renderer/components/sidebar/ThreadItem.tsx`
+
+## 2026-04-25 16:30 GST (Dubai)
+### Split-screen: two chat panels side by side
+Implemented split-screen mode for viewing two threads simultaneously. Added split state to taskStore (splitTaskId, splitRatio, focusedPanel) with persistence in history-store. Refactored ChatPanel to accept an optional taskId prop for reuse. Created SplitPanelHeader (project icon + thread name + focus indicator), SplitDivider (draggable with blue indicator, grip dots, double-click reset), SplitChatLayout (two panels with ResizeObserver auto-collapse), and SplitDropZone (drag thread from sidebar to open split). Added split toggle button to HeaderToolbar and Cmd+\ keyboard shortcut. Each panel has its own independent ChatInput. Minimum panel width of 400px enforced.
+
+**Modified:** `src/renderer/stores/task-store-types.ts`, `src/renderer/stores/taskStore.ts`, `src/renderer/lib/history-store.ts`, `src/renderer/components/chat/ChatPanel.tsx`, `src/renderer/components/chat/SplitPanelHeader.tsx`, `src/renderer/components/chat/SplitDivider.tsx`, `src/renderer/components/chat/SplitChatLayout.tsx`, `src/renderer/components/chat/SplitDropZone.tsx`, `src/renderer/components/header-toolbar.tsx`, `src/renderer/components/sidebar/ThreadItem.tsx`, `src/renderer/hooks/useKeyboardShortcuts.ts`, `src/renderer/App.tsx`
+
 ## 2026-04-25 16:22 GST (Dubai)
 ### QueuedMessages: improve chevron reorder button UX/UI
 Redesigned move up/down chevron buttons in the queued messages list. Increased icon size (3→3.5), added hover background (`hover:bg-accent`), replaced invisible disabled state (`opacity-0`) with visible-but-dimmed (`text-muted-foreground/30` + `cursor-not-allowed`), wrapped each button in a tooltip ("Move up"/"Move down"), improved aria-labels to include message text, and added `tabIndex` management for keyboard navigation.

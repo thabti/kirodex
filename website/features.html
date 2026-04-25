@@ -46,7 +46,7 @@
       <p class="mb-6 max-w-2xl text-[15px] text-muted-foreground">Full-featured chat interface powered by the Agent Client Protocol. Each conversation runs as an independent agent thread with its own context, tool calls, and execution history.</p>
       <div class="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Threaded conversations</h3><p class="text-[13px] text-muted-foreground">Each thread is an independent agent session with its own context window and tool access.</p></div>
-        <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Slash commands</h3><p class="text-[13px] text-muted-foreground">/plan, /model, /agent, /btw, /branch, /worktree, /clear, /fork, /close with fuzzy search.</p></div>
+        <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Slash commands</h3><p class="text-[13px] text-muted-foreground">/plan, /model, /agent, /btw, /branch, /worktree, /clear, /fork, /close, /tangent with fuzzy search.</p></div>
         <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Agent mentions</h3><p class="text-[13px] text-muted-foreground">@agent pills with built-in agents, styled icons, and fuzzy matching.</p></div>
         <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Plan mode</h3><p class="text-[13px] text-muted-foreground">Toggle between planning and building. Context-aware handoff card when usage grows past 30%.</p></div>
         <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Question cards</h3><p class="text-[13px] text-muted-foreground">Agents ask multi-choice questions; pick an option and reply inline.</p></div>
@@ -54,6 +54,13 @@
         <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Thread archiving</h3><p class="text-[13px] text-muted-foreground">/close preserves conversation history in a read-only view instead of deleting.</p></div>
         <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Task management</h3><p class="text-[13px] text-muted-foreground">Create, pause, resume, cancel, and delete tasks. Queue messages while the agent is running.</p></div>
         <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Kiro config sidebar</h3><p class="text-[13px] text-muted-foreground">Browse agents, skills, steering rules, and MCP servers from your .kiro/ directory.</p></div>
+        <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Subagent pipelines</h3><p class="text-[13px] text-muted-foreground">Parallel agent pipelines render as expandable stage cards with dependency indicators.</p></div>
+        <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Image attachments</h3><p class="text-[13px] text-muted-foreground">Drag and drop images into chat. Sent as ACP ContentBlock::Image for multimodal agents.</p></div>
+        <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Message queue</h3><p class="text-[13px] text-muted-foreground">Type messages while the agent is running. They queue up and send when the turn ends. Reorder or steer mid-run.</p></div>
+        <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">/fork threads</h3><p class="text-[13px] text-muted-foreground">Fork the current thread into a new conversation, preserving full context from the original.</p></div>
+        <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Folder drag-and-drop</h3><p class="text-[13px] text-muted-foreground">Drag folders into the chat input to attach them as context pills. The agent receives the full directory tree.</p></div>
+        <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Mode dropdown</h3><p class="text-[13px] text-muted-foreground">Switch between plan and chat modes from the toolbar dropdown. No slash command needed.</p></div>
+        <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Error state with retry</h3><p class="text-[13px] text-muted-foreground">Failed agent calls show a shake animation and retry button. One click to resend without retyping.</p></div>
       </div>
       <!-- Screenshot placeholder -->
       <div class="flex h-80 items-center justify-center rounded-2xl border border-dashed border-border bg-card/50">
@@ -112,6 +119,51 @@
       </div>
     </section>
 
+    <!-- ── Split-screen ───────────────────────────────────── -->
+    <section>
+      <div class="mb-3 flex items-center gap-2.5">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="text-sky-400"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/></svg>
+        <h2 class="text-2xl font-bold text-foreground">Split-screen</h2>
+      </div>
+      <p class="mb-6 max-w-2xl text-[15px] text-muted-foreground">View two threads side by side, even from different projects. Each panel has its own independent chat input.</p>
+      <div class="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Drag to split</h3><p class="text-[13px] text-muted-foreground">Drag any thread from the sidebar onto the main area to open it in a split panel.</p></div>
+        <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Right-click split</h3><p class="text-[13px] text-muted-foreground">Right-click a thread and choose "Split left" or "Split right" to place it in either panel.</p></div>
+        <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Draggable divider</h3><p class="text-[13px] text-muted-foreground">Resize panels by dragging the divider. Double-click to reset to 50/50. Blue indicator during drag.</p></div>
+        <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Focus indicators</h3><p class="text-[13px] text-muted-foreground">Clear visual ring and dot on the active panel. Click to switch focus between panels.</p></div>
+        <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Responsive</h3><p class="text-[13px] text-muted-foreground">Minimum 400px per panel. Auto-collapses to single view if the window gets too narrow.</p></div>
+        <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Cmd+\ shortcut</h3><p class="text-[13px] text-muted-foreground">Toggle split view with a keyboard shortcut. State persists across app restarts.</p></div>
+      </div>
+    </section>
+
+
+    <!-- ── Multi-window ──────────────────────────────────── -->
+    <section>
+      <div class="mb-3 flex items-center gap-2.5">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-400"><rect x="2" y="3" width="20" height="14" rx="2"/><rect x="5" y="6" width="14" height="8" rx="1" opacity="0.5"/></svg>
+        <h2 class="text-2xl font-bold text-foreground">Multi-window</h2>
+      </div>
+      <p class="mb-6 max-w-2xl text-[15px] text-muted-foreground">Open multiple Kirodex windows from the native File menu. Each window runs independently with its own state.</p>
+      <div class="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Cmd+N new window</h3><p class="text-[13px] text-muted-foreground">Open a new window from the File menu or with the keyboard shortcut.</p></div>
+        <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Independent state</h3><p class="text-[13px] text-muted-foreground">Each window has its own threads, terminal sessions, and agent connections.</p></div>
+        <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Cross-project work</h3><p class="text-[13px] text-muted-foreground">Work on different projects in separate windows without switching contexts.</p></div>
+      </div>
+    </section>
+    <!-- ── Analytics ────────────────────────────────────────── -->
+    <section>
+      <div class="mb-3 flex items-center gap-2.5">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="text-purple-400"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        <h2 class="text-2xl font-bold text-foreground">Analytics dashboard</h2>
+      </div>
+      <p class="mb-6 max-w-2xl text-[15px] text-muted-foreground">Track your AI-assisted development with local-only analytics. All data stays on your machine.</p>
+      <div class="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Nine chart types</h3><p class="text-[13px] text-muted-foreground">Coding hours, messages, tokens, tool calls, diff stats, model popularity, mode usage, slash commands, and project stats.</p></div>
+        <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">ACID-compliant storage</h3><p class="text-[13px] text-muted-foreground">Powered by redb for crash-safe local persistence. No cloud, no telemetry.</p></div>
+        <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Access via /data</h3><p class="text-[13px] text-muted-foreground">Open the dashboard with the /data or /usage slash command. Clear data anytime from Settings.</p></div>
+      </div>
+    </section>
+
     <!-- ── Notifications ────────────────────────────────────── -->
     <section>
       <div class="mb-3 flex items-center gap-2.5">
@@ -132,6 +184,8 @@
         <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">CLI path and model</h3><p class="text-[13px] text-muted-foreground">Configure kiro-cli path, default model, and auto-approve preferences.</p></div>
         <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Appearance</h3><p class="text-[13px] text-muted-foreground">Dark, light, and system themes. Adjustable font size. Sidebar position.</p></div>
         <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Keyboard shortcuts</h3><p class="text-[13px] text-muted-foreground">Cmd+L to focus chat, Cmd+J for terminal, Cmd+D for diffs, Cmd+B for /btw, and more.</p></div>
+        <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Crash recovery</h3><p class="text-[13px] text-muted-foreground">Detects corrupted store data and offers a one-click reset. Automatic backups protect your threads.</p></div>
+        <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Recent projects</h3><p class="text-[13px] text-muted-foreground">Quickly reopen previously used projects from the sidebar menu. State persists across restarts.</p></div>
         <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Per-project preferences</h3><p class="text-[13px] text-muted-foreground">Auto-approve, worktree defaults, symlink directories, and custom icons per project.</p></div>
         <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Auto-update</h3><p class="text-[13px] text-muted-foreground">Update checker with sidebar badge. One-click install when a new version is available.</p></div>
         <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Privacy controls</h3><p class="text-[13px] text-muted-foreground">Optional anonymous analytics. No prompts, code, or file paths are ever sent.</p></div>
@@ -167,7 +221,8 @@
         <div class="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3"><kbd class="rounded border border-border bg-[#1a1a1a] px-2 py-0.5 text-[12px] font-mono text-muted-foreground">Cmd+J</kbd><span class="text-[13px] text-foreground">Toggle terminal</span></div>
         <div class="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3"><kbd class="rounded border border-border bg-[#1a1a1a] px-2 py-0.5 text-[12px] font-mono text-muted-foreground">Cmd+D</kbd><span class="text-[13px] text-foreground">Toggle diff panel</span></div>
         <div class="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3"><kbd class="rounded border border-border bg-[#1a1a1a] px-2 py-0.5 text-[12px] font-mono text-muted-foreground">Cmd+B</kbd><span class="text-[13px] text-foreground">Side question (/btw)</span></div>
-        <div class="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3"><kbd class="rounded border border-border bg-[#1a1a1a] px-2 py-0.5 text-[12px] font-mono text-muted-foreground">Cmd+N</kbd><span class="text-[13px] text-foreground">New thread</span></div>
+        <div class="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3"><kbd class="rounded border border-border bg-[#1a1a1a] px-2 py-0.5 text-[12px] font-mono text-muted-foreground">Cmd+\</kbd><span class="text-[13px] text-foreground">Toggle split view</span></div>
+        <div class="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3"><kbd class="rounded border border-border bg-[#1a1a1a] px-2 py-0.5 text-[12px] font-mono text-muted-foreground">Cmd+N</kbd><span class="text-[13px] text-foreground">New window</span></div>
         <div class="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3"><kbd class="rounded border border-border bg-[#1a1a1a] px-2 py-0.5 text-[12px] font-mono text-muted-foreground">Esc</kbd><span class="text-[13px] text-foreground">Pause agent</span></div>
         <div class="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3"><kbd class="rounded border border-border bg-[#1a1a1a] px-2 py-0.5 text-[12px] font-mono text-muted-foreground">Cmd+,</kbd><span class="text-[13px] text-foreground">Open settings</span></div>
         <div class="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3"><kbd class="rounded border border-border bg-[#1a1a1a] px-2 py-0.5 text-[12px] font-mono text-muted-foreground">Cmd+Shift+[</kbd><span class="text-[13px] text-foreground">Previous thread</span></div>

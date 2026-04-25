@@ -95,16 +95,33 @@ chmod +x Kirodex_*.AppImage && ./Kirodex_*.AppImage
 - Chat interface via the [Agent Client Protocol](https://github.com/anthropics/agent-client-protocol) SDK
 - Threaded agentic development — each conversation runs as an independent agent thread with its own context, tool calls, and execution history
 - Empty thread splash screen with clickable slash commands and `@` mentions to get started fast
-- Slash commands (`/clear`, `/close`, `/model`, `/agent`, `/plan`, `/chat`, `/data`, `/branch`, `/worktree`, `/fork`) with fuzzy search across all pickers
+- Slash commands (`/clear`, `/close`, `/model`, `/agent`, `/plan`, `/chat`, `/data`, `/branch`, `/worktree`, `/fork`, `/btw`, `/tangent`) with fuzzy search across all pickers
+- `/btw` side questions — ask a quick question in a floating overlay without polluting conversation history; `/tangent` is an alias. Press Escape to discard or Keep to preserve the exchange
+- `/fork` — fork the current thread into a new conversation, preserving context
 - Agent mention pills (`@agent`) with built-in agents, styled icons, and fuzzy matching
 - Plan mode with per-thread state and a handoff card to start building after planning
+- Mode dropdown — switch between plan and chat modes from the toolbar
 - Context-aware plan handoff — when context usage grows past 30% in plan mode, a suggestion banner appears to switch to implement mode before the context window fills up; the plan is preserved across compaction so the coding agent picks up where the planner left off
 - Thread archiving — `/close` preserves conversation history in a read-only view instead of deleting
 - Task management: create, pause, resume, cancel, delete
+- Message queue — type messages while the agent is running; they queue up and send when the turn ends
 - Question cards — agents can ask multi-choice questions; pick an option and reply inline
 - Subagent display — parallel agent pipelines render as expandable stage cards with dependency indicators
 - Kiro config sidebar — browse agents (grouped by stack), skills, steering rules, and MCP servers from `.kiro/`
 - Emoji and project-file icon picker for customizing thread icons
+- Folder drag-and-drop — drag folders into the chat input to attach them as context pills
+- Image attachments sent as proper ACP `ContentBlock::Image` for multimodal agents
+- Error state with shake animation and retry button when agent calls fail
+
+**Split-screen**
+- View two threads side by side, even from different projects
+- Drag a thread from the sidebar to open it in a split panel, or right-click and choose "Split left" / "Split right"
+- `Cmd+\` to toggle split view; draggable divider with double-click to reset 50/50
+- Focus indicators and independent chat inputs per panel; minimum 400px per panel with auto-collapse
+
+**Multi-window**
+- Open multiple Kirodex windows via `Cmd+N` (new window) from the native File menu
+- Each window has its own independent state, threads, and terminal sessions
 
 **Code and diffs**
 - Syntax-highlighted inline and side-by-side diff views ([Shiki](https://shiki.style))
@@ -112,7 +129,6 @@ chmod +x Kirodex_*.AppImage && ./Kirodex_*.AppImage
 - Code viewer for read tool calls with line numbers and syntax highlighting
 - Click a file operation in chat to jump to that file
 - Changed files summary with per-file +/- stats and one-click stage/revert
-- Image attachments sent as proper ACP `ContentBlock::Image` for multimodal agents
 
 **Git**
 - Branch, stage, commit, push, pull, fetch through [git2](https://crates.io/crates/git2) with SSH + HTTPS credential support (no shell commands)
@@ -140,9 +156,12 @@ chmod +x Kirodex_*.AppImage && ./Kirodex_*.AppImage
 **Terminal and settings**
 - Integrated PTY terminal ([xterm.js](https://xtermjs.org) + portable-pty)
 - `Cmd+L` shortcut to focus the chat input from anywhere
+- `Cmd+B` shortcut to open a `/btw` side question
 - Open in editor — launch files in VS Code, Cursor, Zed, or your preferred terminal emulator
 - Update checker with sidebar badge when a new version is available
 - Quit confirmation dialog on `Cmd+Q` / window close
+- Crash recovery — detects corrupted store data and offers a one-click reset with automatic backups
+- Recent projects menu — quickly reopen previously used projects
 - Thread and state persistence across version updates with automatic backups
 - Full-screen settings panel: CLI path, default model, auto-approve, font size, keyboard shortcuts, git integration, notification preferences, and analytics
 - First-run onboarding wizard for CLI setup and authentication
