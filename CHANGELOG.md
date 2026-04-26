@@ -1,5 +1,20 @@
 # Changelog
 
+## [v0.38.0] - 2026-04-26
+
+### Features
+
+- per-panel state, fix split close, thread ordering, perf audit ([`3724da8`](https://github.com/thabti/kirodex/commit/3724da87804ca418c2970acc7aa517ad228b64b2))
+- add slash command mode tracking and estimated token cost ([`ce93c25`](https://github.com/thabti/kirodex/commit/ce93c25874d3ef806e9d444f211df9c27d2d26c1))
+
+### Bug fixes
+
+- fix z-index conflict with settings panel ([`2c29b9e`](https://github.com/thabti/kirodex/commit/2c29b9ed000bdb42f7e8fe8343fd3b61c5b758a5))
+
+### Documentation
+
+- update activity log ([`0509a37`](https://github.com/thabti/kirodex/commit/0509a37f3b5954131a5996734c9d8f18243886db))
+
 ## [v0.37.0] - 2026-04-26
 
 ### Features
