@@ -19,7 +19,7 @@ interface AboutDialogProps {
 
 export const AboutDialog = ({ open, onOpenChange }: AboutDialogProps) => {
   const [appVersion, setAppVersion] = useState('')
-  const { status, updateInfo, progress, error, triggerDownload } = useUpdateStore()
+  const { status, updateInfo, progress, error, triggerDownload, triggerRestart } = useUpdateStore()
   const customAppIcon = useSettingsStore((s) => s.settings.customAppIcon)
   const displayIcon = customAppIcon || defaultAppIcon
 
@@ -49,20 +49,19 @@ export const AboutDialog = ({ open, onOpenChange }: AboutDialogProps) => {
   }, [])
 
   const handleDownload = useCallback(() => {
+    onOpenChange(false)
     triggerDownload?.()
-  }, [triggerDownload])
+  }, [triggerDownload, onOpenChange])
 
   const handleRestart = useCallback(async () => {
+    if (!triggerRestart) return
     try {
-      const { prepareForRelaunch } = await import('@/lib/relaunch')
-      await prepareForRelaunch()
-      const { relaunch } = await import('@tauri-apps/plugin-process')
-      await relaunch()
+      await triggerRestart()
     } catch (err) {
       console.error('[updater] restart failed:', err)
       useUpdateStore.getState().setError(err instanceof Error ? err.message : 'Restart failed')
     }
-  }, [])
+  }, [triggerRestart])
 
   const isChecking = status === 'checking'
   const isAvailable = status === 'available'

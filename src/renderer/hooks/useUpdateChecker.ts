@@ -116,11 +116,17 @@ export const useUpdateChecker = () => {
   // Expose downloadAndInstall to the store so other components (e.g. sidebar badge) can trigger it
   useEffect(() => {
     if (store.status === 'available') {
+      // If another component (e.g. UpdatesCard) called check() and found an update,
+      // pendingUpdateRef may be null or stale. Re-check to get a fresh Update object.
+      if (!pendingUpdateRef.current || pendingUpdateRef.current.version !== store.updateInfo?.version) {
+        checkForUpdate().catch(() => {})
+        return
+      }
       useUpdateStore.getState().setTriggerDownload(() => { downloadAndInstall() })
     } else {
       useUpdateStore.getState().setTriggerDownload(null)
     }
-  }, [store.status, downloadAndInstall])
+  }, [store.status, store.updateInfo?.version, downloadAndInstall, checkForUpdate])
 
   // Expose restart to the store so the restart dialog can trigger it
   useEffect(() => {

@@ -34,7 +34,7 @@ export const RestartPromptDialog = () => {
 
   return (
     <Dialog open={isReady} onOpenChange={(open) => { if (!open) handleDismiss() }}>
-      <DialogContent showCloseButton={false} className="max-w-sm">
+      <DialogContent showCloseButton={false} className="z-[60] max-w-sm" overlayClassName="z-[60]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-base">
             <IconRefresh className="size-5 text-primary" aria-hidden />

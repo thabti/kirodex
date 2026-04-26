@@ -52,7 +52,7 @@ export const UpdateAvailableDialog = () => {
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="z-[60] max-w-sm" overlayClassName="z-[60]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-base">
             {isReady
