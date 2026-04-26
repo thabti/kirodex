@@ -121,8 +121,33 @@ export const computeModelPopularity = (events: AnalyticsEvent[]): Record<string,
 export const computeModeUsage = (events: AnalyticsEvent[]): Record<string, number> =>
   countBy(events, 'detail')
 
-export const computeSlashCommandUsage = (events: AnalyticsEvent[]): Record<string, number> =>
-  countBy(events, 'detail')
+/** Parse slash_cmd detail field. New format: "name:mode", legacy: "name" */
+const parseSlashDetail = (detail: string): { name: string; mode: string } => {
+  const idx = detail.lastIndexOf(':')
+  if (idx > 0 && (detail.endsWith(':plan') || detail.endsWith(':command'))) {
+    return { name: detail.slice(0, idx), mode: detail.slice(idx + 1) }
+  }
+  return { name: detail, mode: 'unknown' }
+}
+
+export interface SlashCommandModeData {
+  readonly totals: Record<string, number>
+  readonly byMode: Record<string, { command: number; plan: number }>
+}
+
+export const computeSlashCommandUsage = (events: AnalyticsEvent[]): SlashCommandModeData => {
+  const totals: Record<string, number> = {}
+  const byMode: Record<string, { command: number; plan: number }> = {}
+  for (const e of events) {
+    const raw = e.detail ?? 'unknown'
+    const { name, mode } = parseSlashDetail(raw)
+    totals[name] = (totals[name] ?? 0) + 1
+    if (!byMode[name]) byMode[name] = { command: 0, plan: 0 }
+    if (mode === 'plan') byMode[name].plan += 1
+    else byMode[name].command += 1
+  }
+  return { totals, byMode }
+}
 
 export const computeToolCallBreakdown = (events: AnalyticsEvent[]): Record<string, number> =>
   countBy(events, 'detail')
@@ -169,3 +194,72 @@ export const computeTotalFilesEdited = (events: AnalyticsEvent[]): number =>
   new Set(events.map((e) => e.detail).filter(Boolean)).size
 
 export const computeTotalToolCalls = (events: AnalyticsEvent[]): number => events.length
+
+// ── Model pricing ($ per million tokens) ──────────
+
+interface ModelPricing {
+  readonly input: number
+  readonly output: number
+}
+
+/**
+ * Pricing map for Claude models. Keys are matched as substrings against model IDs.
+ * Order matters: more specific patterns first.
+ * Source: https://docs.anthropic.com/en/docs/about-claude/pricing (April 2026)
+ */
+const MODEL_PRICING: readonly { readonly pattern: string; readonly pricing: ModelPricing }[] = [
+  // Opus tiers
+  { pattern: 'opus-4-', pricing: { input: 15, output: 75 } },
+  { pattern: 'opus-4.1', pricing: { input: 15, output: 75 } },
+  { pattern: 'opus-4.5', pricing: { input: 5, output: 25 } },
+  { pattern: 'opus-4.6', pricing: { input: 5, output: 25 } },
+  { pattern: 'opus-4.7', pricing: { input: 5, output: 25 } },
+  { pattern: 'opus-3', pricing: { input: 15, output: 75 } },
+  // Sonnet tiers
+  { pattern: 'sonnet-4-', pricing: { input: 3, output: 15 } },
+  { pattern: 'sonnet-4.5', pricing: { input: 3, output: 15 } },
+  { pattern: 'sonnet-4.6', pricing: { input: 3, output: 15 } },
+  { pattern: 'sonnet-3', pricing: { input: 3, output: 15 } },
+  // Haiku tiers
+  { pattern: 'haiku-4.5', pricing: { input: 1, output: 5 } },
+  { pattern: 'haiku-3.5', pricing: { input: 0.80, output: 4 } },
+  { pattern: 'haiku-3', pricing: { input: 0.25, output: 1.25 } },
+] as const
+
+const findPricing = (modelId: string): ModelPricing | null => {
+  const lower = modelId.toLowerCase()
+  for (const entry of MODEL_PRICING) {
+    if (lower.includes(entry.pattern)) return entry.pricing
+  }
+  return null
+}
+
+/**
+ * Estimate total cost from token_usage and model_used events.
+ * Uses a simple heuristic: assume ~25% of tokens are output, ~75% input.
+ * This is an estimate since we don't have separate input/output token counts.
+ */
+export const computeEstimatedCost = (
+  tokenEvents: AnalyticsEvent[],
+  modelEvents: AnalyticsEvent[],
+): number => {
+  if (tokenEvents.length === 0 || modelEvents.length === 0) return 0
+  // Find the most-used model to use as the pricing basis
+  const modelCounts = countBy(modelEvents, 'detail')
+  let topModel = ''
+  let topCount = 0
+  for (const [model, count] of Object.entries(modelCounts)) {
+    if (count > topCount) { topModel = model; topCount = count }
+  }
+  const pricing = findPricing(topModel)
+  if (!pricing) return 0
+  const totalTokens = sumValue(tokenEvents)
+  // Heuristic split: 75% input, 25% output
+  const inputTokens = totalTokens * 0.75
+  const outputTokens = totalTokens * 0.25
+  const inputCost = (inputTokens / 1_000_000) * pricing.input
+  const outputCost = (outputTokens / 1_000_000) * pricing.output
+  return inputCost + outputCost
+}
+
+export const findModelPricing = findPricing

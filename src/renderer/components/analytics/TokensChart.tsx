@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import type { AnalyticsEvent } from '@/types/analytics'
-import { computeTokensByDay, computeTotalTokens } from '@/lib/analytics-aggregators'
+import { computeTokensByDay, computeTotalTokens, computeEstimatedCost } from '@/lib/analytics-aggregators'
 import { ChartCard, StatRow, EmptyChart } from './ChartCard'
 
 const fmtTokens = (n: number): string => {
@@ -10,13 +10,33 @@ const fmtTokens = (n: number): string => {
   return String(n)
 }
 
-export const TokensChart = ({ events }: { events: AnalyticsEvent[] }) => {
+const fmtCost = (n: number): string => {
+  if (n < 0.01) return '<$0.01'
+  if (n < 1) return `$${n.toFixed(2)}`
+  return `$${n.toFixed(2)}`
+}
+
+interface TokensChartProps {
+  readonly events: AnalyticsEvent[]
+  readonly modelEvents?: AnalyticsEvent[]
+}
+
+export const TokensChart = ({ events, modelEvents = [] }: TokensChartProps) => {
   const data = useMemo(() => computeTokensByDay(events), [events])
   const total = useMemo(() => computeTotalTokens(events), [events])
+  const estimatedCost = useMemo(
+    () => computeEstimatedCost(events, modelEvents),
+    [events, modelEvents],
+  )
 
   return (
     <ChartCard title="Token usage">
-      <StatRow label="Total tokens" value={fmtTokens(total)} />
+      <div className="flex flex-col gap-1 mb-2">
+        <StatRow label="Total tokens" value={fmtTokens(total)} />
+        {estimatedCost > 0 && (
+          <StatRow label="Est. cost" value={`~${fmtCost(estimatedCost)}`} color="text-amber-400" />
+        )}
+      </div>
       {data.length === 0 ? (
         <EmptyChart message="No token data yet" />
       ) : (
@@ -28,6 +48,11 @@ export const TokensChart = ({ events }: { events: AnalyticsEvent[] }) => {
             <Bar dataKey="value" name="Tokens" fill="#f59e0b" radius={[3, 3, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
+      )}
+      {estimatedCost > 0 && (
+        <p className="mt-2 text-[10px] text-muted-foreground/50">
+          Cost estimate based on most-used model pricing. Assumes ~75% input, ~25% output tokens.
+        </p>
       )}
     </ChartCard>
   )

@@ -55,8 +55,9 @@ export const useSlashAction = (): SlashActionResult => {
     // the `default` case.
     const KNOWN = new Set(['clear', 'model', 'agent', 'settings', 'upload', 'plan', 'usage', 'data', 'close', 'exit', 'branch', 'worktree', 'btw', 'tangent', 'fork'])
     if (KNOWN.has(name)) {
+      const mode = useSettingsStore.getState().currentModeId === 'kiro_planner' ? 'plan' : 'command'
       track('feature_used', { feature: 'slash_command', detail: name })
-      record('slash_cmd', { detail: name })
+      record('slash_cmd', { detail: `${name}:${mode}` })
     }
     switch (name) {
       case 'clear': {
