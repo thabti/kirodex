@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.40.0] - 2026-04-28
+
+### Other changes
+
+- Add memory monitoring and lazy-load archived threads (#20) ([`a264d50`](https://github.com/thabti/kirodex/commit/a264d506382bc8331faf77a24c3022f0486443ee))
+
 ## [v0.39.0] - 2026-04-27
 
 ### Features
