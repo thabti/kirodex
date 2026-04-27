@@ -1,18 +1,55 @@
 import { create } from 'zustand'
-import type { AgentTask, ActivityEntry, SoftDeletedThread } from '@/types'
+import type { AgentTask, ActivityEntry, SoftDeletedThread, TaskMessage } from '@/types'
 import { ipc } from '@/lib/ipc'
 import { joinChunk } from '@/lib/utils'
 import * as historyStore from '@/lib/history-store'
+import type { ArchivedThreadMeta } from '@/lib/history-store'
 import { useSettingsStore } from './settingsStore'
 import { track } from '@/lib/analytics'
 import { sendTaskNotification } from '@/lib/notifications'
 import type { TaskStore } from './task-store-types'
+
+interface SavedMessageLike {
+  role: string
+  content: string
+  timestamp: string
+  thinking?: string
+}
+
+interface SavedThreadLike {
+  id: string
+  name: string
+  workspace: string
+  createdAt: string
+  messages: SavedMessageLike[]
+  parentTaskId?: string
+  worktreePath?: string
+  originalWorkspace?: string
+  projectId?: string
+}
+
+const projectMeta = (t: SavedThreadLike): ArchivedThreadMeta => {
+  const last = t.messages.length > 0 ? t.messages[t.messages.length - 1].timestamp : t.createdAt
+  return {
+    id: t.id,
+    name: t.name,
+    workspace: t.workspace,
+    createdAt: t.createdAt,
+    lastActivityAt: last,
+    messageCount: t.messages.length,
+    ...(t.parentTaskId ? { parentTaskId: t.parentTaskId } : {}),
+    ...(t.worktreePath ? { worktreePath: t.worktreePath } : {}),
+    ...(t.originalWorkspace ? { originalWorkspace: t.originalWorkspace } : {}),
+    ...(t.projectId ? { projectId: t.projectId } : {}),
+  }
+}
 
 export type { TaskStore, BtwCheckpoint } from './task-store-types'
 export { initTaskListeners, applyTurnEnd } from './task-store-listeners'
 
 export const useTaskStore = create<TaskStore>((set, get) => ({
   tasks: {},
+  archivedMeta: {},
   projects: [],
   projectIds: {},
   projectNames: {},
@@ -52,11 +89,17 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   threadOrders: {},
 
   setSelectedTask: (id) => {
-    const { selectedTaskId: currentId, activeSplitId, splitViews, focusedPanel, notifiedTaskIds } = get()
+    const { selectedTaskId: currentId, activeSplitId, splitViews, focusedPanel, notifiedTaskIds, archivedMeta, tasks: currentTasks } = get()
     if (currentId === id && !activeSplitId) return
     // Clear the notification badge when the user navigates to this thread
     if (id && notifiedTaskIds.includes(id)) {
       set({ notifiedTaskIds: notifiedTaskIds.filter((nid) => nid !== id) })
+    }
+    // Hydrate archived metadata into a full task lazily on selection.
+    // Fire-and-forget: the user sees the thread name from `archivedMeta` while
+    // the messages load, and Zustand re-renders once hydration completes.
+    if (id && !currentTasks[id] && archivedMeta[id]) {
+      void get().hydrateArchivedTask(id)
     }
     // If the target task is part of the active split, focus that panel instead of closing the split
     if (activeSplitId && id) {
@@ -337,7 +380,16 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   },
 
   softDeleteTask: (id) => {
-    const task = get().tasks[id]
+    const state = get()
+    const task = state.tasks[id]
+    // Archived metadata threads aren't inflated yet — hydrate first so the
+    // soft-delete entry retains the full message history needed for restore.
+    if (!task && state.archivedMeta[id]) {
+      void state.hydrateArchivedTask(id).then((ok) => {
+        if (ok) get().softDeleteTask(id)
+      })
+      return
+    }
     if (!task) return
     // Worktree threads: show confirmation dialog BEFORE deleting
     if (task.worktreePath && task.originalWorkspace) {
@@ -815,38 +867,48 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
       const list = await ipc.listTasks()
       const tasks: Record<string, AgentTask> = Object.fromEntries(list.map((t) => [t.id, t]))
 
-      // Load persisted history (archived threads from previous sessions)
+      // Load persisted history (archived threads from previous sessions).
+      // We project to lightweight metadata only — never inflate full message
+      // arrays into `tasks`. They're hydrated on demand when the user opens
+      // an archived thread (see hydrateArchivedTask).
       try {
         const [savedThreads, savedProjects, savedSoftDeleted] = await Promise.all([
           historyStore.loadThreads(),
           historyStore.loadProjects(),
           historyStore.loadSoftDeleted(),
         ])
-        const archived = historyStore.toArchivedTasks(savedThreads)
-        for (const t of archived) {
-          if (!tasks[t.id]) {
-            // No live task — use the archived version
-            tasks[t.id] = t
-          } else {
-            // Live task exists — merge worktree metadata the backend doesn't track
-            // Create a new object to preserve Zustand reactivity (don't mutate in place)
-            const live = tasks[t.id]
-            tasks[t.id] = {
+        const softDeletedIds = new Set(savedSoftDeleted.map((sd) => sd.task.id))
+        const archivedMeta: Record<string, ArchivedThreadMeta> = {}
+        for (const saved of savedThreads) {
+          if (softDeletedIds.has(saved.id)) continue
+          if (tasks[saved.id]) {
+            // Live task exists — merge worktree metadata the backend doesn't
+            // track (without copying messages or other heavy fields).
+            const live = tasks[saved.id]
+            tasks[saved.id] = {
               ...live,
-              ...(!live.worktreePath && t.worktreePath ? { worktreePath: t.worktreePath } : {}),
-              ...(!live.originalWorkspace && t.originalWorkspace ? { originalWorkspace: t.originalWorkspace } : {}),
-              ...(!live.projectId && t.projectId ? { projectId: t.projectId } : {}),
-              ...(!live.parentTaskId && t.parentTaskId ? { parentTaskId: t.parentTaskId } : {}),
+              ...(!live.worktreePath && saved.worktreePath ? { worktreePath: saved.worktreePath } : {}),
+              ...(!live.originalWorkspace && saved.originalWorkspace ? { originalWorkspace: saved.originalWorkspace } : {}),
+              ...(!live.projectId && saved.projectId ? { projectId: saved.projectId } : {}),
+              ...(!live.parentTaskId && saved.parentTaskId ? { parentTaskId: saved.parentTaskId } : {}),
             }
+          } else {
+            archivedMeta[saved.id] = projectMeta(saved)
           }
         }
-        // Derive projects AFTER merge so worktree tasks use restored originalWorkspace
-        // Start with saved project order, then append any new workspaces
+        // Derive projects AFTER merge so worktree tasks use restored originalWorkspace.
+        // Start with saved project order, then append any new workspaces drawn
+        // from live tasks AND archived metadata (so projects with only archived
+        // threads still show up).
         const savedOrder = savedProjects.map((sp) => sp.workspace)
         const projectsSet = new Set(savedOrder)
         const projects = [...savedOrder]
         for (const t of Object.values(tasks)) {
           const ws = t.originalWorkspace ?? t.workspace
+          if (!projectsSet.has(ws)) { projectsSet.add(ws); projects.push(ws) }
+        }
+        for (const m of Object.values(archivedMeta)) {
+          const ws = m.originalWorkspace ?? m.workspace
           if (!projectsSet.has(ws)) { projectsSet.add(ws); projects.push(ws) }
         }
         // Merge project workspaces from history (already in savedOrder, but handle edge cases)
@@ -870,16 +932,20 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
         for (const sd of savedSoftDeleted) {
           softDeleted[sd.task.id] = sd
           deletedTaskIds.add(sd.task.id)
-          // Remove from tasks map so deleted threads don't appear in sidebar
+          // Remove from tasks/meta so deleted threads don't appear in sidebar
           delete tasks[sd.task.id]
+          delete archivedMeta[sd.task.id]
         }
-        // Restore missing threads from backup (covers data lost during update relaunch)
+        // Restore missing threads from backup (covers data lost during update relaunch).
+        // Backup threads also become metadata — don't inflate them.
         try {
           const backup = await historyStore.loadBackup()
           if (backup.threads.length > 0) {
-            const backupTasks = historyStore.toArchivedTasks(backup.threads)
-            for (const bt of backupTasks) {
-              if (!tasks[bt.id] && !deletedTaskIds.has(bt.id)) tasks[bt.id] = bt
+            for (const bt of backup.threads) {
+              if (tasks[bt.id]) continue
+              if (deletedTaskIds.has(bt.id)) continue
+              if (archivedMeta[bt.id]) continue
+              archivedMeta[bt.id] = projectMeta(bt)
             }
             for (const bp of backup.projects) {
               if (bp.displayName && !projectNames[bp.workspace]) projectNames[bp.workspace] = bp.displayName
@@ -890,6 +956,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
               if (!softDeleted[sd.task.id] && !tasks[sd.task.id]) {
                 softDeleted[sd.task.id] = sd
                 deletedTaskIds.add(sd.task.id)
+                delete archivedMeta[sd.task.id]
               }
             }
           }
@@ -900,6 +967,14 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
         for (const [id, t] of Object.entries(existing)) {
           if (t.status === 'running' || t.status === 'paused') {
             tasks[id] = t
+            delete archivedMeta[id]
+          }
+        }
+        // Preserve any archived threads the user has hydrated this session.
+        for (const [id, t] of Object.entries(existing)) {
+          if (t.isArchived && !tasks[id]) {
+            tasks[id] = t
+            delete archivedMeta[id]
           }
         }
         // Restore per-project thread ordering
@@ -907,22 +982,29 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
         for (const sp of savedProjects) {
           if (sp.threadOrder?.length) threadOrders[sp.workspace] = sp.threadOrder
         }
-        set({ tasks, projects, projectIds, projectNames, softDeleted, deletedTaskIds, threadOrders, connected: true })
+        set({ tasks, archivedMeta, projects, projectIds, projectNames, softDeleted, deletedTaskIds, threadOrders, connected: true })
       } catch {
         // History load failed — derive projects from live tasks, filtering worktree paths
         const projects = [...new Set(list.map((t) => t.originalWorkspace ?? t.workspace))]
         set({ tasks, projects, connected: true })
       }
     } catch {
-      // Backend not available — try loading from history only
+      // Backend not available — try loading from history only.
+      // Same lazy-meta strategy as the primary path: archived threads stay
+      // as metadata in `archivedMeta` until the user opens one.
       try {
         const [savedThreads, savedProjects, savedSoftDeleted] = await Promise.all([
           historyStore.loadThreads(),
           historyStore.loadProjects(),
           historyStore.loadSoftDeleted(),
         ])
-        const archived = historyStore.toArchivedTasks(savedThreads)
-        const tasks = Object.fromEntries(archived.map((t) => [t.id, t]))
+        const softDeletedIds = new Set(savedSoftDeleted.map((sd) => sd.task.id))
+        const tasks: Record<string, AgentTask> = {}
+        const archivedMeta: Record<string, ArchivedThreadMeta> = {}
+        for (const saved of savedThreads) {
+          if (softDeletedIds.has(saved.id)) continue
+          archivedMeta[saved.id] = projectMeta(saved)
+        }
         const projects = savedProjects.map((sp) => sp.workspace)
         const projectNames: Record<string, string> = {}
         const projectIds: Record<string, string> = {}
@@ -943,9 +1025,10 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
         try {
           const backup = await historyStore.loadBackup()
           if (backup.threads.length > 0) {
-            const backupTasks = historyStore.toArchivedTasks(backup.threads)
-            for (const bt of backupTasks) {
-              if (!tasks[bt.id] && !deletedTaskIds.has(bt.id)) tasks[bt.id] = bt
+            for (const bt of backup.threads) {
+              if (deletedTaskIds.has(bt.id)) continue
+              if (archivedMeta[bt.id]) continue
+              archivedMeta[bt.id] = projectMeta(bt)
             }
             for (const bp of backup.projects) {
               if (bp.displayName && !projectNames[bp.workspace]) projectNames[bp.workspace] = bp.displayName
@@ -953,18 +1036,20 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
               if (!projects.includes(bp.workspace)) projects.push(bp.workspace)
             }
             for (const sd of backup.softDeleted) {
-              if (!softDeleted[sd.task.id] && !tasks[sd.task.id]) {
+              if (!softDeleted[sd.task.id]) {
                 softDeleted[sd.task.id] = sd
                 deletedTaskIds.add(sd.task.id)
+                delete archivedMeta[sd.task.id]
               }
             }
           }
         } catch { /* backup load is best-effort */ }
-        // Preserve live tasks (same guard as the primary path above)
+        // Preserve live + hydrated archived tasks (same guard as primary path)
         const existing = get().tasks
         for (const [id, t] of Object.entries(existing)) {
-          if (t.status === 'running' || t.status === 'paused') {
+          if (t.status === 'running' || t.status === 'paused' || t.isArchived) {
             tasks[id] = t
+            delete archivedMeta[id]
           }
         }
         // Restore per-project thread ordering
@@ -972,10 +1057,55 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
         for (const sp of savedProjects) {
           if (sp.threadOrder?.length) threadOrders[sp.workspace] = sp.threadOrder
         }
-        set({ tasks, projects, projectIds, projectNames, softDeleted, deletedTaskIds, threadOrders, connected: false })
+        set({ tasks, archivedMeta, projects, projectIds, projectNames, softDeleted, deletedTaskIds, threadOrders, connected: false })
       } catch {
         set({ connected: false })
       }
+    }
+  },
+
+  hydrateArchivedTask: async (id) => {
+    const state = get()
+    if (state.tasks[id]) return true
+    const meta = state.archivedMeta[id]
+    if (!meta) return false
+    try {
+      const saved = await historyStore.loadThread(id)
+      if (!saved) {
+        // Stale meta: drop it so the sidebar stops showing this thread
+        set((s) => {
+          if (!s.archivedMeta[id]) return s
+          const { [id]: _drop, ...rest } = s.archivedMeta
+          return { archivedMeta: rest }
+        })
+        return false
+      }
+      const messages: TaskMessage[] = saved.messages.map((m) => ({
+        role: m.role as TaskMessage['role'],
+        content: m.content,
+        timestamp: m.timestamp,
+        ...(m.thinking ? { thinking: m.thinking } : {}),
+      }))
+      const task: AgentTask = {
+        id: saved.id,
+        name: saved.name,
+        workspace: saved.workspace,
+        status: 'completed',
+        createdAt: saved.createdAt,
+        messages,
+        isArchived: true,
+        ...(saved.parentTaskId ? { parentTaskId: saved.parentTaskId } : {}),
+        ...(saved.worktreePath ? { worktreePath: saved.worktreePath } : {}),
+        ...(saved.originalWorkspace ? { originalWorkspace: saved.originalWorkspace } : {}),
+        ...(saved.projectId ? { projectId: saved.projectId } : {}),
+      }
+      set((s) => {
+        const { [id]: _drop, ...remainingMeta } = s.archivedMeta
+        return { tasks: { ...s.tasks, [id]: task }, archivedMeta: remainingMeta }
+      })
+      return true
+    } catch {
+      return false
     }
   },
 
@@ -985,8 +1115,12 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   },
 
   persistHistory: () => {
-    const { tasks, projectNames, projectIds, softDeleted, projects, threadOrders } = get()
-    historyStore.saveThreads(tasks, projectNames, projectIds, projects, threadOrders).catch((err) => {
+    const { tasks, projectNames, projectIds, softDeleted, projects, threadOrders, archivedMeta } = get()
+    // Tell saveThreads which on-disk archived ids to preserve verbatim.
+    // Without this set, saveThreads would drop every archived thread that
+    // isn't currently inflated in `tasks`.
+    const keepArchivedIds = new Set(Object.keys(archivedMeta))
+    historyStore.saveThreads(tasks, projectNames, projectIds, projects, threadOrders, keepArchivedIds).catch((err) => {
       console.warn('[persistHistory] saveThreads failed:', err)
     })
     historyStore.saveSoftDeleted(Object.values(softDeleted)).catch((err) => {
@@ -1007,6 +1141,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     // Reset all in-memory state
     set({
       tasks: {},
+      archivedMeta: {},
       projects: [],
       projectIds: {},
       projectNames: {},

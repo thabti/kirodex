@@ -210,6 +210,15 @@ export const MemorySection = ({ draft, updateDraft }: MemorySectionProps) => {
                 hint={report ? `${formatBytes(report.threadsTotal)} held` : undefined}
               />
               <Stat
+                label="Archived"
+                value={report ? `${report.archivedMetaCount}` : '—'}
+                hint={report
+                  ? report.archivedMetaCount > 0
+                    ? `${formatBytes(report.archivedMeta)} metadata only`
+                    : 'none'
+                  : undefined}
+              />
+              <Stat
                 label="Soft-deleted"
                 value={report ? `${report.softDeletedCount}` : '—'}
                 hint={report ? `${formatBytes(report.softDeleted)} pending purge` : undefined}

@@ -734,14 +734,16 @@ describe('loadTasks', () => {
 
   it('falls back to history-only when backend fails', async () => {
     const { ipc } = await import('@/lib/ipc')
-    const { loadThreads, loadProjects, toArchivedTasks } = await import('@/lib/history-store')
+    const { loadThreads, loadProjects } = await import('@/lib/history-store')
     vi.mocked(ipc.listTasks).mockRejectedValueOnce(new Error('backend down'))
-    const archivedTask = makeTask({ id: 'archived-1', workspace: '/ws', isArchived: true })
-    vi.mocked(loadThreads).mockResolvedValueOnce([])
+    vi.mocked(loadThreads).mockResolvedValueOnce([
+      { id: 'archived-1', name: 'Test Task', workspace: '/ws', createdAt: '2026-01-01T00:00:00Z', messages: [] },
+    ])
     vi.mocked(loadProjects).mockResolvedValueOnce([{ workspace: '/ws', threadIds: ['archived-1'] }])
-    vi.mocked(toArchivedTasks).mockReturnValueOnce([archivedTask])
     await useTaskStore.getState().loadTasks()
-    expect(useTaskStore.getState().tasks['archived-1']).toBeDefined()
+    // Archived threads land in `archivedMeta` (lazy), not `tasks`, until the user opens one.
+    expect(useTaskStore.getState().archivedMeta['archived-1']).toBeDefined()
+    expect(useTaskStore.getState().tasks['archived-1']).toBeUndefined()
     expect(useTaskStore.getState().connected).toBe(false)
   })
 
@@ -766,22 +768,21 @@ describe('loadTasks', () => {
 
   it('merges worktree metadata from archived onto live tasks', async () => {
     const { ipc } = await import('@/lib/ipc')
-    const { loadThreads, loadProjects, toArchivedTasks } = await import('@/lib/history-store')
+    const { loadThreads, loadProjects } = await import('@/lib/history-store')
     const liveTask = makeTask({ id: 'wt-1', workspace: '/project/.kiro/worktrees/feat', status: 'running' })
-    const archivedTask = makeTask({
+    vi.mocked(ipc.listTasks).mockResolvedValueOnce([liveTask])
+    vi.mocked(loadThreads).mockResolvedValueOnce([{
       id: 'wt-1',
+      name: 'Test Task',
       workspace: '/project/.kiro/worktrees/feat',
-      status: 'completed',
-      isArchived: true,
+      createdAt: '2026-01-01T00:00:00Z',
+      messages: [],
       worktreePath: '/project/.kiro/worktrees/feat',
       originalWorkspace: '/project',
       projectId: 'uuid-123',
       parentTaskId: 'parent-1',
-    })
-    vi.mocked(ipc.listTasks).mockResolvedValueOnce([liveTask])
-    vi.mocked(loadThreads).mockResolvedValueOnce([])
+    }])
     vi.mocked(loadProjects).mockResolvedValueOnce([{ workspace: '/project', projectId: 'uuid-123', threadIds: ['wt-1'] }])
-    vi.mocked(toArchivedTasks).mockReturnValueOnce([archivedTask])
     await useTaskStore.getState().loadTasks()
     const task = useTaskStore.getState().tasks['wt-1']
     expect(task.status).toBe('running')
@@ -822,20 +823,20 @@ describe('loadTasks', () => {
 
   it('excludes worktree paths from projects array after merge', async () => {
     const { ipc } = await import('@/lib/ipc')
-    const { loadThreads, loadProjects, toArchivedTasks } = await import('@/lib/history-store')
+    const { loadThreads, loadProjects } = await import('@/lib/history-store')
     const liveTask = makeTask({ id: 'wt-3', workspace: '/project/.kiro/worktrees/feat', status: 'running' })
-    const archivedTask = makeTask({
+    vi.mocked(ipc.listTasks).mockResolvedValueOnce([liveTask])
+    vi.mocked(loadThreads).mockResolvedValueOnce([{
       id: 'wt-3',
+      name: 'Test Task',
       workspace: '/project/.kiro/worktrees/feat',
-      isArchived: true,
+      createdAt: '2026-01-01T00:00:00Z',
+      messages: [],
       worktreePath: '/project/.kiro/worktrees/feat',
       originalWorkspace: '/project',
       projectId: 'uuid-456',
-    })
-    vi.mocked(ipc.listTasks).mockResolvedValueOnce([liveTask])
-    vi.mocked(loadThreads).mockResolvedValueOnce([])
+    }])
     vi.mocked(loadProjects).mockResolvedValueOnce([{ workspace: '/project', projectId: 'uuid-456', threadIds: ['wt-3'] }])
-    vi.mocked(toArchivedTasks).mockReturnValueOnce([archivedTask])
     await useTaskStore.getState().loadTasks()
     expect(useTaskStore.getState().projects).toContain('/project')
     expect(useTaskStore.getState().projects).not.toContain('/project/.kiro/worktrees/feat')
@@ -843,24 +844,30 @@ describe('loadTasks', () => {
 
   it('restores missing threads from backup', async () => {
     const { ipc } = await import('@/lib/ipc')
-    const { loadThreads, loadProjects, toArchivedTasks, loadBackup } = await import('@/lib/history-store')
+    const { loadThreads, loadProjects, loadBackup } = await import('@/lib/history-store')
     vi.mocked(ipc.listTasks).mockResolvedValueOnce([])
     vi.mocked(loadThreads).mockResolvedValueOnce([])
     vi.mocked(loadProjects).mockResolvedValueOnce([])
-    vi.mocked(toArchivedTasks).mockReturnValueOnce([])
-    const backupTask = makeTask({ id: 'backup-1', name: 'Restored Thread', workspace: '/ws', isArchived: true,
-      worktreePath: '/ws/.kiro/worktrees/feat', originalWorkspace: '/ws', parentTaskId: 'parent-1', projectId: '/ws' })
     vi.mocked(loadBackup).mockResolvedValueOnce({
-      threads: [{ id: 'backup-1', name: 'Restored Thread', workspace: '/ws', createdAt: '', messages: [] }],
+      threads: [{
+        id: 'backup-1',
+        name: 'Restored Thread',
+        workspace: '/ws',
+        createdAt: '',
+        messages: [],
+        worktreePath: '/ws/.kiro/worktrees/feat',
+        originalWorkspace: '/ws',
+        parentTaskId: 'parent-1',
+        projectId: '/ws',
+      }],
       projects: [{ workspace: '/ws', displayName: 'My Project', projectId: 'uuid-1', threadIds: ['backup-1'] }],
       softDeleted: [],
     })
-    // toArchivedTasks is called twice: once for primary (empty), once for backup
-    vi.mocked(toArchivedTasks).mockReturnValueOnce([backupTask])
     await useTaskStore.getState().loadTasks()
-    expect(useTaskStore.getState().tasks['backup-1']).toBeDefined()
-    expect(useTaskStore.getState().tasks['backup-1'].name).toBe('Restored Thread')
-    expect(useTaskStore.getState().tasks['backup-1'].worktreePath).toBe('/ws/.kiro/worktrees/feat')
+    // Backup threads are restored as archived metadata (not inflated until opened).
+    expect(useTaskStore.getState().archivedMeta['backup-1']).toBeDefined()
+    expect(useTaskStore.getState().archivedMeta['backup-1'].name).toBe('Restored Thread')
+    expect(useTaskStore.getState().archivedMeta['backup-1'].worktreePath).toBe('/ws/.kiro/worktrees/feat')
     expect(useTaskStore.getState().projectNames['/ws']).toBe('My Project')
   })
 

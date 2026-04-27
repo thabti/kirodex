@@ -1,5 +1,5 @@
 import { memo, useState, useRef, useEffect, useCallback } from 'react'
-import { IconPencil, IconTrash, IconArchive, IconGitBranch, IconLayoutColumns, IconArrowsSplit, IconPin, IconPinnedOff, IconArrowUp, IconArrowDown } from '@tabler/icons-react'
+import { IconPencil, IconTrash, IconLock, IconGitBranch, IconLayoutColumns, IconArrowsSplit, IconPin, IconPinnedOff, IconArrowUp, IconArrowDown } from '@tabler/icons-react'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useTaskStore } from '@/stores/taskStore'
 import { SplitThreadPicker } from '@/components/chat/SplitThreadPicker'
@@ -148,7 +148,14 @@ export const ThreadItem = memo(function ThreadItem({ task, isActive, jumpLabel, 
           <span className={cn('size-1.5 shrink-0 rounded-full', dot.color, dot.pulse && 'animate-pulse')} />
         ) : null}
         {task.isArchived && (
-          <IconArchive className="size-3 shrink-0 text-muted-foreground/70" aria-label="View-only thread" />
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="inline-flex shrink-0">
+                <IconLock className="size-3 text-muted-foreground/70" aria-label="View-only archived thread" />
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="right">Archived — view only</TooltipContent>
+          </Tooltip>
         )}
         {task.worktreePath && !task.isArchived && (
           <Tooltip>

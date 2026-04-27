@@ -117,6 +117,9 @@ export interface MemoryReport {
   /** Bytes used by soft-deleted threads still in RAM. */
   readonly softDeleted: number
   readonly softDeletedCount: number
+  /** Bytes used by lazy-loaded archived thread metadata (very small per entry). */
+  readonly archivedMeta: number
+  readonly archivedMetaCount: number
   /** Bytes used by per-workspace drafts (text + attachments + pasted chunks). */
   readonly drafts: number
   /** Bytes used by the Rust→WebView debug log buffer. */
@@ -215,6 +218,16 @@ export const measureMemory = (
     softDeleted += sizeOfString(entry.deletedAt)
   }
 
+  let archivedMeta = 0
+  for (const m of Object.values(store.archivedMeta)) {
+    archivedMeta += sizeOfString(m.id) + sizeOfString(m.name) +
+      sizeOfString(m.workspace) + sizeOfString(m.createdAt) +
+      sizeOfString(m.lastActivityAt) + 8 +
+      sizeOfString(m.parentTaskId) + sizeOfString(m.worktreePath) +
+      sizeOfString(m.originalWorkspace) + sizeOfString(m.projectId)
+  }
+  const archivedMetaCount = Object.keys(store.archivedMeta).length
+
   let drafts = 0
   for (const text of Object.values(store.drafts)) drafts += sizeOfString(text)
   for (const list of Object.values(store.draftAttachments)) {
@@ -236,12 +249,14 @@ export const measureMemory = (
     threadsTotal,
     softDeleted,
     softDeletedCount: Object.keys(store.softDeleted).length,
+    archivedMeta,
+    archivedMetaCount,
     drafts,
     debugLog,
     debugLogCount: debugStore?.entries.length ?? 0,
     jsDebugLog,
     jsDebugLogCount: jsDebugStore?.entries.length ?? 0,
-    grandTotal: threadsTotal + softDeleted + drafts + debugLog + jsDebugLog,
+    grandTotal: threadsTotal + softDeleted + archivedMeta + drafts + debugLog + jsDebugLog,
   }
 }
 

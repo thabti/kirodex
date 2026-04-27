@@ -1,5 +1,6 @@
 import type { AgentTask, ActivityEntry, ToolCall, PlanStep, SoftDeletedThread, CompactionStatus, Attachment, ProjectFile, IpcAttachment } from '@/types'
 import type { PastedChunk } from '@/hooks/useChatInput'
+import type { ArchivedThreadMeta } from '@/lib/history-store'
 
 export interface QueuedMessage {
   readonly text: string
@@ -14,6 +15,10 @@ export interface BtwCheckpoint {
 
 export interface TaskStore {
   tasks: Record<string, AgentTask>
+  /** Lazy metadata for archived threads not currently inflated into `tasks`.
+   *  These are read-only past-session threads. Hydrated on demand when the
+   *  user opens one. Keyed by thread id. */
+  archivedMeta: Record<string, ArchivedThreadMeta>
   projects: string[]           // workspace paths
   /** Maps workspace path → stable UUID for project identity */
   projectIds: Record<string, string>
@@ -125,6 +130,9 @@ export interface TaskStore {
   setTaskMode: (taskId: string, modeId: string) => void
   setTaskModel: (taskId: string, modelId: string) => void
   loadTasks: () => Promise<void>
+  /** Inflate an archived thread from disk into `tasks` so its messages can be
+   *  rendered. No-op if already hydrated. Returns true on success. */
+  hydrateArchivedTask: (id: string) => Promise<boolean>
   setConnected: (v: boolean) => void
   persistHistory: () => void
   clearHistory: () => Promise<void>

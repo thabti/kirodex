@@ -61,6 +61,7 @@ function computeHasPendingQuestion(messages: readonly { role: string; content: s
  */
 export function useSidebarTasks(sort: SortKey): readonly SidebarProject[] {
   const tasks = useTaskStore((s) => s.tasks)
+  const archivedMeta = useTaskStore((s) => s.archivedMeta)
   const projects = useTaskStore((s) => s.projects)
   const projectIds = useTaskStore((s) => s.projectIds)
   const projectNames = useTaskStore((s) => s.projectNames)
@@ -73,7 +74,9 @@ export function useSidebarTasks(sort: SortKey): readonly SidebarProject[] {
   const sidebarTasks = useMemo(() => {
     const prev = prevRef.current
     const next = new Map<string, SidebarTask>()
-    let changed = prev.size !== Object.keys(tasks).length
+    const expectedSize = Object.keys(tasks).length + Object.keys(archivedMeta).length
+    let changed = prev.size !== expectedSize
+    // 1. Live + hydrated archived tasks
     for (const t of Object.values(tasks)) {
       const msgs = t.messages
       const lastMsg = msgs.length > 0 ? msgs[msgs.length - 1].timestamp : ''
@@ -88,10 +91,35 @@ export function useSidebarTasks(sort: SortKey): readonly SidebarProject[] {
         next.set(t.id, { id: t.id, name: t.name, workspace: t.workspace, projectId: pid, createdAt: t.createdAt, lastActivityAt, status: t.status, isArchived: t.isArchived, worktreePath: t.worktreePath, originalWorkspace: t.originalWorkspace, hasPendingQuestion })
       }
     }
+    // 2. Archived metadata — read-only, never have pending questions, never inflated
+    for (const m of Object.values(archivedMeta)) {
+      // Skip if a hydrated version is already in the map (transitioning)
+      if (next.has(m.id)) continue
+      const pid = m.projectId ?? m.originalWorkspace ?? m.workspace
+      const p = prev.get(m.id)
+      if (p && p.name === m.name && p.status === 'completed' && p.createdAt === m.createdAt && p.workspace === m.workspace && p.isArchived === true && p.worktreePath === m.worktreePath && p.originalWorkspace === m.originalWorkspace && p.projectId === pid && p.lastActivityAt === m.lastActivityAt && !p.hasPendingQuestion && !p.isDraft) {
+        next.set(m.id, p)
+      } else {
+        changed = true
+        next.set(m.id, {
+          id: m.id,
+          name: m.name,
+          workspace: m.workspace,
+          projectId: pid,
+          createdAt: m.createdAt,
+          lastActivityAt: m.lastActivityAt,
+          status: 'completed',
+          isArchived: true,
+          worktreePath: m.worktreePath,
+          originalWorkspace: m.originalWorkspace,
+          hasPendingQuestion: false,
+        })
+      }
+    }
     if (!changed) return prev
     prevRef.current = next
     return next
-  }, [tasks])
+  }, [tasks, archivedMeta])
 
   return useMemo(() => {
     // Group tasks by projectId — the canonical project identity

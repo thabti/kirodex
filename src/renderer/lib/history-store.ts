@@ -82,23 +82,90 @@ export async function loadThreads(): Promise<SavedThread[]> {
   return (await store.get<SavedThread[]>('threads')) ?? []
 }
 
+/** Lightweight metadata for archived threads. Lets us list them in the sidebar
+ *  without paying the cost of holding every message in memory. */
+export interface ArchivedThreadMeta {
+  readonly id: string
+  readonly name: string
+  readonly workspace: string
+  readonly createdAt: string
+  /** Timestamp of the last persisted message; falls back to createdAt. */
+  readonly lastActivityAt: string
+  readonly messageCount: number
+  readonly parentTaskId?: string
+  readonly worktreePath?: string
+  readonly originalWorkspace?: string
+  readonly projectId?: string
+}
+
+/** Load only the metadata projection of every persisted thread.
+ *  Drops the heavy messages array immediately so it can be GC'd. */
+export async function loadThreadsMeta(): Promise<ArchivedThreadMeta[]> {
+  const threads = await loadThreads()
+  return threads.map(toMeta)
+}
+
+/** Load a single persisted thread by id. Returns null if not found. */
+export async function loadThread(id: string): Promise<SavedThread | null> {
+  const threads = await loadThreads()
+  return threads.find((t) => t.id === id) ?? null
+}
+
+const toMeta = (t: SavedThread): ArchivedThreadMeta => {
+  const last = t.messages.length > 0 ? t.messages[t.messages.length - 1].timestamp : t.createdAt
+  return {
+    id: t.id,
+    name: t.name,
+    workspace: t.workspace,
+    createdAt: t.createdAt,
+    lastActivityAt: last,
+    messageCount: t.messages.length,
+    ...(t.parentTaskId ? { parentTaskId: t.parentTaskId } : {}),
+    ...(t.worktreePath ? { worktreePath: t.worktreePath } : {}),
+    ...(t.originalWorkspace ? { originalWorkspace: t.originalWorkspace } : {}),
+    ...(t.projectId ? { projectId: t.projectId } : {}),
+  }
+}
+
 /** Load all persisted projects (returns [] if nothing saved) */
 export async function loadProjects(): Promise<SavedProject[]> {
   const store = await getStore()
   return (await store.get<SavedProject[]>('projects')) ?? []
 }
 
-/** Persist a snapshot of the current threads */
+/** Persist a snapshot of the current threads.
+ *
+ *  Archived threads that are not currently loaded into `tasks` (e.g. lazy-meta
+ *  threads from previous sessions that the user hasn't opened) are preserved
+ *  on disk verbatim by reading the existing array first and only overwriting
+ *  entries whose ids are in `tasks` or in `keepArchivedIds`. Anything not
+ *  represented in either set is dropped (this handles permanent deletes).
+ */
 export async function saveThreads(
   tasks: Record<string, AgentTask>,
   projectNames: Record<string, string>,
   projectIds: Record<string, string> = {},
   orderedProjects: string[] = [],
   threadOrders: Record<string, string[]> = {},
+  keepArchivedIds: ReadonlySet<string> = new Set(),
 ): Promise<void> {
-  const threads: SavedThread[] = Object.values(tasks)
-    .filter((t) => t.messages.length > 0)
-    .map((t) => ({
+  const store = await getStore()
+  // Read first so we don't lose archived threads that were never inflated
+  // into the in-memory `tasks` map this session.
+  const existing = (await store.get<SavedThread[]>('threads')) ?? []
+  const merged = new Map<string, SavedThread>()
+  const liveIds = new Set<string>()
+
+  // 1. Carry over archived threads from disk (unchanged).
+  for (const t of existing) {
+    if (keepArchivedIds.has(t.id)) merged.set(t.id, t)
+  }
+
+  // 2. Overwrite/insert entries for live tasks currently in memory.
+  for (const t of Object.values(tasks)) {
+    if (t.messages.length === 0) continue
+    liveIds.add(t.id)
+    merged.set(t.id, {
       id: t.id,
       name: t.name,
       workspace: t.workspace,
@@ -108,11 +175,16 @@ export async function saveThreads(
       ...(t.worktreePath ? { worktreePath: t.worktreePath } : {}),
       ...(t.originalWorkspace ? { originalWorkspace: t.originalWorkspace } : {}),
       ...(t.projectId ? { projectId: t.projectId } : {}),
-    }))
+    })
+  }
 
-  // Group thread IDs by workspace — worktree threads nest under originalWorkspace
+  const threads: SavedThread[] = Array.from(merged.values())
+
+  // Group thread IDs by workspace — worktree threads nest under originalWorkspace.
+  // Iterate the merged set so threads kept from disk (archived, not in `tasks`)
+  // still register their workspace association.
   const threadsByWorkspace = new Map<string, string[]>()
-  for (const t of Object.values(tasks)) {
+  for (const t of threads) {
     const ws = t.originalWorkspace ?? t.workspace
     const ids = threadsByWorkspace.get(ws) ?? []
     ids.push(t.id)
@@ -137,7 +209,6 @@ export async function saveThreads(
     ...(threadOrders[ws]?.length ? { threadOrder: threadOrders[ws] } : {}),
   }))
 
-  const store = await getStore()
   _selfWriteCount++
   try {
     await store.set('threads', threads)
