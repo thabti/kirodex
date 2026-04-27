@@ -1,5 +1,11 @@
 # Activity Log
 
+## 2026-04-28 02:11 GST (Dubai)
+### Tests: Fix BtwOverlay AgentTask fixtures missing required fields
+CI lint/build failed because `BtwOverlay.test.tsx` task fixtures lacked `name` and `createdAt`, which are required on `AgentTask`. Added both fields to every inline task object so `bunx tsc --noEmit` and `vite build` pass.
+
+**Modified:** src/renderer/components/chat/BtwOverlay.test.tsx
+
 ## 2026-04-27 18:55 GST (Dubai)
 ### History: Lazy-hydrate archived threads with metadata-only sidebar
 Reworked the history-store to stop eagerly inflating archived threads at startup. `loadTasks` now projects every persisted thread to a lightweight `ArchivedThreadMeta` (id, name, timestamps, messageCount, project metadata) and stores it in a new `archivedMeta` map on the task store. Full message arrays are only inflated by the new `hydrateArchivedTask(id)` action when the user actually opens a thread. `setSelectedTask` triggers hydration on demand, and `softDeleteTask` hydrates archived metadata first so the soft-delete entry retains full content. `saveThreads` learned to preserve unloaded archived entries on disk by merging the existing array with current live tasks (controlled by a new `keepArchivedIds` parameter from the caller). Sidebar `useSidebarTasks` projects both `tasks` and `archivedMeta` into the same `SidebarTask` shape so the user sees no UX change. Memory section gained an "Archived" stat card. Replaced the archive icon in the sidebar `ThreadItem` with a lock icon plus tooltip to make read-only state explicit. For 500 archived threads × 100 messages × 500 B avg, this drops in-memory cost from ~25 MB to ~100 KB.

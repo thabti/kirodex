@@ -76,7 +76,7 @@ describe('BtwOverlay', () => {
   it('renders the question text when checkpoint is set', () => {
     useTaskStore.setState({
       selectedTaskId: 'task-1',
-      tasks: { 'task-1': { id: 'task-1', status: 'running', messages: [], workspace: '/ws' } },
+      tasks: { 'task-1': { id: 'task-1', name: 'Task 1', createdAt: '2026-01-01T00:00:00Z', status: 'running', messages: [], workspace: '/ws' } },
       btwCheckpoint: { taskId: 'task-1', messages: [], question: 'What are brand colours?' },
     })
     render(<BtwOverlay />)
@@ -86,7 +86,7 @@ describe('BtwOverlay', () => {
   it('shows thinking state when no response yet', () => {
     useTaskStore.setState({
       selectedTaskId: 'task-1',
-      tasks: { 'task-1': { id: 'task-1', status: 'running', messages: [], workspace: '/ws' } },
+      tasks: { 'task-1': { id: 'task-1', name: 'Task 1', createdAt: '2026-01-01T00:00:00Z', status: 'running', messages: [], workspace: '/ws' } },
       btwCheckpoint: { taskId: 'task-1', messages: [], question: 'test' },
     })
     render(<BtwOverlay />)
@@ -100,7 +100,7 @@ describe('BtwOverlay', () => {
     ]
     useTaskStore.setState({
       selectedTaskId: 'task-1',
-      tasks: { 'task-1': { id: 'task-1', status: 'running', messages: msgs, workspace: '/ws' } },
+      tasks: { 'task-1': { id: 'task-1', name: 'Task 1', createdAt: '2026-01-01T00:00:00Z', status: 'running', messages: msgs, workspace: '/ws' } },
       btwCheckpoint: { taskId: 'task-1', messages: [], question: 'test' },
     })
     render(<BtwOverlay />)
@@ -110,7 +110,7 @@ describe('BtwOverlay', () => {
   it('does NOT render PermissionBanner when no pending permission', () => {
     useTaskStore.setState({
       selectedTaskId: 'task-1',
-      tasks: { 'task-1': { id: 'task-1', status: 'running', messages: [], workspace: '/ws' } },
+      tasks: { 'task-1': { id: 'task-1', name: 'Task 1', createdAt: '2026-01-01T00:00:00Z', status: 'running', messages: [], workspace: '/ws' } },
       btwCheckpoint: { taskId: 'task-1', messages: [], question: 'test' },
     })
     render(<BtwOverlay />)
@@ -123,6 +123,8 @@ describe('BtwOverlay', () => {
       tasks: {
         'task-1': {
           id: 'task-1',
+          name: 'Task 1',
+          createdAt: '2026-01-01T00:00:00Z',
           status: 'running',
           messages: [],
           workspace: '/ws',
@@ -152,6 +154,8 @@ describe('BtwOverlay', () => {
       tasks: {
         'task-1': {
           id: 'task-1',
+          name: 'Task 1',
+          createdAt: '2026-01-01T00:00:00Z',
           status: 'running',
           messages: [],
           workspace: '/ws',
@@ -177,7 +181,7 @@ describe('BtwOverlay', () => {
     const exitBtwMode = vi.fn()
     useTaskStore.setState({
       selectedTaskId: 'task-1',
-      tasks: { 'task-1': { id: 'task-1', status: 'running', messages: [], workspace: '/ws' } },
+      tasks: { 'task-1': { id: 'task-1', name: 'Task 1', createdAt: '2026-01-01T00:00:00Z', status: 'running', messages: [], workspace: '/ws' } },
       btwCheckpoint: { taskId: 'task-1', messages: [], question: 'test' },
       exitBtwMode,
     })
@@ -190,7 +194,7 @@ describe('BtwOverlay', () => {
     const exitBtwMode = vi.fn()
     useTaskStore.setState({
       selectedTaskId: 'task-1',
-      tasks: { 'task-1': { id: 'task-1', status: 'running', messages: [], workspace: '/ws' } },
+      tasks: { 'task-1': { id: 'task-1', name: 'Task 1', createdAt: '2026-01-01T00:00:00Z', status: 'running', messages: [], workspace: '/ws' } },
       btwCheckpoint: { taskId: 'task-1', messages: [], question: 'test' },
       exitBtwMode,
     })
@@ -203,7 +207,7 @@ describe('BtwOverlay', () => {
     const exitBtwMode = vi.fn()
     useTaskStore.setState({
       selectedTaskId: 'task-1',
-      tasks: { 'task-1': { id: 'task-1', status: 'running', messages: [], workspace: '/ws' } },
+      tasks: { 'task-1': { id: 'task-1', name: 'Task 1', createdAt: '2026-01-01T00:00:00Z', status: 'running', messages: [], workspace: '/ws' } },
       btwCheckpoint: { taskId: 'task-1', messages: [], question: 'test' },
       exitBtwMode,
     })
@@ -218,6 +222,8 @@ describe('BtwOverlay', () => {
       tasks: {
         'task-1': {
           id: 'task-1',
+          name: 'Task 1',
+          createdAt: '2026-01-01T00:00:00Z',
           status: 'running',
           messages: [],
           workspace: '/ws',
