@@ -159,6 +159,8 @@ export interface AppSettings {
   btwMaxChars?: number
   /** Base64 data URL for a user-supplied app icon (About dialog + dock). */
   customAppIcon?: string | null
+  /** Last app version whose changelog the user has seen. Used to show the "What's New" dialog once per upgrade. */
+  lastSeenChangelogVersion?: string | null
 }
 
 export interface ProjectFile {
