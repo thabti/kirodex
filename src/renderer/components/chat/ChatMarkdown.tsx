@@ -269,10 +269,10 @@ function ChatMarkdown({ text, isStreaming = false, questionsAnswered = false, ta
 
   return (
     <div className={cn(PROSE_CLASSES, isStreaming && 'streaming-cursor')} style={{ fontSize: chatFontSize }}>
-      {showQuestions && <QuestionCards text={displayText} taskId={resolvedTaskId} />}
       <ReactMarkdown remarkPlugins={remarkPlugins} components={components}>
         {markdownText}
       </ReactMarkdown>
+      {showQuestions && <QuestionCards text={displayText} taskId={resolvedTaskId} />}
     </div>
   );
 }
