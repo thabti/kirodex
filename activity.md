@@ -1,5 +1,59 @@
 # Activity Log
 
+## 2026-04-27 11:38 GST (Dubai)
+### Chat: Redesigned CleaningReviewCard component
+Created a compact cleaning review/rating card with visible amber stars (hover/focus states, scale animations), avatar with initials fallback, date + cleaning ID metadata row, rating label badge that animates in, and a thank-you footer on submit. Full accessibility: semantic `article` element, ARIA `radiogroup` for stars, `aria-live` regions for dynamic content, keyboard navigation on every interactive element, and proper focus-visible outlines.
+
+**Modified:** `src/renderer/components/chat/CleaningReviewCard.tsx`
+
+## 2026-04-27 11:37 GST (Dubai)
+### Sidebar: blue dot indicator for pending questions
+Added a blue dot on sidebar thread items when the last assistant message has unanswered structured questions (`[N]:` format). Computed via `computeHasPendingQuestion()` in `useSidebarTasks.ts` with structural sharing. The blue dot overrides the task status dot, giving a clear visual signal: green = active, blue = question pending, amber = permission needed.
+
+**Modified:** `src/renderer/hooks/useSidebarTasks.ts`, `src/renderer/components/sidebar/ThreadItem.tsx`
+
+## 2026-04-27 11:35 GST (Dubai)
+### Zoom: add webview zoom level limits (50%–100%)
+Created `useZoomLimit` hook that clamps the Tauri webview zoom between 50% and 100%. Intercepts Ctrl+wheel (trackpad pinch-to-zoom) and Cmd+/- keyboard shortcuts, preventing the UI from zooming beyond bounds. Cmd+0 resets to 100%.
+
+**Modified:** `src/renderer/hooks/useZoomLimit.ts`, `src/renderer/App.tsx`
+
+## 2026-04-27 11:25 GST (Dubai)
+### WhatsNewDialog: fix issues from code and user flow audit
+Fixed 6 issues found by parallel audit agents: (1) fresh install guard — seeds lastSeenChangelogVersion without showing dialog, (2) fallback changelog lookup for patch releases, (3) updates lastSeen even when no entry found, (4) prevents overlap with UpdateAvailableDialog, (5) added focus-visible ring to X button for keyboard accessibility, (6) removed redundant sm:grid-cols-2 class.
+
+**Modified:** `src/renderer/App.tsx`, `src/renderer/components/WhatsNewDialog.tsx`
+
+## 2026-04-27 11:19 GST (Dubai)
+### WhatsNewDialog: add "What's New" changelog dialog after app updates
+Added a changelog dialog that appears once after a version upgrade. Shows the app icon, version number, bulleted highlights from the changelog, and two buttons: "Request feature" (opens GitHub issues) and "Got it" (dismisses and persists the seen version). Tracks `lastSeenChangelogVersion` in AppSettings via confy. Uses semver comparison to only trigger on upgrades.
+
+**Modified:** `src/renderer/App.tsx`, `src/renderer/components/WhatsNewDialog.tsx`, `src/renderer/lib/changelog.ts`, `src/renderer/types/index.ts`
+
+## 2026-04-26 15:39 GST (Dubai)
+### CloneRepoDialog: UX polish for consistency and speed
+Improved the clone dialog: auto-updates target path when URL changes, tracks parent dir separately so folder picker + URL paste work in any order, shortened placeholders, displays `~/` instead of full home path, resets state on close instead of on open, cleaner title ("Clone repository").
+
+**Modified:** `src/renderer/components/CloneRepoDialog.tsx`
+
+## 2026-04-26 15:31 GST (Dubai)
+### Git: add Clone from GitHub to File menu
+Added "Clone from GitHub…" (Cmd+Shift+O) to the native File menu. A modal dialog accepts HTTPS or SSH repository URLs, lets the user pick a target directory via the native folder picker, shows a loading spinner during clone, displays errors inline, and auto-opens the cloned project on success. Backend uses the system `git` binary (not git2) for full SSH agent and credential helper support.
+
+**Modified:** `src-tauri/src/commands/git.rs`, `src-tauri/src/lib.rs`, `src/renderer/App.tsx`, `src/renderer/components/CloneRepoDialog.tsx`, `src/renderer/lib/ipc.ts`
+
+## 2026-04-26 15:29 GST (Dubai)
+### HeaderToolbar: fix split view tooltip
+Changed the split toggle button tooltip from "compare two threads" to "work on two threads at once" to accurately describe the feature's purpose.
+
+**Modified:** `src/renderer/components/header-toolbar.tsx`
+
+## 2026-04-26 14:54 GST (Dubai)
+### EmptyState: add features showcase section
+Added a six-card features grid below the CTA button in the empty state screen. Cards highlight Split view, Spin threads, Git worktrees, Inline diffs, Built-in terminal, and Slash commands with colored Tabler icons, labels, descriptions, and hover animations. Uses a 2-column grid with `border-border/50` cards and `group-hover:scale-110` icon transitions.
+
+**Modified:** `src/renderer/App.tsx`
+
 ## 2026-04-26 04:44 GST (Dubai)
 ### Update dialog: fix z-index conflict with settings panel
 The update button and its modal were unclickable when the settings panel was open because both used z-50. Bumped UpdateAvailableDialog and RestartPromptDialog to z-[60] via a new `overlayClassName` prop on DialogContent. Refactored UpdatesCard and AboutDialog to use the store's `triggerDownload`/`triggerRestart` instead of creating separate Update objects, and close settings when a download starts so the dialog takes over. Fixed useUpdateChecker to re-check when another component sets status to 'available' with a stale pendingUpdateRef.
