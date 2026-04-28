@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.40.2] - 2026-04-28
+
+### Bug fixes
+
+- skip redundant flush on relaunch to prevent hang ([`1b34c79`](https://github.com/thabti/kirodex/commit/1b34c79b8202e52956863d5ee31227c96d770f59))
+
 ## [v0.40.1] - 2026-04-28
 
 ### Bug fixes
