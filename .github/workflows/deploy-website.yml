@@ -36,6 +36,7 @@ jobs:
           mkdir -p _site
           cp website/index.html _site/
           cp website/changelog.html _site/
+          cp website/changelog-data.js _site/
           cp website/features.html _site/
           cp -r website/dist _site/
           cp -r website/assets _site/
