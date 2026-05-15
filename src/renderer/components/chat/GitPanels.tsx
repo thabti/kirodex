@@ -47,7 +47,7 @@ export const BranchPanel = memo(function BranchPanel({ onDismiss }: { onDismiss:
           {isCreating ? 'Creating…' : 'Create'}
         </button>
       </div>
-      {error && <p className="px-3 pb-2 text-[11px] text-red-400">{error}</p>}
+      {error && <p className="px-3 pb-2 text-[11px] text-red-600 dark:text-red-400">{error}</p>}
     </PanelShell>
   )
 })
@@ -103,8 +103,8 @@ export const WorktreePanel = memo(function WorktreePanel({ onDismiss }: { onDism
       {slug && normalizedSlug && normalizedSlug !== slug && (
         <p className="px-3 pb-1 text-[11px] text-muted-foreground">Slug: <code className="rounded bg-muted/40 px-1 text-[10px]">{normalizedSlug}</code></p>
       )}
-      {slug && !isValid && <p className="px-3 pb-2 text-[11px] text-amber-400">Invalid slug: use alphanumeric, dashes, underscores, dots</p>}
-      {error && <p className="px-3 pb-2 text-[11px] text-red-400">{error}</p>}
+      {slug && !isValid && <p className="px-3 pb-2 text-[11px] text-amber-600 dark:text-amber-400">Invalid slug: use alphanumeric, dashes, underscores, dots</p>}
+      {error && <p className="px-3 pb-2 text-[11px] text-red-600 dark:text-red-400">{error}</p>}
     </PanelShell>
   )
 })

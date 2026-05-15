@@ -13,8 +13,8 @@ export const DiffStatsChart = ({ diffEvents, fileEvents }: { diffEvents: Analyti
   return (
     <ChartCard title="Code changes">
       <div className="mb-2 grid grid-cols-3 gap-2">
-        <StatRow label="Additions" value={`+${additions}`} color="text-emerald-500" />
-        <StatRow label="Deletions" value={`-${deletions}`} color="text-red-400" />
+        <StatRow label="Additions" value={`+${additions}`} color="text-emerald-600 dark:text-emerald-500" />
+        <StatRow label="Deletions" value={`-${deletions}`} color="text-red-600 dark:text-red-400" />
         <StatRow label="Files edited" value={filesEdited} />
       </div>
       {data.length === 0 ? (

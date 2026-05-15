@@ -1,5 +1,5 @@
-import { memo, useCallback, useRef, useState } from 'react'
-import { IconPlus, IconArrowsUpDown, IconCheck, IconLayoutSidebarLeftCollapse, IconLayoutSidebarRightCollapse, IconFolderOpen, IconLayoutColumns, IconX, IconPin } from '@tabler/icons-react'
+import { memo, useCallback, useEffect, useRef, useState } from 'react'
+import { IconPlus, IconArrowsUpDown, IconCheck, IconLayoutSidebarLeftCollapse, IconLayoutSidebarRightCollapse, IconFolderOpen, IconLayoutColumns, IconX, IconPin, IconPinnedOff, IconReplace, IconArrowsExchange } from '@tabler/icons-react'
 import { useTaskStore } from '@/stores/taskStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useShallow } from 'zustand/react/shallow'
@@ -11,6 +11,7 @@ import { useSidebarTasks, type SortKey, type SidebarTask } from '@/hooks/useSide
 import { useResizeHandle } from '@/hooks/useResizeHandle'
 import { useModifierKeys } from '@/hooks/useModifierKeys'
 import { ProjectItem } from './ProjectItem'
+import { SplitThreadPicker } from '@/components/chat/SplitThreadPicker'
 import { SidebarFooter } from './SidebarFooter'
 
 const SORT_OPTIONS: { key: SortKey; label: string }[] = [
@@ -83,15 +84,41 @@ const SplitViewsList = memo(function SplitViewsList() {
   const tasks = useTaskStore((s) => s.tasks)
   const setActiveSplit = useTaskStore((s) => s.setActiveSplit)
   const removeSplitView = useTaskStore((s) => s.removeSplitView)
+  const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; splitId: string } | null>(null)
 
   if (splitViews.length === 0) return null
 
+  const handleContextMenu = (e: React.MouseEvent, splitId: string) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setCtxMenu({ x: e.clientX, y: e.clientY, splitId })
+  }
+
+  const handleRemove = () => {
+    if (ctxMenu) removeSplitView(ctxMenu.splitId)
+    setCtxMenu(null)
+  }
+
+  const handleReplace = (side: 'left' | 'right') => {
+    if (ctxMenu) useTaskStore.setState({ pendingSplitReplace: { splitId: ctxMenu.splitId, side } })
+    setCtxMenu(null)
+  }
+
+  const handleSwap = () => {
+    if (!ctxMenu) return
+    const sv = splitViews.find((s) => s.id === ctxMenu.splitId)
+    if (sv) {
+      useTaskStore.setState((state) => ({
+        splitViews: state.splitViews.map((v) =>
+          v.id === sv.id ? { ...v, left: sv.right, right: sv.left } : v,
+        ),
+      }))
+    }
+    setCtxMenu(null)
+  }
+
   return (
     <div className="px-2 pb-1">
-      <div className="flex items-center gap-1.5 px-2 pb-1.5 pt-1">
-        <IconLayoutColumns className="size-3 text-muted-foreground/60" />
-        <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground/60">Side by Side</span>
-      </div>
       <ul className="flex flex-col gap-0.5">
         {splitViews.map((sv) => {
           const leftName = tasks[sv.left]?.name ?? 'Thread'
@@ -102,6 +129,7 @@ const SplitViewsList = memo(function SplitViewsList() {
               <button
                 type="button"
                 onClick={() => setActiveSplit(sv.id)}
+                onContextMenu={(e) => handleContextMenu(e, sv.id)}
                 className={cn(
                   'flex min-w-0 h-8 w-full items-center gap-2 rounded-lg px-2 text-[12px] select-none transition-colors',
                   isActive
@@ -126,6 +154,65 @@ const SplitViewsList = memo(function SplitViewsList() {
           )
         })}
       </ul>
+      {ctxMenu && (
+        <>
+          <div className="fixed inset-0 z-[299]" onClick={() => setCtxMenu(null)} onContextMenu={(e) => { e.preventDefault(); setCtxMenu(null) }} />
+          <div
+            className="fixed z-[300] min-w-[160px] rounded-lg border border-border bg-popover py-1 shadow-lg"
+            style={{ left: ctxMenu.x, top: ctxMenu.y }}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="flex w-full items-center gap-2 px-3 py-1.5 text-[13px] text-foreground transition-colors hover:bg-accent"
+              onClick={handleRemove}
+            >
+              <IconX className="size-3.5" /> Remove
+            </button>
+            <button
+              type="button"
+              className="flex w-full items-center gap-2 px-3 py-1.5 text-[13px] text-foreground transition-colors hover:bg-accent"
+              onClick={handleSwap}
+            >
+              <IconArrowsExchange className="size-3.5" /> Swap sides
+            </button>
+            <div className="my-1 border-t border-border/50" />
+            <button
+              type="button"
+              className="flex w-full items-center gap-2 px-3 py-1.5 text-[13px] text-foreground transition-colors hover:bg-accent"
+              onClick={() => handleReplace('left')}
+            >
+              <IconReplace className="size-3.5" /> Replace left
+            </button>
+            <button
+              type="button"
+              className="flex w-full items-center gap-2 px-3 py-1.5 text-[13px] text-foreground transition-colors hover:bg-accent"
+              onClick={() => handleReplace('right')}
+            >
+              <IconReplace className="size-3.5" /> Replace right
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  )
+})
+
+/** Hint banner shown when user needs to click a thread to replace a split side */
+const PendingReplaceHint = memo(function PendingReplaceHint() {
+  const pending = useTaskStore((s) => s.pendingSplitReplace)
+  if (!pending) return null
+  return (
+    <div className="mx-2 mb-1 flex items-center justify-between rounded-md bg-primary/10 px-2 py-1.5 text-[11px] text-primary">
+      <span>Click a thread to replace {pending.side} panel</span>
+      <button
+        type="button"
+        aria-label="Cancel replace"
+        onClick={() => useTaskStore.setState({ pendingSplitReplace: null })}
+        className="ml-1 rounded p-0.5 hover:bg-primary/20"
+      >
+        <IconX className="size-3" />
+      </button>
     </div>
   )
 })
@@ -135,16 +222,35 @@ const PinnedThreadsList = memo(function PinnedThreadsList({ selectedTaskId, onSe
   const pinnedThreadIds = useTaskStore((s) => s.pinnedThreadIds)
   const tasks = useTaskStore((s) => s.tasks)
   const unpinThread = useTaskStore((s) => s.unpinThread)
+  const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; taskId: string } | null>(null)
+  const [splitPicker, setSplitPicker] = useState<{ x: number; y: number; taskId: string } | null>(null)
+  const ctxRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!ctxMenu) return
+    const handler = (e: MouseEvent) => {
+      if (ctxRef.current && !ctxRef.current.contains(e.target as Node)) setCtxMenu(null)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [ctxMenu])
 
   const pinnedTasks = pinnedThreadIds.map((id) => tasks[id]).filter(Boolean)
   if (pinnedTasks.length === 0) return null
 
+  const handleContextMenu = (e: React.MouseEvent, taskId: string) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setCtxMenu({ x: e.clientX, y: e.clientY, taskId })
+  }
+
+  const handleUnpin = () => {
+    if (ctxMenu) unpinThread(ctxMenu.taskId)
+    setCtxMenu(null)
+  }
+
   return (
     <div className="px-2 pb-1">
-      <div className="flex items-center gap-1.5 px-2 pb-1.5 pt-1">
-        <IconPin className="size-3 text-amber-500/60" />
-        <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground/60">Pinned</span>
-      </div>
       <ul className="flex flex-col gap-0.5">
         {pinnedTasks.map((task) => {
           const isActive = task.id === selectedTaskId
@@ -153,6 +259,7 @@ const PinnedThreadsList = memo(function PinnedThreadsList({ selectedTaskId, onSe
               <button
                 type="button"
                 onClick={() => onSelect(task.id)}
+                onContextMenu={(e) => handleContextMenu(e, task.id)}
                 className={cn(
                   'flex min-w-0 h-7 w-full items-center gap-1.5 rounded-lg px-2 text-[12px] select-none transition-colors',
                   isActive
@@ -160,13 +267,14 @@ const PinnedThreadsList = memo(function PinnedThreadsList({ selectedTaskId, onSe
                     : 'text-muted-foreground hover:bg-accent hover:text-foreground',
                 )}
               >
+                <IconPin className="size-3 shrink-0 text-amber-500/60" />
                 <span className="min-w-0 truncate">{task.name}</span>
               </button>
               <button
                 type="button"
                 aria-label="Unpin thread"
                 onClick={(e) => { e.stopPropagation(); unpinThread(task.id) }}
-                className="absolute right-1 top-1/2 -translate-y-1/2 hidden size-4 items-center justify-center rounded text-muted-foreground/50 hover:bg-accent hover:text-foreground group-hover/pin:flex"
+                className="absolute right-1 top-1/2 -translate-y-1/2 z-10 hidden size-4 items-center justify-center rounded bg-sidebar text-muted-foreground/50 hover:bg-accent hover:text-foreground group-hover/pin:flex"
               >
                 <IconX className="size-2.5" />
               </button>
@@ -174,6 +282,36 @@ const PinnedThreadsList = memo(function PinnedThreadsList({ selectedTaskId, onSe
           )
         })}
       </ul>
+      {ctxMenu && (
+        <div
+          ref={ctxRef}
+          className="fixed z-[300] min-w-[140px] rounded-lg border border-border bg-popover py-1 shadow-lg"
+          style={{ left: ctxMenu.x, top: ctxMenu.y }}
+          onMouseDown={(e) => e.stopPropagation()}
+        >
+          <button
+            type="button"
+            className="flex w-full items-center gap-2 px-3 py-1.5 text-[13px] text-foreground transition-colors hover:bg-accent"
+            onClick={handleUnpin}
+          >
+            <IconPinnedOff className="size-3.5" /> Unpin
+          </button>
+          <button
+            type="button"
+            className="flex w-full items-center gap-2 px-3 py-1.5 text-[13px] text-foreground transition-colors hover:bg-accent"
+            onClick={() => { setCtxMenu(null); setSplitPicker({ x: ctxMenu.x, y: ctxMenu.y, taskId: ctxMenu.taskId }) }}
+          >
+            <IconLayoutColumns className="size-3.5" /> Open side-by-side
+          </button>
+        </div>
+      )}
+      {splitPicker && (
+        <SplitThreadPicker
+          anchorTaskId={splitPicker.taskId}
+          position={{ x: splitPicker.x, y: splitPicker.y }}
+          onClose={() => setSplitPicker(null)}
+        />
+      )}
     </div>
   )
 })
@@ -362,6 +500,7 @@ export const TaskSidebar = memo(function TaskSidebar({ width, onResize, position
         </div>
       </div>
       <SplitViewsList />
+      <PendingReplaceHint />
       <PinnedThreadsList selectedTaskId={selectedTaskId ?? (pendingWorkspace ? `draft:${pendingWorkspace}` : null)} onSelect={handleSelectTask} />
       <SidebarDivider />
       <ScrollArea className="min-h-0 flex-1 overflow-hidden px-2">

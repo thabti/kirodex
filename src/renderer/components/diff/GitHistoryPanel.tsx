@@ -221,8 +221,8 @@ export const GitHistoryPanel = memo(function GitHistoryPanel({ workspace, onView
                   {commit.fileCount > 0 && (
                     <>
                       <span>·</span>
-                      <span className="text-green-500/70">+{commit.additions}</span>
-                      <span className="text-red-500/70">-{commit.deletions}</span>
+                      <span className="text-emerald-600 dark:text-emerald-400">+{commit.additions}</span>
+                      <span className="text-red-600 dark:text-red-400">-{commit.deletions}</span>
                       <span>({commit.fileCount} files)</span>
                     </>
                   )}

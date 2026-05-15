@@ -88,6 +88,8 @@ export interface TaskStore {
   splitViews: Array<{ id: string; left: string; right: string; ratio: number }>
   /** Currently active split view ID (null = single panel mode) */
   activeSplitId: string | null
+  /** Pending split replacement: next thread click replaces this side */
+  pendingSplitReplace: { splitId: string; side: 'left' | 'right' } | null
   /** Split-screen: which panel is focused */
   focusedPanel: 'left' | 'right'
   /** Per-thread scroll positions (in-memory only, not persisted) */
@@ -167,6 +169,8 @@ export interface TaskStore {
   createSplitView: (left: string, right: string) => string
   /** Remove a saved split view */
   removeSplitView: (id: string) => void
+  /** Replace the left or right thread in a split view */
+  replaceSplitThread: (splitId: string, side: 'left' | 'right', threadId: string) => void
   /** Pin a thread to the top of the sidebar */
   pinThread: (id: string) => void
   /** Unpin a thread from the sidebar */
