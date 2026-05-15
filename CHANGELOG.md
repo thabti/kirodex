@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.50.0] - 2026-05-15
+
+### Features
+
+- add context menu with swap, replace, and remove actions ([`84dac2b`](https://github.com/thabti/kirodex/commit/84dac2b5d958a3534264f949e2ba2f59cea28ce9))
+
 ## [v0.49.0] - 2026-05-13
 
 ### Chores
