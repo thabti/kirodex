@@ -20,7 +20,8 @@
   </p>
   <table>
     <tr>
-      <td><img src="screenshots/kirodex.png" alt="Kirodex main view" width="100%" /></td>
+      <td><img src="screenshots/kirodex-light.png" alt="Kirodex light mode" width="100%" /></td>
+      <td><img src="screenshots/kirodex-dark.png" alt="Kirodex dark mode" width="100%" /></td>
     </tr>
   </table>
 

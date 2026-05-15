@@ -89,11 +89,19 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   splitViews: [],
   pinnedThreadIds: [],
   activeSplitId: null,
+  pendingSplitReplace: null,
   focusedPanel: 'left' as const,
   scrollPositions: {},
   threadOrders: {},
 
   setSelectedTask: (id) => {
+    // Handle pending split replacement
+    const pending = get().pendingSplitReplace
+    if (pending && id) {
+      set({ pendingSplitReplace: null })
+      get().replaceSplitThread(pending.splitId, pending.side, id)
+      return
+    }
     const { selectedTaskId: currentId, activeSplitId, splitViews, focusedPanel, notifiedTaskIds, archivedMeta, tasks: currentTasks } = get()
     if (currentId === id && !activeSplitId) return
     // Clear the notification badge when the user navigates to this thread
@@ -1417,6 +1425,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
       splitViews: [],
       pinnedThreadIds: [],
       activeSplitId: null,
+      pendingSplitReplace: null,
       scrollPositions: {},
     })
     // Clear project-specific preferences but preserve core settings (onboarding, CLI path, model, etc.)
@@ -1533,6 +1542,13 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     set((s) => ({
       splitViews: s.splitViews.filter((sv) => sv.id !== id),
       activeSplitId: s.activeSplitId === id ? null : s.activeSplitId,
+    }))
+  },
+  replaceSplitThread: (splitId, side, threadId) => {
+    set((s) => ({
+      splitViews: s.splitViews.map((sv) =>
+        sv.id === splitId ? { ...sv, [side]: threadId } : sv,
+      ),
     }))
   },
   pinThread: (id) => {

@@ -1,5 +1,77 @@
 # Activity Log
 
+## 2026-05-14 09:17 GST (Dubai)
+
+### FileTree: Clean up context menu, add Mention in Chat
+
+Removed Cut, Copy, Paste, Duplicate, Delete, and Open in Default App from the file tree context menu. Added "Mention in Chat" action that appends the file as a `@mention` pill in the chat input via `setDraftMentionedFiles`. Fixed Copy Path / Copy Relative Path error handling with try/catch so `onClose()` always fires even if clipboard write fails.
+
+**Modified:** `src/renderer/components/file-tree/TreeContextMenu.tsx`
+
+## 2026-05-14 09:05 GST (Dubai)
+
+### Docs: Add light/dark mode screenshots to README and website
+
+Cropped macOS title bar (56px retina) from two new screenshots and added them to `screenshots/` and `website/assets/`. Updated README.md with a side-by-side table showing light and dark mode. Updated website hero section with a 2-column grid layout and labels.
+
+**Modified:** `README.md`, `website/index.html`, `screenshots/kirodex-light.png`, `screenshots/kirodex-dark.png`, `website/assets/kirodex-light.png`, `website/assets/kirodex-dark.png`
+
+## 2026-05-14 09:03 GST (Dubai)
+
+### DiffViewer: Fix Files Changed panel retaining dark mode background
+
+Added `:host { background-color: var(--card) !important; }` to the `UNSAFE_CSS` injected into the `@pierre/diffs` Shadow DOM. The library sets `background-color: var(--diffs-bg)` on `:host` using the theme's `editor.background` (#070707 from pierre-dark), but the existing overrides only targeted child selectors (`[data-diffs-header]`, `[data-diff]`, `[data-file]`), leaving the root element dark.
+
+**Modified:** `src/renderer/components/code/diff-viewer-utils.ts`
+
+## 2026-05-14 08:59 GST (Dubai)
+
+### Sidebar: Add right-click context menu to split view items
+
+Added a context menu on right-click for split view items with three options: Remove, Replace left, and Replace right. Clicking "Replace left/right" enters a pending state where the next thread click in the sidebar replaces that side of the split. A hint banner shows while pending, dismissable via X.
+
+**Modified:** `src/renderer/components/sidebar/TaskSidebar.tsx`, `src/renderer/stores/task-store-types.ts`, `src/renderer/stores/taskStore.ts`, `src/renderer/stores/task-store-selectors.test.ts`
+
+## 2026-05-14 09:02 GST (Dubai)
+
+### Sidebar: Solid background on unpin button hover
+
+Added `bg-sidebar` to the pinned thread unpin button so it has a solid background when revealed on hover, preventing text bleed-through.
+
+**Modified:** `src/renderer/components/sidebar/TaskSidebar.tsx`
+
+## 2026-05-14 08:58 GST (Dubai)
+
+### Sidebar: Add right-click context menu with Unpin option to pinned threads
+
+Added a right-click context menu to the pinned threads section in the sidebar. Right-clicking a pinned thread now shows an "Unpin" option with the `IconPinnedOff` icon. Includes a click-outside handler to dismiss the menu.
+
+**Modified:** `src/renderer/components/sidebar/TaskSidebar.tsx`
+
+## 2026-05-14 08:57 GST (Dubai)
+
+### Sidebar: Move pin icon inline with pinned threads, remove PINNED heading
+
+Removed the "PINNED" section header and moved the pin icon to the left of each pinned thread item for a cleaner, more compact layout.
+
+**Modified:** `src/renderer/components/sidebar/TaskSidebar.tsx`
+
+## 2026-05-14 08:56 GST (Dubai)
+
+### Sidebar: Remove "Side by Side" section header
+
+Removed the icon + label header from the split views section in TaskSidebar. The split view list items remain; only the decorative header was removed.
+
+**Modified:** `src/renderer/components/sidebar/TaskSidebar.tsx`
+
+## 2026-05-13 15:10 GST (Dubai)
+
+### Diff UI: Full light mode support for Files Changed and diff components
+
+Fixed all diff-related components to support light mode. Replaced hardcoded dark-only colors (text-green-400, text-red-400, text-emerald-400) with proper light/dark variants (text-emerald-600 dark:text-emerald-400, text-red-600 dark:text-red-400). Removed duplicate UNSAFE_CSS from DiffPanel.tsx in favor of the shared import from diff-viewer-utils.ts.
+
+**Modified:** src/renderer/components/diff/DiffPanel.tsx, src/renderer/components/diff/GitHistoryPanel.tsx, src/renderer/components/CommitDialog.tsx, src/renderer/components/chat/GitPanels.tsx, src/renderer/components/analytics/DiffStatsChart.tsx, src/renderer/components/header-toolbar.tsx
+
 ## 2026-05-13 10:46 GST (Dubai)
 
 ### Header Toolbar: Darken diff stats colors in light mode

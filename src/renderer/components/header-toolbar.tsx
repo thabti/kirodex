@@ -232,7 +232,7 @@ export const HeaderToolbar = memo(function HeaderToolbar({
               onClick={handleInitGit}
               className={cn(
                 "inline-flex h-7 items-center gap-1.5 rounded-lg px-2.5 text-xs transition-colors",
-                "bg-emerald-500/[0.06] hover:bg-emerald-500/10 text-emerald-400",
+                "bg-emerald-500/[0.06] hover:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
                 isInitializing && "opacity-50 cursor-not-allowed",
               )}
             >
@@ -257,8 +257,8 @@ export const HeaderToolbar = memo(function HeaderToolbar({
                 className={cn(
                   "inline-flex h-7 items-center gap-1.5 rounded-l-lg px-2 text-xs transition-colors",
                   sidePanelOpen
-                    ? "bg-emerald-500/15 text-emerald-300"
-                    : "text-emerald-400 hover:bg-emerald-500/10",
+                    ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
+                    : "text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/10",
                 )}
               >
                 <IconGitCompare className="size-3" aria-hidden />

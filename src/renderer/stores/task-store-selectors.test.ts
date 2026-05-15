@@ -64,6 +64,7 @@ const makeState = (overrides: Partial<TaskStore> = {}): TaskStore => ({
   pinnedThreadIds: [],
   splitViews: [],
   activeSplitId: null,
+  pendingSplitReplace: null,
   focusedPanel: 'left',
   scrollPositions: {},
   threadOrders: {},

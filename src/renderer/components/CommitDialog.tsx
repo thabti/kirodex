@@ -320,9 +320,9 @@ export function CommitDialog({ open, onOpenChange, workspace }: CommitDialogProp
                                 <span className="text-muted-foreground">Excluded</span>
                               ) : (
                                 <>
-                                  <span className="text-green-400">+{file.insertions}</span>
+                                  <span className="text-emerald-600 dark:text-emerald-400">+{file.insertions}</span>
                                   <span className="text-muted-foreground"> / </span>
-                                  <span className="text-red-400">-{file.deletions}</span>
+                                  <span className="text-red-600 dark:text-red-400">-{file.deletions}</span>
                                 </>
                               )}
                             </span>
@@ -333,9 +333,9 @@ export function CommitDialog({ open, onOpenChange, workspace }: CommitDialogProp
                   </div>
                   {/* Total stats */}
                   <div className="flex justify-end font-mono text-xs">
-                    <span className="text-green-400">+{totalInsertions}</span>
+                    <span className="text-emerald-600 dark:text-emerald-400">+{totalInsertions}</span>
                     <span className="text-muted-foreground">/</span>
-                    <span className="text-red-400">-{totalDeletions}</span>
+                    <span className="text-red-600 dark:text-red-400">-{totalDeletions}</span>
                   </div>
                 </div>
               )}

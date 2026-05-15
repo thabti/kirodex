@@ -1,5 +1,5 @@
 import { memo, useState, useRef, useEffect, useCallback } from 'react'
-import { IconPencil, IconTrash, IconHistory, IconGitBranch, IconLayoutColumns, IconArrowsSplit, IconPin, IconPinnedOff, IconArrowUp, IconArrowDown, IconCopy } from '@tabler/icons-react'
+import { IconPencil, IconTrash, IconHistory, IconGitBranch, IconLayoutColumns, IconArrowsSplit, IconPin, IconPinnedOff, IconArrowUp, IconArrowDown, IconCopy, IconGitFork } from '@tabler/icons-react'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useTaskStore } from '@/stores/taskStore'
 import { SplitThreadPicker } from '@/components/chat/SplitThreadPicker'
@@ -134,6 +134,11 @@ export const ThreadItem = memo(function ThreadItem({ task, isActive, jumpLabel, 
     const sessionId = useTaskStore.getState().sessionIds[task.id]
     if (sessionId) void navigator.clipboard.writeText(sessionId)
     setCtxMenu(null)
+  }, [task.id])
+
+  const handleFork = useCallback(() => {
+    setCtxMenu(null)
+    void useTaskStore.getState().forkTask(task.id)
   }, [task.id])
 
   return (
@@ -281,6 +286,13 @@ export const ThreadItem = memo(function ThreadItem({ task, isActive, jumpLabel, 
                   >
                     {isPinned ? <IconPinnedOff className="size-3.5" /> : <IconPin className="size-3.5" />}
                     {isPinned ? 'Unpin' : 'Pin thread'}
+                  </button>
+                  <button
+                    type="button"
+                    className="flex w-full items-center gap-2 px-3 py-1.5 text-[13px] text-foreground transition-colors hover:bg-accent"
+                    onClick={handleFork}
+                  >
+                    <IconGitFork className="size-3.5" /> Fork thread
                   </button>
                   <div className="my-1 border-t border-border/50" />
                   <button

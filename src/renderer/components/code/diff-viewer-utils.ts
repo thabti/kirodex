@@ -1,6 +1,9 @@
 import type { FileDiffMetadata } from '@pierre/diffs'
 
 export const UNSAFE_CSS = `
+:host {
+  background-color: var(--card) !important;
+}
 [data-diffs-header], [data-diff], [data-file] {
   --diffs-bg: var(--card) !important;
   --diffs-bg-addition: color-mix(in srgb, var(--background) 97%, #0dbe4e) !important;

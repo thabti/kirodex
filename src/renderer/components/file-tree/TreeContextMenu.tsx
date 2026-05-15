@@ -1,10 +1,12 @@
 import { memo, useCallback, useEffect, useRef } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { useFileTreeStore, type TreeEntry } from '@/stores/fileTreeStore'
+import { useTaskStore } from '@/stores/taskStore'
+import type { ProjectFile } from '@/types'
 import {
-  IconFile, IconFolder, IconTrash, IconCopy, IconClipboard,
+  IconFile, IconFolder, IconTrash, IconCopy,
   IconPencil, IconExternalLink, IconTerminal, IconSearch,
-  IconScissors, IconCopyPlus, IconGitBranch,
+  IconGitBranch, IconAt,
 } from '@tabler/icons-react'
 import { cn } from '@/lib/utils'
 
@@ -66,7 +68,6 @@ export const TreeContextMenu = memo(function TreeContextMenu({
 
   const handleNewFile = useCallback(() => {
     const parentDir = entry?.isDir ? entry.path : (entry?.path.split('/').slice(0, -1).join('/') ?? '')
-    // Auto-expand the directory if it's collapsed
     if (entry?.isDir && !useFileTreeStore.getState().expandedDirs.has(entry.path)) {
       useFileTreeStore.getState().expandDir(entry.path).then(() => {
         store.getState().setRenamingPath(`__new_file__:${parentDir}`)
@@ -79,7 +80,6 @@ export const TreeContextMenu = memo(function TreeContextMenu({
 
   const handleNewFolder = useCallback(() => {
     const parentDir = entry?.isDir ? entry.path : (entry?.path.split('/').slice(0, -1).join('/') ?? '')
-    // Auto-expand the directory if it's collapsed
     if (entry?.isDir && !useFileTreeStore.getState().expandedDirs.has(entry.path)) {
       useFileTreeStore.getState().expandDir(entry.path).then(() => {
         store.getState().setRenamingPath(`__new_folder__:${parentDir}`)
@@ -96,53 +96,50 @@ export const TreeContextMenu = memo(function TreeContextMenu({
     onClose()
   }, [entry, workspace, onClose])
 
-  const handleOpenDefault = useCallback(() => {
-    if (!entry) return
-    invoke('open_in_default_app', { workspace, relPath: entry.path }).catch(console.error)
-    onClose()
-  }, [entry, workspace, onClose])
-
   const handleOpenTerminal = useCallback(() => {
     const path = entry?.path ?? ''
     invoke('open_terminal_at', { workspace, relPath: path }).catch(console.error)
     onClose()
   }, [entry, workspace, onClose])
 
-  const handleCut = useCallback(() => {
+  const handleMentionInChat = useCallback(() => {
     if (!entry) return
-    store.getState().setClipboard({ path: entry.path, operation: 'cut' })
+    const dir = entry.path.split('/').slice(0, -1).join('/')
+    const file: ProjectFile = {
+      path: entry.path,
+      name: entry.name,
+      dir,
+      isDir: entry.isDir,
+      ext: entry.ext,
+      modifiedAt: entry.modifiedAt,
+      gitStatus: entry.gitStatus,
+    }
+    const existing = useTaskStore.getState().draftMentionedFiles[workspace] ?? []
+    if (!existing.some((f) => f.path === file.path)) {
+      useTaskStore.getState().setDraftMentionedFiles(workspace, [...existing, file])
+    }
     onClose()
-  }, [entry, onClose])
-
-  const handleCopy = useCallback(() => {
-    if (!entry) return
-    store.getState().setClipboard({ path: entry.path, operation: 'copy' })
-    onClose()
-  }, [entry, onClose])
-
-  const handleDuplicate = useCallback(() => {
-    if (!entry) return
-    store.getState().duplicateEntry(entry.path).catch(console.error)
-    onClose()
-  }, [entry, onClose])
-
-  const handlePaste = useCallback(() => {
-    const destDir = entry?.isDir ? entry.path : (entry?.path.split('/').slice(0, -1).join('/') ?? '')
-    store.getState().pasteEntry(destDir).catch(console.error)
-    onClose()
-  }, [entry, onClose])
+  }, [entry, workspace, onClose])
 
   const handleCopyPath = useCallback(async () => {
     if (!entry) return
-    const path: string = await invoke('copy_entry_path', { workspace, relPath: entry.path, relative: false })
-    await navigator.clipboard.writeText(path)
+    try {
+      const path: string = await invoke('copy_entry_path', { workspace, relPath: entry.path, relative: false })
+      await navigator.clipboard.writeText(path)
+    } catch (err) {
+      console.error('Failed to copy path:', err)
+    }
     onClose()
   }, [entry, workspace, onClose])
 
   const handleCopyRelPath = useCallback(async () => {
     if (!entry) return
-    const path: string = await invoke('copy_entry_path', { workspace, relPath: entry.path, relative: true })
-    await navigator.clipboard.writeText(path)
+    try {
+      const path: string = await invoke('copy_entry_path', { workspace, relPath: entry.path, relative: true })
+      await navigator.clipboard.writeText(path)
+    } catch (err) {
+      console.error('Failed to copy relative path:', err)
+    }
     onClose()
   }, [entry, workspace, onClose])
 
@@ -164,14 +161,6 @@ export const TreeContextMenu = memo(function TreeContextMenu({
     onClose()
   }, [entry, onClose])
 
-  const handleDelete = useCallback(() => {
-    if (!entry) return
-    store.getState().deleteEntry(entry.path, true).catch(console.error)
-    onClose()
-  }, [entry, onClose])
-
-  const clipboard = useFileTreeStore((s) => s.clipboard)
-
   // Build menu items
   const items: MenuItem[] = []
 
@@ -182,27 +171,21 @@ export const TreeContextMenu = memo(function TreeContextMenu({
   if (entry) {
     // Reveal / Open
     items.push({ label: 'Reveal in Finder', icon: <IconExternalLink className="size-3.5" />, shortcut: '⌥⌘R', action: handleReveal })
-    items.push({ label: 'Open in Default App', icon: <IconExternalLink className="size-3.5" />, shortcut: '⌃⇧↵', action: handleOpenDefault })
     items.push({ label: 'Open in Terminal', icon: <IconTerminal className="size-3.5" />, action: handleOpenTerminal, separator: true })
 
-    // Find in folder (for directories) — opens Finder search scoped to folder
+    // Find in folder (for directories)
     if (entry.isDir) {
       items.push({ label: 'Find in Folder...', icon: <IconSearch className="size-3.5" />, shortcut: '⌥⌘⇧F', action: () => {
         const absPath = `${workspace}/${entry.path}`
-        // Open a Finder window with search active in this folder
         invoke('open_finder_search', { path: absPath }).catch(() => {
-          // Fallback: just reveal the folder
           invoke('reveal_in_finder', { workspace, relPath: entry.path }).catch(console.error)
         })
         onClose()
       }, separator: true })
     }
 
-    // Cut/Copy/Duplicate/Paste
-    items.push({ label: 'Cut', icon: <IconScissors className="size-3.5" />, shortcut: '⌘X', action: handleCut })
-    items.push({ label: 'Copy', icon: <IconCopy className="size-3.5" />, shortcut: '⌘C', action: handleCopy })
-    items.push({ label: 'Duplicate', icon: <IconCopyPlus className="size-3.5" />, shortcut: '⌘D', action: handleDuplicate })
-    items.push({ label: 'Paste', icon: <IconClipboard className="size-3.5" />, shortcut: '⌘V', action: handlePaste, disabled: !clipboard, separator: true })
+    // Mention in Chat
+    items.push({ label: 'Mention in Chat', icon: <IconAt className="size-3.5" />, action: handleMentionInChat, separator: true })
 
     // Copy path
     items.push({ label: 'Copy Path', icon: <IconCopy className="size-3.5" />, shortcut: '⌥⌘C', action: handleCopyPath })
@@ -211,14 +194,12 @@ export const TreeContextMenu = memo(function TreeContextMenu({
     // Gitignore
     items.push({ label: 'Add to .gitignore', icon: <IconGitBranch className="size-3.5" />, action: handleAddToGitignore, separator: true })
 
-    // Rename / Delete
+    // Rename / Trash
     items.push({ label: 'Rename', icon: <IconPencil className="size-3.5" />, shortcut: 'F2', action: handleRename })
     items.push({ label: 'Trash', icon: <IconTrash className="size-3.5" />, action: handleTrash })
-    items.push({ label: 'Delete', icon: <IconTrash className="size-3.5" />, shortcut: '⌥⌘⌫', action: handleDelete, danger: true })
   } else {
     // Background context menu
     items.push({ label: 'Open in Terminal', icon: <IconTerminal className="size-3.5" />, action: handleOpenTerminal })
-    items.push({ label: 'Paste', icon: <IconClipboard className="size-3.5" />, shortcut: '⌘V', action: handlePaste, disabled: !clipboard })
   }
 
   return (
