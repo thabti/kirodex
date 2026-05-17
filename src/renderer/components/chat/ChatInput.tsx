@@ -121,6 +121,26 @@ export const ChatInput = memo(function ChatInput({ disabled, disabledReason, con
     return () => document.removeEventListener('splash-insert', h)
   }, [setValue, textareaRef, detectMentionTrigger])
 
+  // Listen for selection-insert (SelectionToolbar "Use in chat" action)
+  useEffect(() => {
+    const h = (e: Event) => {
+      const { text, prefix } = (e as CustomEvent<{ text: string; prefix: string }>).detail ?? {}
+      if (!text) return
+      const next = (prefix ?? '') + text
+      setValue(next)
+      requestAnimationFrame(() => {
+        const el = textareaRef.current
+        if (!el) return
+        el.focus()
+        el.setSelectionRange(next.length, next.length)
+        el.style.height = 'auto'
+        el.style.height = `${Math.min(el.scrollHeight, 200)}px`
+      })
+    }
+    document.addEventListener('selection-insert', h)
+    return () => document.removeEventListener('selection-insert', h)
+  }, [setValue, textareaRef])
+
   // Auto-focus textarea
   useEffect(() => {
     if (autoFocus && textareaRef.current) {

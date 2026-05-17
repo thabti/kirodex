@@ -21,6 +21,7 @@ export const MessageListTaskIdContext = createContext<string | null>(null)
 export const useMessageListTaskId = (): string | null => useContext(MessageListTaskIdContext)
 
 import { AUTO_SCROLL_THRESHOLD, ROW_HEIGHT_ESTIMATES } from './MessageList.logic'
+import { SelectionToolbar } from '@/components/diff/SelectionToolbar'
 
 interface MessageListProps {
   taskId?: string | null
@@ -40,6 +41,8 @@ interface MessageListProps {
   onTimelineRows?: (rows: TimelineRow[]) => void
   /** Optional header content rendered inside the scroll container (scrolls with messages) */
   headerContent?: React.ReactNode
+  /** Current workspace — forwarded to SelectionToolbar for new-thread action */
+  workspace?: string | null
 }
 
 export const MessageList = memo(function MessageList({
@@ -55,6 +58,7 @@ export const MessageList = memo(function MessageList({
   activeMatchId,
   onTimelineRows,
   headerContent,
+  workspace,
 }: MessageListProps) {
   const parentRef = useRef<HTMLDivElement>(null)
   const [showScrollBtn, setShowScrollBtn] = useState(false)
@@ -76,22 +80,10 @@ export const MessageList = memo(function MessageList({
     prevTaskIdRef.current = taskId
     // Reset stable timeline state for the new thread
     stableStateRef.current = EMPTY_STABLE_STATE
-    // Determine where to scroll in the new thread
+    // Always scroll to bottom when switching threads
     if (!taskId) return
-    const saved = useTaskStore.getState().scrollPositions[taskId]
-    if (saved !== undefined) {
-      // Restore saved position — check if it was near bottom
-      const el = parentRef.current
-      if (el) {
-        const distFromBottom = el.scrollHeight - saved - el.clientHeight
-        isNearBottomRef.current = distFromBottom < AUTO_SCROLL_THRESHOLD
-      }
-      pendingScrollRef.current = saved
-    } else {
-      // No saved position — default to bottom
-      isNearBottomRef.current = true
-      pendingScrollRef.current = 'bottom'
-    }
+    isNearBottomRef.current = true
+    pendingScrollRef.current = 'bottom'
   }, [taskId])
 
   // Save scroll position on unmount (e.g., switching to dashboard/analytics)
@@ -332,6 +324,7 @@ export const MessageList = memo(function MessageList({
           Scroll to bottom
         </button>
       )}
+      <SelectionToolbar containerRef={parentRef} workspace={workspace} />
     </div>
     </MessageListTaskIdContext.Provider>
   )

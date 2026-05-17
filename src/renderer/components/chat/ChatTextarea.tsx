@@ -149,6 +149,7 @@ export const ChatTextarea = memo(function ChatTextarea({
       <textarea
         ref={textareaRef}
         data-testid="chat-textarea"
+        data-chat-input
         value={value}
         onChange={onChange}
         onKeyDown={onKeyDown}
