@@ -12,6 +12,12 @@ export type AnalyticsEventKind =
   | 'thread_created'
   | 'mcp_used'
   | 'skill_used'
+  | 'goal_started'
+  | 'goal_iteration'
+  | 'goal_completed'
+  | 'goal_budget_limited'
+  | 'goal_paused'
+  | 'goal_cleared'
 
 export interface AnalyticsEvent {
   readonly ts: number
