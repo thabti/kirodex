@@ -121,25 +121,20 @@ export const TreeContextMenu = memo(function TreeContextMenu({
     onClose()
   }, [entry, workspace, onClose])
 
-  const handleCopyPath = useCallback(async () => {
+  const handleCopyPath = useCallback(() => {
     if (!entry) return
-    try {
-      const path: string = await invoke('copy_entry_path', { workspace, relPath: entry.path, relative: false })
-      await navigator.clipboard.writeText(path)
-    } catch (err) {
+    const absolutePath = `${workspace}/${entry.path}`
+    navigator.clipboard.writeText(absolutePath).catch((err) => {
       console.error('Failed to copy path:', err)
-    }
+    })
     onClose()
   }, [entry, workspace, onClose])
 
-  const handleCopyRelPath = useCallback(async () => {
+  const handleCopyRelPath = useCallback(() => {
     if (!entry) return
-    try {
-      const path: string = await invoke('copy_entry_path', { workspace, relPath: entry.path, relative: true })
-      await navigator.clipboard.writeText(path)
-    } catch (err) {
+    navigator.clipboard.writeText(entry.path).catch((err) => {
       console.error('Failed to copy relative path:', err)
-    }
+    })
     onClose()
   }, [entry, workspace, onClose])
 

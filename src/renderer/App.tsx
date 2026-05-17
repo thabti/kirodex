@@ -575,6 +575,24 @@ export function App() {
     };
   }, []);
 
+  // selection-new-thread: open new pending chat in the same workspace, pre-filled with the selection
+  useEffect(() => {
+    const h = (e: Event) => {
+      const { text, workspace } = (e as CustomEvent<{ text: string; workspace?: string | null }>).detail ?? {}
+      if (!text) return
+      const state = useTaskStore.getState()
+      const ws = workspace ?? state.projects[0]
+      if (!ws) return
+      state.setPendingWorkspace(ws)
+      // After the pending chat mounts it listens for splash-insert
+      requestAnimationFrame(() => {
+        document.dispatchEvent(new CustomEvent('splash-insert', { detail: text }))
+      })
+    }
+    document.addEventListener('selection-new-thread', h)
+    return () => document.removeEventListener('selection-new-thread', h)
+  }, [])
+
   // Wire PostHog once settings are loaded; re-run on opt-in/opt-out toggles.
   useEffect(() => {
     if (!settingsLoaded) return;
@@ -676,7 +694,7 @@ export function App() {
       <div data-testid="app-container" className="flex h-full bg-background text-foreground">
         {/* Sidebar — full height, bleeds into top */}
         <ErrorBoundary>
-          {!isSidebarCollapsed && <TaskSidebar width={sidebarWidth} onResize={setSidebarWidth} position={sidebarPosition} onCollapse={toggleSidebar} />}
+          {!isSidebarCollapsed && <TaskSidebar width={sidebarWidth} onResize={setSidebarWidth} position={sidebarPosition} onCollapse={toggleSidebar} onCloneFromGitHub={() => setIsCloneDialogOpen(true)} />}
         </ErrorBoundary>
 
         {/* Right column: header + content */}
