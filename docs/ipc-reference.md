@@ -5,6 +5,8 @@ All frontend-to-backend communication in Kirodex uses Tauri's IPC bridge:
 - **Commands** use `invoke()` to call Rust `#[tauri::command]` functions from the renderer. Each command has a TypeScript wrapper in `src/renderer/lib/ipc.ts`.
 - **Events** use `listen()` to subscribe to backend-emitted events. The `tauriListen` wrapper defers the `unlisten` call to avoid crashes during HMR and React StrictMode double-mount cycles.
 
+> **Note:** This reference covers the core IPC commands. Additional commands exist for analytics, project file tree watching, thread database, goal mode, git history, checkpoints, syntax highlighting, pattern extraction, and tracing. See `src-tauri/src/lib.rs` for the full registered command list.
+
 ---
 
 ## 1. Task management commands
