@@ -29,6 +29,11 @@ const COMMAND_DESCRIPTIONS: Record<string, string> = {
   tools: 'View or configure available tools',
   usage: 'Open the analytics dashboard with usage stats and charts',
   worktree: 'Create a worktree and new thread for isolated work',
+  goal: 'Start an autonomous goal loop — the agent works until done',
+  'goal pause': 'Pause the goal after the current turn',
+  'goal resume': 'Resume a paused goal',
+  'goal clear': 'Drop the goal and return to normal chat',
+  'goal status': 'Show goal progress without interrupting',
 }
 
 // ── Per-command SVG icons ───────────────────────────────────────────
@@ -136,6 +141,31 @@ const COMMAND_ICONS: Record<string, () => React.ReactNode> = {
   worktree: () => (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
       <circle cx="6" cy="6" r="3" /><circle cx="18" cy="6" r="3" /><circle cx="6" cy="18" r="3" /><line x1="6" y1="9" x2="6" y2="15" /><path d="M9 6h6" /><path d="M6 9c0 3 2 6 6 9" />
+    </svg>
+  ),
+  goal: () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" />
+    </svg>
+  ),
+  'goal pause': () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <circle cx="12" cy="12" r="10" /><line x1="10" y1="15" x2="10" y2="9" /><line x1="14" y1="15" x2="14" y2="9" />
+    </svg>
+  ),
+  'goal resume': () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <circle cx="12" cy="12" r="10" /><polygon points="10 8 16 12 10 16 10 8" />
+    </svg>
+  ),
+  'goal clear': () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" />
+    </svg>
+  ),
+  'goal status': () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
     </svg>
   ),
 }

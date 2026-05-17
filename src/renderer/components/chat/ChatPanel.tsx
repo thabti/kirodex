@@ -16,6 +16,7 @@ import { SearchQueryContext } from './HighlightText'
 import { BtwOverlay } from './BtwOverlay'
 import { PanelProvider } from './PanelContext'
 import { StickyTaskList } from './StickyTaskList'
+import { GoalCard } from './GoalCard'
 
 import { useMessageSearch } from '@/hooks/useMessageSearch'
 import { ipc } from '@/lib/ipc'
@@ -51,6 +52,7 @@ const StreamingMessageList = memo(function StreamingMessageList({
   activeMatchId,
   onTimelineRows,
   headerContent,
+  workspace,
 }: {
   taskId?: string | null
   isRunning: boolean
@@ -58,6 +60,7 @@ const StreamingMessageList = memo(function StreamingMessageList({
   activeMatchId?: string | null
   onTimelineRows?: (rows: TimelineRow[]) => void
   headerContent?: React.ReactNode
+  workspace?: string | null
 }) {
   const storeSelectedId = useTaskStore((s) => s.selectedTaskId)
   const resolvedId = taskIdProp ?? storeSelectedId
@@ -82,6 +85,7 @@ const StreamingMessageList = memo(function StreamingMessageList({
       activeMatchId={activeMatchId}
       onTimelineRows={onTimelineRows}
       headerContent={headerContent}
+      workspace={workspace}
     />
   )
 })
@@ -358,6 +362,7 @@ export const ChatPanel = memo(function ChatPanel({ taskId: taskIdProp }: ChatPan
         )}
 
         <SearchQueryContext.Provider value={searchQuery}>
+          {resolvedTaskId && <GoalCard taskId={resolvedTaskId} />}
           <StreamingMessageList
             taskId={resolvedTaskId}
             isRunning={isRunning && !isBtwMode}
@@ -365,6 +370,7 @@ export const ChatPanel = memo(function ChatPanel({ taskId: taskIdProp }: ChatPan
             activeMatchId={search.isOpen ? search.activeMatchId : undefined}
             onTimelineRows={handleTimelineRows}
             headerContent={undefined}
+            workspace={taskWorkspace}
           />
         </SearchQueryContext.Provider>
 
