@@ -1,5 +1,22 @@
 # Changelog
 
+## [v0.53.0] - 2026-05-17
+
+### Features
+
+- add useMenuPosition hook for viewport-aware menu placement ([`585ba7d`](https://github.com/thabti/kirodex/commit/585ba7d))
+- selection-new-thread event in App, simplify TreeContextMenu copy paths ([`fd2b18c`](https://github.com/thabti/kirodex/commit/fd2b18c))
+- add project dropdown, useMenuPosition, and update badge styling ([`893d501`](https://github.com/thabti/kirodex/commit/893d501))
+- add selection-insert listener and simplify thread scroll behavior ([`148d20d`](https://github.com/thabti/kirodex/commit/148d20d))
+
+### Documentation
+
+- update architecture, ipc reference, keyboard shortcuts and add dev guides ([`b030a33`](https://github.com/thabti/kirodex/commit/b030a33))
+
+### Chores
+
+- add .codex to .gitignore ([`28308d3`](https://github.com/thabti/kirodex/commit/28308d3))
+
 ## [v0.52.0] - 2026-05-17
 
 ### Features
