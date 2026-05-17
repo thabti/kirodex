@@ -17,4 +17,4 @@ activity.md
 website/node_modules
 website/dist
 website/.browse/
-diff/
+/diff/
