@@ -11,6 +11,7 @@ coverage
 *.csr
 *.cer
 .claude/
+.codex/
 .kiro/worktrees/
 activity.md
 website/node_modules
