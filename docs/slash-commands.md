@@ -21,6 +21,11 @@ Unknown commands return `handled: false` and are forwarded to ACP as regular mes
 | /fork | Fork current thread into a new conversation | Yes |
 | /branch | Open branch picker panel | Yes |
 | /worktree | Open worktree creation panel | Yes |
+| /goal \<objective\> | Start an autonomous goal loop (see [goal-mode.md](goal-mode.md)) | No (Rust orchestrator) |
+| /goal | Show current goal status or open goal modal | Yes |
+| /goal pause | Pause the goal loop after current turn | No (syncs via IPC) |
+| /goal resume | Resume a paused goal | No (syncs via IPC) |
+| /goal clear | Drop the goal and return to normal chat | No (syncs via IPC) |
 
 ## Notes
 

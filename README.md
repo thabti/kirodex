@@ -94,10 +94,15 @@ chmod +x Kirodex_*.AppImage && ./Kirodex_*.AppImage
 **Chat and agents**
 - Chat interface via the [Agent Client Protocol](https://github.com/anthropics/agent-client-protocol) SDK
 - Threaded agentic development — each conversation runs as an independent agent thread with its own context, tool calls, and execution history
+- Command palette (`Cmd+K`) — quick navigation, thread search, project switching, git actions, panel toggles, mode/model switching, and frecency-ranked results
+- Selection toolbar — select text in any message to copy, add to chat, or start a new thread from the selection
+- Pinned threads — pin important threads to the top of the sidebar for quick access
+- Light and dark themes — full light mode support with proper contrast across all components including diffs, analytics, and git panels
 - Empty thread splash screen with clickable slash commands and `@` mentions to get started fast
-- Slash commands (`/clear`, `/close`, `/model`, `/agent`, `/plan`, `/chat`, `/data`, `/branch`, `/worktree`, `/fork`, `/btw`, `/tangent`) with fuzzy search across all pickers
+- Slash commands (`/clear`, `/close`, `/model`, `/agent`, `/plan`, `/chat`, `/data`, `/branch`, `/worktree`, `/fork`, `/btw`, `/tangent`, `/goal`) with fuzzy search across all pickers
 - `/btw` side questions — ask a quick question in a floating overlay without polluting conversation history; `/tangent` is an alias. Press Escape to discard or Keep to preserve the exchange
 - `/fork` — fork the current thread into a new conversation, preserving context
+- `/goal` — autonomous agent loop: give the agent a durable objective and walk away. It keeps working through plan → implement → verify cycles with self-correction until done, budget-limited, or paused. Inspired by Codex CLI's goal mode and the Ralph Loop pattern.
 - `@mentions` — type `@` in the chat input to fuzzy-search and attach project files (with git status and relative timestamps), agents, skills, and prompts as context pills
 - Agent mention pills (`@agent`) with built-in agents, styled icons, and fuzzy matching
 - Plan mode with per-thread state and a handoff card to start building after planning

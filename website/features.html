@@ -82,6 +82,33 @@
       </div>
     </section>
 
+    <!-- ── Goal mode ──────────────────────────────────────── -->
+    <section>
+      <div class="mb-3 flex items-center gap-2.5">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="text-amber-400"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+        <h2 class="text-2xl font-bold text-foreground">Goal mode</h2>
+      </div>
+      <p class="mb-6 max-w-2xl text-[15px] text-muted-foreground">Give the agent a durable objective and walk away. It keeps working through plan → implement → verify cycles with self-correction until done, budget-limited, or paused. Inspired by <a href="https://developers.openai.com/codex/use-cases/follow-goals" class="text-foreground underline" target="_blank" rel="noopener">Codex CLI's /goal</a> and the <a href="https://github.com/mreferre/ralph-loop-kiro-specs" class="text-foreground underline" target="_blank" rel="noopener">Ralph Loop</a>.</p>
+      <div class="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Autonomous loop</h3><p class="text-[13px] text-muted-foreground">Type /goal, set an objective and stop condition, and the agent runs iteratively without further input.</p></div>
+        <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Self-correction</h3><p class="text-[13px] text-muted-foreground">Mistakes are logged as corrections and injected into every subsequent iteration. The agent never repeats a listed error.</p></div>
+        <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Budget and safety</h3><p class="text-[13px] text-muted-foreground">Token budget, iteration cap, and consecutive-failure detection. Auto-pauses when stuck. Manual pause/clear anytime.</p></div>
+        <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Editable templates</h3><p class="text-[13px] text-muted-foreground">Prompt templates live in .kiro/goal/ and are editable per-project. Customize the agent's phased approach.</p></div>
+        <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Works with any agent</h3><p class="text-[13px] text-muted-foreground">Built as a generic orchestration layer over ACP. No Codex-specific tools required — uses sentinel-based completion.</p></div>
+        <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Progress tracking</h3><p class="text-[13px] text-muted-foreground">Each iteration logs progress to .kiro/goal/progress.md. Review what the agent learned and where it got stuck.</p></div>
+      </div>
+      <div class="rounded-xl border border-border bg-card/50 p-6">
+        <p class="mb-3 text-[13px] font-medium text-muted-foreground">Commands</p>
+        <div class="grid gap-2 font-mono text-[13px] sm:grid-cols-2">
+          <div class="flex gap-3"><span class="text-foreground">/goal &lt;objective&gt;</span><span class="text-muted-foreground">Start a goal</span></div>
+          <div class="flex gap-3"><span class="text-foreground">/goal</span><span class="text-muted-foreground">Show status</span></div>
+          <div class="flex gap-3"><span class="text-foreground">/goal pause</span><span class="text-muted-foreground">Pause after current turn</span></div>
+          <div class="flex gap-3"><span class="text-foreground">/goal resume</span><span class="text-muted-foreground">Resume a paused goal</span></div>
+          <div class="flex gap-3"><span class="text-foreground">/goal clear</span><span class="text-muted-foreground">Drop goal, return to chat</span></div>
+        </div>
+      </div>
+    </section>
+
     <!-- ── Code and diffs ───────────────────────────────────── -->
     <section>
       <div class="mb-3 flex items-center gap-2.5">
