@@ -1,5 +1,16 @@
 # Changelog
 
+## [v0.54.0] - 2026-05-17
+
+### Bug fixes
+
+- allow empty branch in vcs_status test for detached HEAD ([`67775a4`](https://github.com/thabti/kirodex/commit/67775a46bc3ae48b36c7a2b0510406d29f6e2336))
+
+### Documentation
+
+- update activity log with test verification results ([`5ab38c5`](https://github.com/thabti/kirodex/commit/5ab38c5dd25cdec99b75cacfd903d45a125ba7bb))
+- update activity log ([`471f802`](https://github.com/thabti/kirodex/commit/471f802528b6ec77094ed2a83e8a0aed3cd7e4b4))
+
 ## [v0.53.0] - 2026-05-17
 
 ### Features
