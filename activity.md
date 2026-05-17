@@ -1,5 +1,156 @@
 # Activity Log
 
+## 2026-05-17 10:05 GST (Dubai)
+
+### Goal Mode: Align with Codex architecture and improve documentation
+
+Rewrote `docs/goal-mode.md` to match Codex's six-part Goal contract pattern (outcome, verification surface, constraints, boundaries, iteration policy, blocked stop condition). Updated GoalModal placeholders to guide users toward strong goals. Aligned the no-tool-call suppression logic with Codex's conservative continuation policy: any turn with no tool calls counts toward the failure threshold.
+
+**Modified:**
+- `docs/goal-mode.md` — Complete rewrite with Codex-aligned architecture
+- `src/renderer/components/chat/GoalModal.tsx` — Better placeholder guidance
+- `src/renderer/stores/task-store-listeners.ts` — No-tool-call suppression aligned with Codex
+
+## 2026-05-17 10:01 GST (Dubai)
+
+### SidebarFooter: Fix squashed Update badge and add download icon
+
+Replaced "Update Now" text with a download icon + "Update" label. Added `whitespace-nowrap`, `flex`, and `gap-1` to prevent text squashing in narrow sidebars.
+
+**Modified:**
+- src/renderer/components/sidebar/SidebarFooter.tsx
+- src/renderer/components/sidebar/SidebarFooter.test.tsx
+
+## 2026-05-17 09:35 GST (Dubai)
+
+### Sidebar: Add project dropdown menu on + button
+
+Replaced the single-action + button in the sidebar with a dropdown menu offering two options: "Import folder" (opens native folder picker) and "Clone from GitHub" (opens the clone repo dialog). Matches the Klaudex pattern.
+
+**Modified:** `src/renderer/components/sidebar/TaskSidebar.tsx`, `src/renderer/App.tsx`
+
+## 2026-05-17 09:26 GST (Dubai)
+
+### Docs: Update documentation for open source project
+
+Rewrote `docs/architecture.md` to reflect all 33 backend modules, current stores, and component directories. Created `docs/development.md` (dev setup, commands, workflow, testing). Created `docs/getting-started.md` (user-facing guide covering installation, features, and usage). Updated `docs/keyboard-shortcuts.md` with all current shortcuts including split view, debug panel, and agent shortcuts. Added completeness note to `docs/ipc-reference.md`.
+
+**Modified:**
+- `docs/architecture.md`
+- `docs/development.md`
+- `docs/getting-started.md`
+- `docs/keyboard-shortcuts.md`
+- `docs/ipc-reference.md`
+
+## 2026-05-17 09:26 GST (Dubai)
+
+### Chat: Add /goal to empty thread splash commands
+
+Added `/goal` with a target icon and "Autonomous agent loop" description to the `SLASH_COMMANDS` array in `EmptyThreadSplash.tsx`.
+
+**Modified:**
+- `src/renderer/components/chat/EmptyThreadSplash.tsx`
+
+## 2026-05-17 09:18 GST (Dubai)
+
+### Chat: Always scroll to bottom on thread switch
+
+Changed the MessageList thread-switch logic to always scroll to the bottom instead of restoring saved scroll positions. This ensures users always see the latest messages when switching threads.
+
+**Modified:** `src/renderer/components/chat/MessageList.tsx`
+
+## 2026-05-17 09:18 GST (Dubai)
+
+### Docs: Add /goal documentation and website feature section
+
+Created `docs/goal-mode.md` with full usage guide (commands, templates, self-correction, configuration, persistence, tips). Updated `docs/slash-commands.md` with the `/goal` family. Added `/goal` to README features. Added a Goal mode section to the website features page with six feature cards and a commands reference block.
+
+**Modified:**
+- `docs/goal-mode.md` — New comprehensive usage guide
+- `docs/slash-commands.md` — Added /goal commands to the table
+- `README.md` — Added /goal to features list
+- `website/features.html` — New Goal mode section with feature cards
+
+## 2026-05-17 02:55 GST (Dubai)
+
+### Goal Mode: Implement /goal autonomous agent loop
+
+Implemented the `/goal` command — a Codex-style autonomous agent loop that runs the agent iteratively toward a durable objective. The agent auto-continues after each turn with a Rust-side continuation prompt injection, self-corrects via a Ralph Loop-inspired corrections log, and stops on sentinel detection, budget exhaustion, iteration cap, or consecutive failures. Templates stored in `.kiro/goal/` are editable per-project. Feature is gated behind Settings → Advanced → goalEnabled.
+
+**Modified:**
+- `src/renderer/stores/goalStore.ts` — Zustand store with per-thread goal state
+- `src/renderer/stores/goalStore.test.ts` — 27 unit tests
+- `src-tauri/src/commands/goal.rs` — Rust goal orchestrator (11 tests)
+- `src-tauri/src/commands/mod.rs` — Module registration
+- `src-tauri/src/lib.rs` — Command registration
+- `src-tauri/.kiro_goal_templates/` — Embedded fallback templates
+- `.kiro/goal/initial.md`, `continuation.md`, `budget_limit.md` — Project templates
+- `src/renderer/lib/ipc.ts` — Goal IPC bindings
+- `src/renderer/stores/task-store-listeners.ts` — Auto-continuation on turn_end
+- `src/renderer/hooks/useSlashAction.ts` — /goal command routing
+- `src/renderer/components/chat/GoalModal.tsx` — Goal configuration modal
+- `src/renderer/components/chat/GoalCard.tsx` — Persistent status card
+- `src/renderer/components/chat/ChatPanel.tsx` — GoalCard integration
+- `src/renderer/types/index.ts` — AppSettings goal fields
+- `src/renderer/types/analytics.ts` — Goal analytics event kinds
+- `src/renderer/lib/analytics-aggregators.ts` — PartitionedEvents update
+
+## 2026-05-15 10:07 GST (Dubai)
+
+### Sidebar: Add viewport boundary detection to all context menus
+
+Created a reusable `useMenuPosition` hook and applied it to all custom context menus/popovers that use fixed positioning. Fixed: ThreadItem, ProjectItem, and TaskSidebar (SortDropdown, SplitViewsList, PinnedThreadsList, main sidebar menu). TreeContextMenu, KiroMcpRow, and SplitThreadPicker already had detection.
+
+**Modified:** `src/renderer/hooks/useMenuPosition.ts`, `src/renderer/components/sidebar/ThreadItem.tsx`, `src/renderer/components/sidebar/ProjectItem.tsx`, `src/renderer/components/sidebar/TaskSidebar.tsx`
+
+## 2026-05-15 10:05 GST (Dubai)
+
+### ThreadItem: Fix context menu being cut off at viewport edges
+
+Added viewport boundary detection to the custom context menu in `ThreadItem.tsx`. After the menu renders, a `useEffect` measures its bounding rect and repositions it if it overflows the right or bottom edges of the viewport. Uses a ref flag to prevent infinite re-render loops.
+
+**Modified:** `src/renderer/components/sidebar/ThreadItem.tsx`
+
+## 2026-05-15 09:41 GST (Dubai)
+
+### FileTree: Fix copy path and copy relative path in context menu
+
+The `await invoke(...)` call before `navigator.clipboard.writeText()` introduced an async gap that caused the WebView to lose user activation context, silently failing the clipboard write. Replaced with client-side path construction (trivial string join) so the clipboard write happens synchronously within the user gesture.
+
+**Modified:** `src/renderer/components/file-tree/TreeContextMenu.tsx`
+
+## 2026-05-15 07:42 GST (Dubai)
+
+### Docs: Add command palette, selection toolbar, pinned threads, and light/dark themes to README
+
+Added four new feature bullet points to the README.md "Chat and agents" section: command palette (`Cmd+K`), selection toolbar, pinned threads, and light/dark theme support.
+
+**Modified:** `README.md`
+
+## 2026-05-15 06:55 GST (Dubai)
+
+### Chat: Add SelectionToolbar for text selection actions
+
+Retrofitted the SelectionToolbar from klaudex into kirodex. When users select text in the message list, a floating toolbar appears with Copy, Add to Chat, and New Thread actions. Wired custom events (`selection-insert`, `selection-new-thread`) through ChatInput and App.tsx.
+
+**Modified:**
+- `src/renderer/components/diff/SelectionToolbar.tsx` (new)
+- `src/renderer/components/chat/ChatTextarea.tsx`
+- `src/renderer/components/chat/ChatInput.tsx`
+- `src/renderer/components/chat/MessageList.tsx`
+- `src/renderer/components/chat/ChatPanel.tsx`
+- `src/renderer/App.tsx`
+
+## 2026-05-15 06:27 GST (Dubai)
+
+### Release: v0.50.0 minor release
+
+Committed split-view context menu enhancements (swap, replace, remove), sidebar improvements, file tree refactor, and screenshot/website updates. All checks passed (1299 frontend tests, 397 Rust tests, TypeScript clean, Vite build clean). Bumped version 0.49.0 → 0.50.0 and pushed tag v0.50.0.
+
+**Modified:** package.json, src-tauri/Cargo.toml, src-tauri/tauri.conf.json, CHANGELOG.md, README.md, activity.md, src/renderer/components/sidebar/TaskSidebar.tsx, src/renderer/stores/taskStore.ts, src/renderer/stores/task-store-types.ts, src/renderer/components/file-tree/TreeContextMenu.tsx, src/renderer/components/diff/DiffPanel.tsx, screenshots/, website/
+
+---
+
 ## 2026-05-14 09:17 GST (Dubai)
 
 ### FileTree: Clean up context menu, add Mention in Chat
