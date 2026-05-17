@@ -5,67 +5,69 @@
  */
 export const CHANGELOG_DATA = [
   {
-    version: 'v0.43.0',
-    date: '2026-05-10',
+    version: 'v0.53.0',
+    date: '2026-05-17',
     latest: true,
     sections: {
       Features: [
-        'KiroGhostIcon component for branding',
-      ],
-      'Bug fixes': [
-        'Fix clipped unmodified lines separator in diff view',
+        '/goal autonomous agent loop with orchestrator, templates, and analytics',
+        'Split-view context menu with swap, replace, and remove actions',
+        'Project dropdown, useMenuPosition hook, and viewport-aware menus',
+        'Selection toolbar: insert into chat or start new thread from selection',
+        'Running thread spinner replaces pulse dot in sidebar',
       ],
       Styling: [
-        'Restyle nav sidebar with full-height layout',
-        'Restyle toolbar as connected button group',
-        'Darken border and sidebar colors',
-      ],
-      Refactoring: [
-        'Add memo, useCallback, and tooltips to all settings sections',
-        'Make sidebar full height, move header into content column',
-        'Restyle footer with inline buttons and user menu',
-      ],
-      Performance: [
-        'Wrap SettingRow and SettingsCard in memo',
+        'Highlight active thread item in sidebar',
+        'Darken diff stats colors for light mode contrast',
       ],
     },
   },
   {
-    version: 'v0.42.0',
-    date: '2026-05-10',
-    sections: {
-      'Bug fixes': [
-        'Hide archived banner when message is initiated',
-      ],
-    },
-  },
-  {
-    version: 'v0.41.0',
-    date: '2026-05-10',
-    sections: {
-      'Bug fixes': [
-        'Improve chat UX and fix git diff output',
-      ],
-    },
-  },
-  {
-    version: 'v0.40.x',
-    date: '2026-04-28',
+    version: 'v0.49.0',
+    date: '2026-05-12',
     sections: {
       Features: [
+        'KiroGhostIcon component for branding',
+        'Expanded emoji picker, favicon name hiding, and queue message editing',
+        'Persist UI state every 30s and add connection_lost system message',
+        'Onboarding login errors and non-standard path hint',
+        'Unsaved changes confirmation dialog in settings',
+        'Delete button for memory section thread rows',
+        'Open File Tree from project context menu',
         'Add memory monitoring and lazy-load archived threads',
         'Auto-refresh config when .kiro files change on disk',
         'Add GLM, Qwen, and MiniMax model provider icons',
-        'Remaining performance improvements and new features',
         'File tree panel, MCP server management, drag-drop to chat',
       ],
       'Bug fixes': [
+        'Fix clipped unmodified lines separator in diff view',
+        'Hide archived banner when message is initiated',
+        'Improve chat UX and fix git diff output',
+        'Preserve existing tool call fields during merge',
+        'Strip base64 image data from title/branch prompts',
+        'Render image preview overlay via portal',
+        'Support full paths in terminal command allowlist',
         'Skip redundant flush on relaunch to prevent hang',
         'Path traversal, SSRF, AppleScript injection, and NSOpenPanel crash fixes',
         'Robust JSON parsing for kiro-cli warnings and improve persistence',
         'Prevent PTY cwd bypass via unset HOME on Windows',
       ],
+      Styling: [
+        'Restyle nav sidebar with full-height layout',
+        'Restyle toolbar as connected button group',
+        'Darken border and sidebar colors',
+        'Refine split divider grip dots and panel header layout',
+        'Rename "split view" to "side-by-side" across UI',
+      ],
+      Refactoring: [
+        'Add memo, useCallback, and tooltips to all settings sections',
+        'Make sidebar full height, move header into content column',
+        'Restyle footer with inline buttons and user menu',
+        'Extract ProjectGroup in deleted threads restore',
+        'Replace material-icon-theme with seti-file-icons',
+      ],
       Performance: [
+        'Wrap SettingRow and SettingsCard in memo',
         'Lazy Shiki, inline tool calls, sticky task list, connection state',
         'Connection health monitor with exponential backoff',
         'Normalized selectors, dual-stream sidebar pattern',
