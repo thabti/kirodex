@@ -8,6 +8,7 @@ import { useFileTreeStore } from '@/stores/fileTreeStore'
 import { ThreadItem } from './ThreadItem'
 import { ProjectIcon } from './ProjectIcon'
 import { useProjectIcon, setProjectIconOverride } from '@/hooks/useProjectIcon'
+import { useMenuPosition } from '@/hooks/useMenuPosition'
 import { IconPickerDialog } from './IconPickerDialog'
 import type { SidebarTask } from '@/hooks/useSidebarTasks'
 
@@ -46,6 +47,7 @@ export const ProjectItem = memo(function ProjectItem({
   const ctxRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
   const projectIcon = useProjectIcon(cwd)
+  useMenuPosition(ctxRef, ctxMenu)
 
   useEffect(() => {
     if (!autoFocus) return

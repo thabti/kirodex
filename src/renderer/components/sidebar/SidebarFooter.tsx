@@ -1,5 +1,5 @@
 import { memo, useState, useCallback, useEffect } from 'react'
-import { IconSettings, IconBug } from '@tabler/icons-react'
+import { IconSettings, IconBug, IconDownload } from '@tabler/icons-react'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useTaskStore } from '@/stores/taskStore'
@@ -123,9 +123,10 @@ export const SidebarFooter = memo(function SidebarFooter() {
                   aria-label="Download and install update"
                   onClick={handleUpdateClick}
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); triggerDownload?.() } }}
-                  className="ml-auto shrink-0 rounded-full bg-primary px-1.5 py-0.5 text-[11px] font-medium leading-none text-primary-foreground hover:bg-primary/80 transition-colors"
+                  className="ml-auto flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-primary px-2 py-0.5 text-[11px] font-medium leading-none text-primary-foreground hover:bg-primary/80 transition-colors"
                 >
-                  Update Now
+                  <IconDownload size={12} />
+                  Update
                 </span>
               )}
             </button>

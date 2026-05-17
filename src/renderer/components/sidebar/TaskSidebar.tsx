@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useRef, useState } from 'react'
-import { IconPlus, IconArrowsUpDown, IconCheck, IconLayoutSidebarLeftCollapse, IconLayoutSidebarRightCollapse, IconFolderOpen, IconLayoutColumns, IconX, IconPin, IconPinnedOff, IconReplace, IconArrowsExchange } from '@tabler/icons-react'
+import { IconPlus, IconArrowsUpDown, IconCheck, IconLayoutSidebarLeftCollapse, IconLayoutSidebarRightCollapse, IconFolderOpen, IconLayoutColumns, IconX, IconPin, IconPinnedOff, IconReplace, IconArrowsExchange, IconGitBranch } from '@tabler/icons-react'
 import { useTaskStore } from '@/stores/taskStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useShallow } from 'zustand/react/shallow'
@@ -10,6 +10,7 @@ import { ipc } from '@/lib/ipc'
 import { useSidebarTasks, type SortKey, type SidebarTask } from '@/hooks/useSidebarTasks'
 import { useResizeHandle } from '@/hooks/useResizeHandle'
 import { useModifierKeys } from '@/hooks/useModifierKeys'
+import { useMenuPosition } from '@/hooks/useMenuPosition'
 import { ProjectItem } from './ProjectItem'
 import { SplitThreadPicker } from '@/components/chat/SplitThreadPicker'
 import { SidebarFooter } from './SidebarFooter'
@@ -27,7 +28,9 @@ const SORT_OPTIONS: { key: SortKey; label: string }[] = [
 const SortDropdown = memo(function SortDropdown({ sort, onChange }: { sort: SortKey; onChange: (s: SortKey) => void }) {
   const [open, setOpen] = useState(false)
   const btnRef = useRef<HTMLButtonElement>(null)
+  const dropRef = useRef<HTMLDivElement>(null)
   const [pos, setPos] = useState({ top: 0, left: 0 })
+  useMenuPosition(dropRef, open ? { x: pos.left, y: pos.top } : null)
 
   const handleOpen = useCallback(() => {
     setOpen((v) => {
@@ -54,7 +57,7 @@ const SortDropdown = memo(function SortDropdown({ sort, onChange }: { sort: Sort
       {open && (
         <>
           <div className="fixed inset-0 z-[199]" onClick={() => setOpen(false)} />
-          <div className="fixed z-[200] min-w-[130px] rounded-lg border border-border bg-popover py-1 shadow-lg" style={{ top: pos.top, left: pos.left }}>
+          <div ref={dropRef} className="fixed z-[200] min-w-[130px] rounded-lg border border-border bg-popover py-1 shadow-lg" style={{ top: pos.top, left: pos.left }}>
             {SORT_OPTIONS.map((opt) => (
               <button key={opt.key} type="button"
                 onClick={() => { onChange(opt.key); setOpen(false) }}
@@ -70,11 +73,85 @@ const SortDropdown = memo(function SortDropdown({ sort, onChange }: { sort: Sort
   )
 })
 
+const AddProjectDropdown = memo(function AddProjectDropdown({ onCloneFromGitHub }: { onCloneFromGitHub?: () => void }) {
+  const [open, setOpen] = useState(false)
+  const btnRef = useRef<HTMLButtonElement>(null)
+  const dropRef = useRef<HTMLDivElement>(null)
+  const [pos, setPos] = useState({ top: 0, left: 0 })
+  const setNewProjectOpen = useTaskStore((s) => s.setNewProjectOpen)
+  useMenuPosition(dropRef, open ? { x: pos.left, y: pos.top } : null)
+
+  const handleOpen = useCallback(() => {
+    setOpen((v) => {
+      if (!v && btnRef.current) {
+        const r = btnRef.current.getBoundingClientRect()
+        setPos({ top: r.bottom + 4, left: r.left })
+      }
+      return !v
+    })
+  }, [])
+
+  const handleImportFolder = useCallback(() => {
+    setNewProjectOpen(true)
+    setOpen(false)
+  }, [setNewProjectOpen])
+
+  const handleCloneFromGitHub = useCallback(() => {
+    onCloneFromGitHub?.()
+    setOpen(false)
+  }, [onCloneFromGitHub])
+
+  return (
+    <div className="relative">
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            ref={btnRef}
+            type="button"
+            aria-label="Add project"
+            data-testid="add-project-button"
+            onClick={handleOpen}
+            className={cn(
+              'inline-flex size-5 cursor-pointer items-center justify-center rounded-md transition-colors',
+              open ? 'bg-accent text-foreground' : 'text-muted-foreground hover:bg-accent hover:text-foreground',
+            )}
+          >
+            <IconPlus className="size-3.5" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="top">Add project</TooltipContent>
+      </Tooltip>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-[199]" onClick={() => setOpen(false)} />
+          <div ref={dropRef} className="fixed z-[200] min-w-[180px] rounded-lg border border-border bg-popover py-1 shadow-lg" style={{ top: pos.top, left: pos.left }}>
+            <button
+              type="button"
+              onClick={handleImportFolder}
+              className="flex w-full items-center gap-2 px-3 py-1.5 text-[13px] text-foreground transition-colors hover:bg-accent"
+            >
+              <IconFolderOpen className="size-3.5" aria-hidden /> Import folder
+            </button>
+            <button
+              type="button"
+              onClick={handleCloneFromGitHub}
+              className="flex w-full items-center gap-2 px-3 py-1.5 text-[13px] text-foreground transition-colors hover:bg-accent"
+            >
+              <IconGitBranch className="size-3.5" aria-hidden /> Clone from GitHub
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  )
+})
+
 interface TaskSidebarProps {
   width: number
   onResize: (width: number) => void
   position?: 'left' | 'right'
   onCollapse?: () => void
+  onCloneFromGitHub?: () => void
 }
 
 /** Sidebar section showing saved split view pairings */
@@ -85,6 +162,8 @@ const SplitViewsList = memo(function SplitViewsList() {
   const setActiveSplit = useTaskStore((s) => s.setActiveSplit)
   const removeSplitView = useTaskStore((s) => s.removeSplitView)
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; splitId: string } | null>(null)
+  const ctxRef = useRef<HTMLDivElement>(null)
+  useMenuPosition(ctxRef, ctxMenu)
 
   if (splitViews.length === 0) return null
 
@@ -158,6 +237,7 @@ const SplitViewsList = memo(function SplitViewsList() {
         <>
           <div className="fixed inset-0 z-[299]" onClick={() => setCtxMenu(null)} onContextMenu={(e) => { e.preventDefault(); setCtxMenu(null) }} />
           <div
+            ref={ctxRef}
             className="fixed z-[300] min-w-[160px] rounded-lg border border-border bg-popover py-1 shadow-lg"
             style={{ left: ctxMenu.x, top: ctxMenu.y }}
             onMouseDown={(e) => e.stopPropagation()}
@@ -225,6 +305,7 @@ const PinnedThreadsList = memo(function PinnedThreadsList({ selectedTaskId, onSe
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; taskId: string } | null>(null)
   const [splitPicker, setSplitPicker] = useState<{ x: number; y: number; taskId: string } | null>(null)
   const ctxRef = useRef<HTMLDivElement>(null)
+  useMenuPosition(ctxRef, ctxMenu)
 
   useEffect(() => {
     if (!ctxMenu) return
@@ -342,7 +423,7 @@ const saveSortPreference = (sort: SortKey): void => {
   try { localStorage.setItem(SORT_STORAGE_KEY, sort) } catch { /* best-effort */ }
 }
 
-export const TaskSidebar = memo(function TaskSidebar({ width, onResize, position = 'left', onCollapse }: TaskSidebarProps) {
+export const TaskSidebar = memo(function TaskSidebar({ width, onResize, position = 'left', onCollapse, onCloneFromGitHub }: TaskSidebarProps) {
   const isRight = position === 'right'
   const [sort, setSort] = useState<SortKey>(loadSortPreference)
   const handleSortChange = useCallback((s: SortKey) => {
@@ -351,6 +432,8 @@ export const TaskSidebar = memo(function TaskSidebar({ width, onResize, position
   }, [])
   const projectList = useSidebarTasks(sort)
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null)
+  const sidebarCtxRef = useRef<HTMLDivElement>(null)
+  useMenuPosition(sidebarCtxRef, ctxMenu)
   const isMetaHeld = useModifierKeys()
 
   const { selectedTaskId, pendingWorkspace, lastAddedProject, setSelectedTask, setView, setNewProjectOpen, removeTask, removeProject, archiveThreads, renameTask, reorderProject, reorderThread, clearLastAddedProject } = useTaskStore(
@@ -468,7 +551,7 @@ export const TaskSidebar = memo(function TaskSidebar({ width, onResize, position
       {ctxMenu && (
         <>
           <div className="fixed inset-0 z-[199]" onClick={() => setCtxMenu(null)} onContextMenu={(e) => { e.preventDefault(); setCtxMenu(null) }} />
-          <div className="fixed z-[200] min-w-[160px] rounded-lg border border-border bg-popover py-1 shadow-lg" style={{ top: ctxMenu.y, left: ctxMenu.x }}>
+          <div ref={sidebarCtxRef} className="fixed z-[200] min-w-[160px] rounded-lg border border-border bg-popover py-1 shadow-lg" style={{ top: ctxMenu.y, left: ctxMenu.x }}>
             <button type="button" onClick={handleSwitchSide} className="flex w-full items-center gap-2 px-3 py-1.5 text-[13px] text-foreground hover:bg-accent transition-colors">
               {isRight ? <IconLayoutSidebarLeftCollapse className="size-3.5" /> : <IconLayoutSidebarRightCollapse className="size-3.5" />}
               Move sidebar to {isRight ? 'left' : 'right'}
@@ -488,15 +571,7 @@ export const TaskSidebar = memo(function TaskSidebar({ width, onResize, position
         <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Projects</span>
         <div className="flex shrink-0 items-center gap-1">
           <SortDropdown sort={sort} onChange={handleSortChange} />
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button type="button" aria-label="Add project" data-testid="add-project-button" onClick={() => setNewProjectOpen(true)}
-                className="inline-flex size-5 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
-                <IconPlus className="size-3.5" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="top">Import project folder</TooltipContent>
-          </Tooltip>
+          <AddProjectDropdown onCloneFromGitHub={onCloneFromGitHub} />
         </div>
       </div>
       <SplitViewsList />

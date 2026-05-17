@@ -103,16 +103,16 @@ describe('SidebarFooter update indicator', () => {
     expect(screen.queryByTestId('update-indicator-dot')).not.toBeInTheDocument()
   })
 
-  it('shows "Update Now" badge only when status is available', () => {
+  it('shows "Update" badge only when status is available', () => {
     resetUpdateStore({ status: 'available', triggerDownload: vi.fn() })
     render(wrap(<SidebarFooter />))
-    expect(screen.getByText('Update Now')).toBeInTheDocument()
+    expect(screen.getByText('Update')).toBeInTheDocument()
   })
 
-  it('does not show "Update Now" badge when status is downloading', () => {
+  it('does not show "Update" badge when status is downloading', () => {
     resetUpdateStore({ status: 'downloading' })
     render(wrap(<SidebarFooter />))
-    expect(screen.queryByText('Update Now')).not.toBeInTheDocument()
+    expect(screen.queryByText('Update')).not.toBeInTheDocument()
   })
 
   it('renders Settings button text', () => {
