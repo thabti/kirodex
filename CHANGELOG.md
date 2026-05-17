@@ -1,5 +1,24 @@
 # Changelog
 
+## [v0.52.0] - 2026-05-17
+
+### Features
+
+- replace pulse dot with spinner for running threads ([`018ef4d`](https://github.com/thabti/kirodex/commit/018ef4dd3e5ac4cfe0f7ac7b87745d4c78337767))
+- add /goal slash commands and subcommands ([`1edbf82`](https://github.com/thabti/kirodex/commit/1edbf829ceabbbd57823b4d7cde80ccf45e386e2))
+- add GoalCard, GoalModal, GoalStatusOverlay, and message indicator ([`8c6367e`](https://github.com/thabti/kirodex/commit/8c6367eaeb78beb44bc19971c38feefb7c0c86d5))
+- wire IPC bindings and auto-continuation on turn end ([`0326c7d`](https://github.com/thabti/kirodex/commit/0326c7df13db5449caccdff3a3d93d567bcdbeaf))
+- add Rust goal orchestrator and templates ([`eadb3c6`](https://github.com/thabti/kirodex/commit/eadb3c61578ee6a044e4864cdaffe2b49030659c))
+- add goalStore with per-thread state and analytics types ([`28ff8d1`](https://github.com/thabti/kirodex/commit/28ff8d1860d9028daa616ca954e875b1e529a211))
+
+### Documentation
+
+- add goal-mode.md, update README and website features ([`e363204`](https://github.com/thabti/kirodex/commit/e3632042b30d43c96882574cabca448371fbe973))
+
+### Chores
+
+- update activity log ([`2ad0761`](https://github.com/thabti/kirodex/commit/2ad0761c0b96e00639d0b4b8b8c845fbfad4662c))
+
 ## [v0.51.1] - 2026-05-15
 
 ### Features
