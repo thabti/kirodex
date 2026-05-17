@@ -1,5 +1,29 @@
 # Activity Log
 
+## 2026-05-17 10:38 GST (Dubai)
+
+### Website: add anchor links and expand features.html documentation
+
+Added `id` attributes to all 13 feature sections (chat, goal, file-tree, code, git, terminal, split, multi-window, analytics, notifications, settings, performance, keyboard) for deep linking. Expanded documentation with a full slash commands reference (14 commands), @mentions reference (4 types), a new File tree section, additional cards for Command palette/Selection toolbar/Pinned threads/MCP servers, and related commands boxes for Git, Analytics, and Terminal sections.
+
+**Modified:** website/features.html
+
+## 2026-05-17 10:33 GST (Dubai)
+
+### Release: regenerate v0.53.0
+
+Deleted the previous v0.53.0 tag and release commit, then regenerated a clean release with proper changelog entry covering useMenuPosition, selection-new-thread, project dropdown, and selection-insert features.
+
+**Modified:** package.json, src-tauri/tauri.conf.json, CHANGELOG.md
+
+## 2026-05-17 10:21 GST (Dubai)
+
+### Git: organize and commit pending changes
+
+Added `.codex/` to `.gitignore`, moved stray `.diff` files into the `diff/` folder, and committed all remaining changes as six small logical commits: docs updates, chat components (selection-insert, scroll simplification), sidebar (AddProjectDropdown, update badge), file-tree/App.tsx (selection-new-thread, simplified copy path), and the new `useMenuPosition` hook.
+
+**Modified:** .gitignore, docs/architecture.md, docs/ipc-reference.md, docs/keyboard-shortcuts.md, docs/development.md, docs/getting-started.md, src/renderer/App.tsx, src/renderer/components/chat/ChatInput.tsx, src/renderer/components/chat/ChatTextarea.tsx, src/renderer/components/chat/MessageList.tsx, src/renderer/components/file-tree/TreeContextMenu.tsx, src/renderer/components/sidebar/ProjectItem.tsx, src/renderer/components/sidebar/SidebarFooter.tsx, src/renderer/components/sidebar/SidebarFooter.test.tsx, src/renderer/components/sidebar/TaskSidebar.tsx, src/renderer/hooks/useMenuPosition.ts
+
 ## 2026-05-17 10:05 GST (Dubai)
 
 ### Goal Mode: Align with Codex architecture and improve documentation

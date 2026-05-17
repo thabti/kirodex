@@ -52,7 +52,7 @@
   <div class="mx-auto max-w-5xl space-y-24 px-6 pb-32">
 
     <!-- ── Chat and agents ──────────────────────────────────── -->
-    <section>
+    <section id="chat">
       <div class="mb-3 flex items-center gap-2.5">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="text-blue-400"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z"/></svg>
         <h2 class="text-2xl font-bold text-foreground">Chat and agents</h2>
@@ -75,15 +75,52 @@
         <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Folder drag-and-drop</h3><p class="text-[13px] text-muted-foreground">Drag folders into the chat input to attach them as context pills. The agent receives the full directory tree.</p></div>
         <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Mode dropdown</h3><p class="text-[13px] text-muted-foreground">Switch between plan and chat modes from the toolbar dropdown. No slash command needed.</p></div>
         <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Error state with retry</h3><p class="text-[13px] text-muted-foreground">Failed agent calls show a shake animation and retry button. One click to resend without retyping.</p></div>
+        <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Command palette</h3><p class="text-[13px] text-muted-foreground">Cmd+K opens quick navigation: thread search, project switching, git actions, panel toggles, and frecency-ranked results.</p></div>
+        <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Selection toolbar</h3><p class="text-[13px] text-muted-foreground">Select text in any message to copy, add to chat, or start a new thread from the selection.</p></div>
+        <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Pinned threads</h3><p class="text-[13px] text-muted-foreground">Pin important threads to the top of the sidebar for quick access across sessions.</p></div>
+        <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">MCP server management</h3><p class="text-[13px] text-muted-foreground">Add, remove, and configure MCP servers with stdio/HTTP transport, scope selection, and live status indicators.</p></div>
       </div>
+      <!-- Slash commands reference -->
+      <div class="rounded-xl border border-border bg-card/50 p-6">
+        <p class="mb-3 text-[13px] font-medium text-muted-foreground">Slash commands</p>
+        <div class="grid gap-2 font-mono text-[13px] sm:grid-cols-2 lg:grid-cols-3">
+          <div class="flex gap-3"><span class="text-foreground">/plan</span><span class="text-muted-foreground">Switch to plan mode</span></div>
+          <div class="flex gap-3"><span class="text-foreground">/chat</span><span class="text-muted-foreground">Switch to chat mode</span></div>
+          <div class="flex gap-3"><span class="text-foreground">/model</span><span class="text-muted-foreground">Change the active model</span></div>
+          <div class="flex gap-3"><span class="text-foreground">/agent</span><span class="text-muted-foreground">Switch agent profile</span></div>
+          <div class="flex gap-3"><span class="text-foreground">/clear</span><span class="text-muted-foreground">Clear conversation history</span></div>
+          <div class="flex gap-3"><span class="text-foreground">/close</span><span class="text-muted-foreground">Archive the thread</span></div>
+          <div class="flex gap-3"><span class="text-foreground">/fork</span><span class="text-muted-foreground">Fork into a new thread</span></div>
+          <div class="flex gap-3"><span class="text-foreground">/btw</span><span class="text-muted-foreground">Side question overlay</span></div>
+          <div class="flex gap-3"><span class="text-foreground">/tangent</span><span class="text-muted-foreground">Alias for /btw</span></div>
+          <div class="flex gap-3"><span class="text-foreground">/branch</span><span class="text-muted-foreground">Create and checkout a branch</span></div>
+          <div class="flex gap-3"><span class="text-foreground">/worktree</span><span class="text-muted-foreground">Create a worktree thread</span></div>
+          <div class="flex gap-3"><span class="text-foreground">/goal</span><span class="text-muted-foreground">Start autonomous goal mode</span></div>
+          <div class="flex gap-3"><span class="text-foreground">/data</span><span class="text-muted-foreground">Open analytics dashboard</span></div>
+          <div class="flex gap-3"><span class="text-foreground">/usage</span><span class="text-muted-foreground">Alias for /data</span></div>
+        </div>
+      </div>
+
+      <!-- @mentions reference -->
+      <div class="mt-4 rounded-xl border border-border bg-card/50 p-6">
+        <p class="mb-3 text-[13px] font-medium text-muted-foreground">@mentions</p>
+        <p class="mb-4 text-[13px] text-muted-foreground">Type <code class="rounded bg-[#1a1a1a] px-1.5 py-0.5 text-foreground">@</code> in the chat input to fuzzy-search and attach context. Mentions appear as removable pills above the input.</p>
+        <div class="grid gap-2 font-mono text-[13px] sm:grid-cols-2">
+          <div class="flex gap-3"><span class="text-foreground">@file</span><span class="text-muted-foreground">Attach a project file with git status and timestamp</span></div>
+          <div class="flex gap-3"><span class="text-foreground">@agent</span><span class="text-muted-foreground">Reference a built-in or custom agent</span></div>
+          <div class="flex gap-3"><span class="text-foreground">@skill</span><span class="text-muted-foreground">Attach a skill from .kiro/skills/</span></div>
+          <div class="flex gap-3"><span class="text-foreground">@prompt</span><span class="text-muted-foreground">Attach a steering prompt from .kiro/steering/</span></div>
+        </div>
+      </div>
+
       <!-- Screenshot placeholder -->
-      <div class="flex h-80 items-center justify-center rounded-2xl border border-dashed border-border bg-card/50">
+      <div class="mt-8 flex h-80 items-center justify-center rounded-2xl border border-dashed border-border bg-card/50">
         <span class="text-[14px] text-muted-foreground/50">Screenshot: Chat interface with agent mentions and slash commands</span>
       </div>
     </section>
 
     <!-- ── Goal mode ──────────────────────────────────────── -->
-    <section>
+    <section id="goal">
       <div class="mb-3 flex items-center gap-2.5">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="text-amber-400"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
         <h2 class="text-2xl font-bold text-foreground">Goal mode</h2>
@@ -109,8 +146,25 @@
       </div>
     </section>
 
+    <!-- ── File tree ───────────────────────────────────────── -->
+    <section id="file-tree">
+      <div class="mb-3 flex items-center gap-2.5">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="text-teal-400"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+        <h2 class="text-2xl font-bold text-foreground">File tree</h2>
+      </div>
+      <p class="mb-6 max-w-2xl text-[15px] text-muted-foreground">Collapsible file tree panel with real-time filesystem watching. Drag files into chat to attach them as context.</p>
+      <div class="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Git status indicators</h3><p class="text-[13px] text-muted-foreground">Modified, added, deleted, and renamed files are color-coded with git status badges.</p></div>
+        <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Inline actions</h3><p class="text-[13px] text-muted-foreground">Rename, create file/folder, and context menu actions without leaving the panel.</p></div>
+        <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Drag to chat</h3><p class="text-[13px] text-muted-foreground">Drag files from the tree into the chat input to attach them as @file context pills.</p></div>
+        <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">File preview</h3><p class="text-[13px] text-muted-foreground">Click any file to open a syntax-highlighted preview modal with line numbers.</p></div>
+        <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Toggle hidden files</h3><p class="text-[13px] text-muted-foreground">Show or hide dotfiles and gitignored entries. Collapse/expand all directories.</p></div>
+        <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Real-time watching</h3><p class="text-[13px] text-muted-foreground">File changes from the agent or external editors appear instantly in the tree.</p></div>
+      </div>
+    </section>
+
     <!-- ── Code and diffs ───────────────────────────────────── -->
-    <section>
+    <section id="code">
       <div class="mb-3 flex items-center gap-2.5">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-400"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
         <h2 class="text-2xl font-bold text-foreground">Code and diffs</h2>
@@ -127,7 +181,7 @@
     </section>
 
     <!-- ── Git ──────────────────────────────────────────────── -->
-    <section>
+    <section id="git">
       <div class="mb-3 flex items-center gap-2.5">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="text-orange-400"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
         <h2 class="text-2xl font-bold text-foreground">Git integration</h2>
@@ -136,7 +190,17 @@
       <div class="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Branch, stage, commit, push</h3><p class="text-[13px] text-muted-foreground">Full git workflow without leaving the app. Live diff stats in the header bar.</p></div>
         <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Git worktrees</h3><p class="text-[13px] text-muted-foreground">Isolate each thread in its own working directory. Auto-cleanup on thread close.</p></div>
-        <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">/branch and /worktree</h3><p class="text-[13px] text-muted-foreground">Create branches and worktrees inline. Symlink node_modules and copy gitignored files.</p></div>
+        <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">/branch and /worktree</h3><p class="text-[13px] text-muted-foreground">Create branches and worktrees inline. Symlink node_modules and copy gitignored files via .worktreeinclude.</p></div>
+        <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">AI commit messages</h3><p class="text-[13px] text-muted-foreground">Generate commit messages from diff stats. One click to stage, commit, and push.</p></div>
+        <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Branch management</h3><p class="text-[13px] text-muted-foreground">Create, switch, and delete local branches from the branch selector dropdown.</p></div>
+        <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Worktree badges</h3><p class="text-[13px] text-muted-foreground">Sidebar badge and branch selector indicator for worktree-backed threads. Auto-cleanup on close.</p></div>
+      </div>
+      <div class="mt-4 rounded-xl border border-border bg-card/50 p-6">
+        <p class="mb-3 text-[13px] font-medium text-muted-foreground">Related commands</p>
+        <div class="grid gap-2 font-mono text-[13px] sm:grid-cols-2">
+          <div class="flex gap-3"><span class="text-foreground">/branch &lt;name&gt;</span><span class="text-muted-foreground">Create and checkout a new branch</span></div>
+          <div class="flex gap-3"><span class="text-foreground">/worktree &lt;name&gt;</span><span class="text-muted-foreground">Create a worktree and spawn a thread in it</span></div>
+        </div>
       </div>
       <div class="flex h-80 items-center justify-center rounded-2xl border border-dashed border-border bg-card/50">
         <span class="text-[14px] text-muted-foreground/50">Screenshot: Git branch selector and worktree creation</span>
@@ -144,7 +208,7 @@
     </section>
 
     <!-- ── Terminal ─────────────────────────────────────────── -->
-    <section>
+    <section id="terminal">
       <div class="mb-3 flex items-center gap-2.5">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="text-violet-400"><path d="M4 17l6-6-6-6"/><path d="M12 19h8"/></svg>
         <h2 class="text-2xl font-bold text-foreground">Integrated terminal</h2>
@@ -155,13 +219,20 @@
         <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Per-thread terminals</h3><p class="text-[13px] text-muted-foreground">Each thread gets its own terminal session, scoped to the project directory.</p></div>
         <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Clean lifecycle</h3><p class="text-[13px] text-muted-foreground">PTY processes are killed on window close and thread teardown. No orphans.</p></div>
       </div>
+      <div class="mt-4 rounded-xl border border-border bg-card/50 p-6">
+        <p class="mb-3 text-[13px] font-medium text-muted-foreground">Related shortcuts</p>
+        <div class="grid gap-2 font-mono text-[13px] sm:grid-cols-2">
+          <div class="flex gap-3"><kbd class="rounded border border-border bg-[#1a1a1a] px-2 py-0.5 text-muted-foreground">Cmd+J</kbd><span class="text-muted-foreground">Toggle terminal drawer</span></div>
+          <div class="flex gap-3"><kbd class="rounded border border-border bg-[#1a1a1a] px-2 py-0.5 text-muted-foreground">Cmd+L</kbd><span class="text-muted-foreground">Focus chat input from terminal</span></div>
+        </div>
+      </div>
       <div class="flex h-80 items-center justify-center rounded-2xl border border-dashed border-border bg-card/50">
         <span class="text-[14px] text-muted-foreground/50">Screenshot: Integrated terminal drawer below chat</span>
       </div>
     </section>
 
     <!-- ── Split-screen ───────────────────────────────────── -->
-    <section>
+    <section id="split">
       <div class="mb-3 flex items-center gap-2.5">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="text-sky-400"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/></svg>
         <h2 class="text-2xl font-bold text-foreground">Split-screen</h2>
@@ -179,7 +250,7 @@
 
 
     <!-- ── Multi-window ──────────────────────────────────── -->
-    <section>
+    <section id="multi-window">
       <div class="mb-3 flex items-center gap-2.5">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="text-emerald-400"><rect x="2" y="3" width="20" height="14" rx="2"/><rect x="5" y="6" width="14" height="8" rx="1" opacity="0.5"/></svg>
         <h2 class="text-2xl font-bold text-foreground">Multi-window</h2>
@@ -192,7 +263,7 @@
       </div>
     </section>
     <!-- ── Analytics ────────────────────────────────────────── -->
-    <section>
+    <section id="analytics">
       <div class="mb-3 flex items-center gap-2.5">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="text-purple-400"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
         <h2 class="text-2xl font-bold text-foreground">Analytics dashboard</h2>
@@ -203,19 +274,31 @@
         <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">ACID-compliant storage</h3><p class="text-[13px] text-muted-foreground">Powered by redb for crash-safe local persistence. No cloud, no telemetry.</p></div>
         <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Access via /data</h3><p class="text-[13px] text-muted-foreground">Open the dashboard with the /data or /usage slash command. Clear data anytime from Settings.</p></div>
       </div>
+      <div class="mt-4 rounded-xl border border-border bg-card/50 p-6">
+        <p class="mb-3 text-[13px] font-medium text-muted-foreground">Related commands</p>
+        <div class="grid gap-2 font-mono text-[13px] sm:grid-cols-2">
+          <div class="flex gap-3"><span class="text-foreground">/data</span><span class="text-muted-foreground">Open analytics dashboard</span></div>
+          <div class="flex gap-3"><span class="text-foreground">/usage</span><span class="text-muted-foreground">Alias for /data</span></div>
+        </div>
+      </div>
     </section>
 
     <!-- ── Notifications ────────────────────────────────────── -->
-    <section>
+    <section id="notifications">
       <div class="mb-3 flex items-center gap-2.5">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="text-yellow-400"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
         <h2 class="text-2xl font-bold text-foreground">Notifications</h2>
       </div>
       <p class="mb-6 max-w-2xl text-[15px] text-muted-foreground">Native desktop notifications when the agent finishes while the app is in the background. Configurable in settings.</p>
+      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Turn completion alerts</h3><p class="text-[13px] text-muted-foreground">Get notified when the agent finishes a turn while you're in another app.</p></div>
+        <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Configurable</h3><p class="text-[13px] text-muted-foreground">Toggle on/off in Settings > General > Permissions. Respects macOS notification preferences.</p></div>
+        <div class="rounded-xl border border-border bg-card p-4"><h3 class="mb-1 text-[14px] font-semibold text-foreground">Non-intrusive</h3><p class="text-[13px] text-muted-foreground">Only fires when the app is in the background. No interruptions while you're actively using Kirodex.</p></div>
+      </div>
     </section>
 
     <!-- ── Settings ─────────────────────────────────────────── -->
-    <section>
+    <section id="settings">
       <div class="mb-3 flex items-center gap-2.5">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         <h2 class="text-2xl font-bold text-foreground">Settings</h2>
@@ -237,7 +320,7 @@
     </section>
 
     <!-- ── Performance ──────────────────────────────────────── -->
-    <section>
+    <section id="performance">
       <div class="mb-3 flex items-center gap-2.5">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="text-red-400"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
         <h2 class="text-2xl font-bold text-foreground">Performance</h2>
@@ -252,7 +335,7 @@
     </section>
 
     <!-- ── Keyboard shortcuts ───────────────────────────────── -->
-    <section>
+    <section id="keyboard">
       <div class="mb-3 flex items-center gap-2.5">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="text-cyan-400"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M8 12h.01M12 12h.01M16 12h.01M7 16h10"/></svg>
         <h2 class="text-2xl font-bold text-foreground">Keyboard-first</h2>
