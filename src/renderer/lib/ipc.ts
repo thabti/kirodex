@@ -462,4 +462,38 @@ export const ipc = {
     invoke('git_stash_drop', { cwd, index }),
   gitStashSave: (cwd: string, message?: string): Promise<string> =>
     invoke('git_stash_save', { cwd, message }),
+
+  // ── Goal mode ───────────────────────────────────────────────────────────
+  goalStart: (workspace: string, taskId: string, config: {
+    objective: string; stopCondition: string; scopeConstraint: string;
+    maxIterations: number; tokenBudget: number; consecutiveFailureThreshold: number;
+  }): Promise<string> =>
+    invoke('goal_start', {
+      workspace, taskId,
+      config: {
+        objective: config.objective,
+        stop_condition: config.stopCondition,
+        scope_constraint: config.scopeConstraint,
+        max_iterations: config.maxIterations,
+        token_budget: config.tokenBudget,
+        consecutive_failure_threshold: config.consecutiveFailureThreshold,
+      },
+    }),
+  goalContinue: (workspace: string, taskId: string, lastAssistantMessage: string, tokensThisTurn: number): Promise<{
+    action: string; prompt: string | null; iteration: number; tokensUsed: number;
+  }> =>
+    invoke('goal_continue', {
+      workspace, taskId,
+      lastAssistantMessage, tokensThisTurn,
+    }),
+  goalStatus: (workspace: string, taskId: string): Promise<unknown> =>
+    invoke('goal_status', { workspace, taskId }),
+  goalPause: (workspace: string, taskId: string): Promise<void> =>
+    invoke('goal_pause', { workspace, taskId }),
+  goalResume: (workspace: string, taskId: string): Promise<void> =>
+    invoke('goal_resume', { workspace, taskId }),
+  goalClear: (workspace: string, taskId: string): Promise<void> =>
+    invoke('goal_clear', { workspace, taskId }),
+  goalReadTemplate: (workspace: string, templateName: string): Promise<string> =>
+    invoke('goal_read_template', { workspace, templateName }),
 }
