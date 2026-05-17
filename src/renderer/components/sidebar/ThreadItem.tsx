@@ -2,16 +2,18 @@ import { memo, useState, useRef, useEffect, useCallback } from 'react'
 import { IconPencil, IconTrash, IconHistory, IconGitBranch, IconLayoutColumns, IconArrowsSplit, IconPin, IconPinnedOff, IconArrowUp, IconArrowDown, IconCopy, IconGitFork } from '@tabler/icons-react'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useTaskStore } from '@/stores/taskStore'
+import { useGoalStore } from '@/stores/goalStore'
 import { SplitThreadPicker } from '@/components/chat/SplitThreadPicker'
+import { useMenuPosition } from '@/hooks/useMenuPosition'
 import { cn } from '@/lib/utils'
 import type { SidebarTask } from '@/hooks/useSidebarTasks'
 
-const STATUS_DOT: Record<string, { color: string; pulse?: boolean }> = {
-  running: { color: 'bg-emerald-400', pulse: true },
-  pending_permission: { color: 'bg-amber-400' },
-  pending_question: { color: 'bg-blue-400' },
-  error: { color: 'bg-red-400' },
-  cancelled: { color: 'bg-red-400/50' },
+const STATUS_DOT: Record<string, { color: string; pulse?: boolean; label: string }> = {
+  running: { color: 'bg-emerald-400', pulse: true, label: 'Agent is working' },
+  pending_permission: { color: 'bg-amber-400', label: 'Waiting for permission' },
+  pending_question: { color: 'bg-blue-400', label: 'Question needs your answer' },
+  error: { color: 'bg-red-400', label: 'Error occurred' },
+  cancelled: { color: 'bg-red-400/50', label: 'Cancelled' },
 }
 
 function relativeTime(iso: string): string {
@@ -45,6 +47,7 @@ export const ThreadItem = memo(function ThreadItem({ task, isActive, jumpLabel, 
   const inputRef = useRef<HTMLInputElement>(null)
   const ctxRef = useRef<HTMLDivElement>(null)
   const dot = STATUS_DOT[task.hasPendingQuestion ? 'pending_question' : task.status]
+  const isGoalActive = useGoalStore((s) => s.goals[task.id]?.status === 'active')
 
   useEffect(() => {
     if (editing) inputRef.current?.select()
@@ -61,6 +64,8 @@ export const ThreadItem = memo(function ThreadItem({ task, isActive, jumpLabel, 
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [ctxMenu])
+
+  useMenuPosition(ctxRef, ctxMenu)
 
   const commitRename = useCallback(() => {
     const trimmed = editValue.trim()
@@ -159,8 +164,20 @@ export const ThreadItem = memo(function ThreadItem({ task, isActive, jumpLabel, 
       >
         {task.isDraft ? (
           <span className="size-1.5 shrink-0" />
+        ) : dot?.pulse ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="size-3 shrink-0 animate-spin rounded-full border-[1.5px] border-emerald-400/30 border-t-emerald-400" />
+            </TooltipTrigger>
+            <TooltipContent side="right">{isGoalActive ? 'Goal running' : dot.label}</TooltipContent>
+          </Tooltip>
         ) : dot ? (
-          <span className={cn('size-1.5 shrink-0 rounded-full', dot.color, dot.pulse && 'animate-pulse')} />
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className={cn('size-1.5 shrink-0 rounded-full', dot.color)} />
+            </TooltipTrigger>
+            <TooltipContent side="right">{dot.label}</TooltipContent>
+          </Tooltip>
         ) : null}
         {task.isArchived && (
           <Tooltip>
@@ -221,7 +238,9 @@ export const ThreadItem = memo(function ThreadItem({ task, isActive, jumpLabel, 
               />
             )}
             <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground group-hover/thread:hidden">
-              {relativeTime(task.lastActivityAt)}
+              {isGoalActive
+                ? <span className="inline-block size-3 animate-spin rounded-full border-[1.5px] border-muted-foreground/30 border-t-muted-foreground" />
+                : relativeTime(task.lastActivityAt)}
             </span>
           </>
         )}
