@@ -7,6 +7,7 @@ pub mod diff_stats;
 pub mod error;
 pub mod fs_ops;
 pub mod fuzzy;
+pub mod goal;
 pub mod git;
 pub mod git_ai;
 pub mod git_history;

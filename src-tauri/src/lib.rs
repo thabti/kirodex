@@ -6,7 +6,7 @@ extern crate objc;
 
 pub mod commands;
 
-use commands::{acp, analytics, branch_ai, checkpoint, diff_parse, fs_ops, fuzzy, git, git_ai, git_history, git_pr, git_stack, highlight, kiro_config, kiro_watcher, markdown, pattern_extract, pr_ai, process_diagnostics, project_watcher, pty, settings, streaming_diff, thread_db, thread_title, tracing as app_tracing, transport, vcs_status};
+use commands::{acp, analytics, branch_ai, checkpoint, diff_parse, fs_ops, fuzzy, git, git_ai, git_history, git_pr, git_stack, goal, highlight, kiro_config, kiro_watcher, markdown, pattern_extract, pr_ai, process_diagnostics, project_watcher, pty, settings, streaming_diff, thread_db, thread_title, tracing as app_tracing, transport, vcs_status};
 use std::sync::atomic::{AtomicBool, Ordering};
 use tauri::Manager;
 use tauri::Emitter;
@@ -701,6 +701,14 @@ pub fn run() {
             thread_db::thread_db_stats,
             thread_db::thread_db_clear_all,
             thread_db::thread_db_auto_archive,
+            // Goal
+            goal::goal_start,
+            goal::goal_continue,
+            goal::goal_status,
+            goal::goal_pause,
+            goal::goal_resume,
+            goal::goal_clear,
+            goal::goal_read_template,
             // Relaunch
             set_relaunch_flag,
             // Reset
