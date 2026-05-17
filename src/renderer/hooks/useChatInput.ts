@@ -231,6 +231,11 @@ export function useChatInput({ disabled, isRunning, isActive, taskId: taskIdProp
       { name: 'exit', description: 'Close and delete the current thread' },
       { name: 'btw', description: 'Ask a side question without polluting conversation history' },
       { name: 'tangent', description: 'Ask a side question (alias for /btw)' },
+      { name: 'goal', description: 'Start an autonomous goal loop' },
+      { name: 'goal pause', description: 'Pause the goal after current turn' },
+      { name: 'goal resume', description: 'Resume a paused goal' },
+      { name: 'goal clear', description: 'Drop the goal and return to chat' },
+      { name: 'goal status', description: 'Show goal progress' },
     ]
     const HIDDEN_COMMANDS = new Set(['reply'])
     const filtered = backendCommands.filter((c) => !HIDDEN_COMMANDS.has(c.name.replace(/^\/+/, '')))
