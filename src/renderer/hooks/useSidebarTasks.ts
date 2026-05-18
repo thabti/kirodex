@@ -2,6 +2,14 @@ import { useMemo, useRef } from 'react'
 import { useTaskStore } from '@/stores/taskStore'
 import { hasInteractiveQuestionBlocks } from '@/lib/question-parser'
 
+/** Extract a display name from a workspace path, handling trailing slashes and empty segments. */
+const getDisplayName = (ws: string, projectNames: Record<string, string>): string => {
+  if (projectNames[ws]) return projectNames[ws]
+  const segments = ws.replace(/\/+$/, '').split('/')
+  const last = segments.pop()
+  return last || ws || 'Untitled'
+}
+
 /** Minimal task shape for sidebar rendering — no messages, no streaming, no tool calls */
 export interface SidebarTask {
   readonly id: string
@@ -207,7 +215,7 @@ export function useSidebarTasks(sort: SortKey): readonly SidebarProject[] {
       seenCwd.add(ws)
       const tasks = grouped.get(pid) ?? []
       result.push({
-        name: projectNames[ws] ?? ws.split('/').pop() ?? ws,
+        name: getDisplayName(ws, projectNames),
         cwd: ws,
         tasks,
       })
@@ -224,7 +232,7 @@ export function useSidebarTasks(sort: SortKey): readonly SidebarProject[] {
       if (seenCwd.has(ws)) continue
       seenCwd.add(ws)
       result.push({
-        name: projectNames[ws] ?? ws.split('/').pop() ?? ws,
+        name: getDisplayName(ws, projectNames),
         cwd: ws,
         tasks,
       })

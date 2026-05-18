@@ -348,6 +348,28 @@ pub fn goal_read_template(workspace: String, template_name: String) -> Result<St
     Ok(read_template(&workspace, &template_name))
 }
 
+/// Ensure the .kiro/goal/ directory exists for a project workspace.
+/// Creates the directory and writes default templates if they don't exist.
+/// Called when a project is opened so users can customize templates.
+#[tauri::command]
+pub fn goal_ensure_dir(workspace: String) -> Result<(), AppError> {
+    let dir = goal_dir(&workspace);
+    std::fs::create_dir_all(&dir)?;
+    // Write default templates if they don't exist
+    let templates: &[(&str, &str)] = &[
+        ("initial.md", FALLBACK_INITIAL),
+        ("continuation.md", FALLBACK_CONTINUATION),
+        ("budget_limit.md", FALLBACK_BUDGET_LIMIT),
+    ];
+    for (name, content) in templates {
+        let path = dir.join(name);
+        if !path.exists() {
+            std::fs::write(&path, content)?;
+        }
+    }
+    Ok(())
+}
+
 // ── Helpers ───────────────────────────────────────────────────────
 
 fn chrono_now() -> String {
@@ -477,5 +499,42 @@ mod tests {
         assert!(ts.contains("T"));
         assert!(ts.ends_with("Z"));
         assert_eq!(ts.len(), 20);
+    }
+
+    #[test]
+    fn goal_ensure_dir_creates_directory_and_templates() {
+        let tmp = std::env::temp_dir().join(format!("kirodex_test_{}", std::process::id()));
+        let ws = tmp.to_str().unwrap().to_string();
+        // Clean up from any previous run
+        let _ = std::fs::remove_dir_all(&tmp);
+        let result = goal_ensure_dir(ws.clone());
+        assert!(result.is_ok());
+        let dir = goal_dir(&ws);
+        assert!(dir.exists());
+        assert!(dir.join("initial.md").exists());
+        assert!(dir.join("continuation.md").exists());
+        assert!(dir.join("budget_limit.md").exists());
+        // Verify content matches fallback
+        let content = std::fs::read_to_string(dir.join("initial.md")).unwrap();
+        assert!(content.contains("goal mode"));
+        // Clean up
+        let _ = std::fs::remove_dir_all(&tmp);
+    }
+
+    #[test]
+    fn goal_ensure_dir_does_not_overwrite_existing_templates() {
+        let tmp = std::env::temp_dir().join(format!("kirodex_test_no_overwrite_{}", std::process::id()));
+        let ws = tmp.to_str().unwrap().to_string();
+        let _ = std::fs::remove_dir_all(&tmp);
+        let dir = goal_dir(&ws);
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(dir.join("initial.md"), "custom template").unwrap();
+        let result = goal_ensure_dir(ws.clone());
+        assert!(result.is_ok());
+        let content = std::fs::read_to_string(dir.join("initial.md")).unwrap();
+        assert_eq!(content, "custom template");
+        // Other templates should still be created
+        assert!(dir.join("continuation.md").exists());
+        let _ = std::fs::remove_dir_all(&tmp);
     }
 }

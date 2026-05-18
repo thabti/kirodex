@@ -248,4 +248,128 @@ describe('goalStore', () => {
       expect(useGoalStore.getState().goals).toBe(before)
     })
   })
+
+  describe('status transition validation', () => {
+    it('cannot pause a completed goal', () => {
+      useGoalStore.getState().startGoal('task-1', mockConfig)
+      useGoalStore.getState().completeGoal('task-1')
+      useGoalStore.getState().pauseGoal('task-1')
+      expect(useGoalStore.getState().getGoal('task-1')!.status).toBe('complete')
+    })
+
+    it('cannot pause a budget_limited goal', () => {
+      useGoalStore.getState().startGoal('task-1', mockConfig)
+      useGoalStore.getState().budgetLimitGoal('task-1')
+      useGoalStore.getState().pauseGoal('task-1')
+      expect(useGoalStore.getState().getGoal('task-1')!.status).toBe('budget_limited')
+    })
+
+    it('cannot resume an active goal', () => {
+      useGoalStore.getState().startGoal('task-1', mockConfig)
+      useGoalStore.getState().resumeGoal('task-1')
+      expect(useGoalStore.getState().getGoal('task-1')!.status).toBe('active')
+    })
+
+    it('cannot resume a completed goal', () => {
+      useGoalStore.getState().startGoal('task-1', mockConfig)
+      useGoalStore.getState().completeGoal('task-1')
+      useGoalStore.getState().resumeGoal('task-1')
+      expect(useGoalStore.getState().getGoal('task-1')!.status).toBe('complete')
+    })
+
+    it('cannot resume a budget_limited goal', () => {
+      useGoalStore.getState().startGoal('task-1', mockConfig)
+      useGoalStore.getState().budgetLimitGoal('task-1')
+      useGoalStore.getState().resumeGoal('task-1')
+      expect(useGoalStore.getState().getGoal('task-1')!.status).toBe('budget_limited')
+    })
+
+    it('cannot increment iteration on a completed goal', () => {
+      useGoalStore.getState().startGoal('task-1', mockConfig)
+      useGoalStore.getState().completeGoal('task-1')
+      useGoalStore.getState().incrementIteration('task-1', 5000)
+      expect(useGoalStore.getState().getGoal('task-1')!.iteration).toBe(0)
+    })
+
+    it('cannot increment iteration on a budget_limited goal', () => {
+      useGoalStore.getState().startGoal('task-1', mockConfig)
+      useGoalStore.getState().budgetLimitGoal('task-1')
+      useGoalStore.getState().incrementIteration('task-1', 5000)
+      expect(useGoalStore.getState().getGoal('task-1')!.iteration).toBe(0)
+    })
+
+    it('recordFailure auto-pauses and prevents further increments', () => {
+      useGoalStore.getState().startGoal('task-1', mockConfig)
+      useGoalStore.getState().recordFailure('task-1')
+      useGoalStore.getState().recordFailure('task-1')
+      useGoalStore.getState().recordFailure('task-1') // threshold = 3
+      expect(useGoalStore.getState().getGoal('task-1')!.status).toBe('paused')
+      // After auto-pause, incrementIteration should no-op
+      useGoalStore.getState().incrementIteration('task-1', 1000)
+      expect(useGoalStore.getState().getGoal('task-1')!.iteration).toBe(0)
+    })
+
+    it('full lifecycle: active → paused → active → complete', () => {
+      useGoalStore.getState().startGoal('task-1', mockConfig)
+      expect(useGoalStore.getState().getGoal('task-1')!.status).toBe('active')
+      useGoalStore.getState().pauseGoal('task-1')
+      expect(useGoalStore.getState().getGoal('task-1')!.status).toBe('paused')
+      useGoalStore.getState().resumeGoal('task-1')
+      expect(useGoalStore.getState().getGoal('task-1')!.status).toBe('active')
+      useGoalStore.getState().incrementIteration('task-1', 10000)
+      useGoalStore.getState().completeGoal('task-1')
+      expect(useGoalStore.getState().getGoal('task-1')!.status).toBe('complete')
+      expect(useGoalStore.getState().getGoal('task-1')!.completedAt).not.toBeNull()
+      expect(useGoalStore.getState().getGoal('task-1')!.iteration).toBe(1)
+    })
+
+    it('full lifecycle: active → budget_limited (terminal)', () => {
+      useGoalStore.getState().startGoal('task-1', mockConfig)
+      useGoalStore.getState().incrementIteration('task-1', 100000)
+      useGoalStore.getState().incrementIteration('task-1', 100000)
+      useGoalStore.getState().budgetLimitGoal('task-1')
+      expect(useGoalStore.getState().getGoal('task-1')!.status).toBe('budget_limited')
+      // Terminal state: cannot resume or pause
+      useGoalStore.getState().resumeGoal('task-1')
+      expect(useGoalStore.getState().getGoal('task-1')!.status).toBe('budget_limited')
+      useGoalStore.getState().pauseGoal('task-1')
+      expect(useGoalStore.getState().getGoal('task-1')!.status).toBe('budget_limited')
+    })
+
+    it('isGoalActive returns false for completed goals', () => {
+      useGoalStore.getState().startGoal('task-1', mockConfig)
+      useGoalStore.getState().completeGoal('task-1')
+      expect(useGoalStore.getState().isGoalActive('task-1')).toBe(false)
+    })
+
+    it('isGoalActive returns false for budget_limited goals', () => {
+      useGoalStore.getState().startGoal('task-1', mockConfig)
+      useGoalStore.getState().budgetLimitGoal('task-1')
+      expect(useGoalStore.getState().isGoalActive('task-1')).toBe(false)
+    })
+
+    it('clearGoal works from any status', () => {
+      useGoalStore.getState().startGoal('task-1', mockConfig)
+      useGoalStore.getState().completeGoal('task-1')
+      useGoalStore.getState().clearGoal('task-1')
+      expect(useGoalStore.getState().getGoal('task-1')).toBeNull()
+
+      useGoalStore.getState().startGoal('task-2', mockConfig)
+      useGoalStore.getState().budgetLimitGoal('task-2')
+      useGoalStore.getState().clearGoal('task-2')
+      expect(useGoalStore.getState().getGoal('task-2')).toBeNull()
+
+      useGoalStore.getState().startGoal('task-3', mockConfig)
+      useGoalStore.getState().pauseGoal('task-3')
+      useGoalStore.getState().clearGoal('task-3')
+      expect(useGoalStore.getState().getGoal('task-3')).toBeNull()
+    })
+
+    it('addCorrection works on any non-null goal regardless of status', () => {
+      useGoalStore.getState().startGoal('task-1', mockConfig)
+      useGoalStore.getState().completeGoal('task-1')
+      useGoalStore.getState().addCorrection('task-1', 'Late correction')
+      expect(useGoalStore.getState().getGoal('task-1')!.corrections).toEqual(['Late correction'])
+    })
+  })
 })
