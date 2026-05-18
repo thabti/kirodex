@@ -709,6 +709,7 @@ pub fn run() {
             goal::goal_resume,
             goal::goal_clear,
             goal::goal_read_template,
+            goal::goal_ensure_dir,
             // Relaunch
             set_relaunch_flag,
             // Reset

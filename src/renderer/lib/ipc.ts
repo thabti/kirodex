@@ -496,4 +496,6 @@ export const ipc = {
     invoke('goal_clear', { workspace, taskId }),
   goalReadTemplate: (workspace: string, templateName: string): Promise<string> =>
     invoke('goal_read_template', { workspace, templateName }),
+  goalEnsureDir: (workspace: string): Promise<void> =>
+    invoke('goal_ensure_dir', { workspace }),
 }

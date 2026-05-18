@@ -490,23 +490,50 @@ export function initTaskListeners(): () => void {
     const settings = useSettingsStore.getState().settings
     const task = useTaskStore.getState().tasks[taskId]
     if (task) {
-      const notifStatus = task.status === 'error' ? 'error' : 'completed'
-      sendTaskNotification({
-        task,
-        status: notifStatus,
-        isNotificationsEnabled: settings.notifications ?? true,
-        isSoundEnabled: settings.soundNotifications ?? true,
-        onNotified: (tid) => {
-          useTaskStore.setState((s) => ({
-            notifiedTaskIds: s.notifiedTaskIds.includes(tid) ? s.notifiedTaskIds : [...s.notifiedTaskIds, tid],
-          }))
-        },
-      })
+      // Suppress notifications during active goal mode — only notify on completion/pause/budget
+      const isGoalRunning = useGoalStore.getState().isGoalActive(taskId)
+      if (!isGoalRunning) {
+        const notifStatus = task.status === 'error' ? 'error' : 'completed'
+        sendTaskNotification({
+          task,
+          status: notifStatus,
+          isNotificationsEnabled: settings.notifications ?? true,
+          isSoundEnabled: settings.soundNotifications ?? true,
+          onNotified: (tid) => {
+            useTaskStore.setState((s) => ({
+              notifiedTaskIds: s.notifiedTaskIds.includes(tid) ? s.notifiedTaskIds : [...s.notifiedTaskIds, tid],
+            }))
+          },
+        })
+      }
     }
 
     // ── Goal mode: auto-continue if goal is active ──────────────────────────
     // Check if this thread has an active goal. If so, send the continuation
     // prompt via the Rust orchestrator instead of processing the queue.
+    // Skip if the turn was cancelled — user explicitly stopped the agent.
+    if (stopReason === 'cancelled') {
+      const goalState = useGoalStore.getState()
+      if (goalState.isGoalActive(taskId)) {
+        goalState.pauseGoal(taskId)
+        const t = useTaskStore.getState().tasks[taskId]
+        const workspace = t ? (t.worktreePath ?? t.workspace) : ''
+        if (workspace) ipc.goalPause(workspace, taskId).catch(() => {})
+        record('goal_paused', { thread: taskId, detail: 'user_cancelled' })
+        // Notify user that goal was paused due to cancellation
+        sendTaskNotification({
+          task: useTaskStore.getState().tasks[taskId]!,
+          status: 'completed',
+          isNotificationsEnabled: settings.notifications ?? true,
+          isSoundEnabled: settings.soundNotifications ?? true,
+          onNotified: (tid) => {
+            useTaskStore.setState((s) => ({
+              notifiedTaskIds: s.notifiedTaskIds.includes(tid) ? s.notifiedTaskIds : [...s.notifiedTaskIds, tid],
+            }))
+          },
+        })
+      }
+    }
     {
       const goalState = useGoalStore.getState()
       if (goalState.isGoalActive(taskId)) {
@@ -533,6 +560,21 @@ export function initTaskListeners(): () => void {
                 if (shouldPause) {
                   ipc.goalPause(workspace, taskId).catch(() => {})
                   record('goal_paused', { thread: taskId, detail: 'consecutive_no_tool_calls' })
+                  // Notify: goal auto-paused due to stuck detection
+                  const pausedTask = useTaskStore.getState().tasks[taskId]
+                  if (pausedTask) {
+                    sendTaskNotification({
+                      task: pausedTask,
+                      status: 'completed',
+                      isNotificationsEnabled: settings.notifications ?? true,
+                      isSoundEnabled: settings.soundNotifications ?? true,
+                      onNotified: (tid) => {
+                        useTaskStore.setState((s) => ({
+                          notifiedTaskIds: s.notifiedTaskIds.includes(tid) ? s.notifiedTaskIds : [...s.notifiedTaskIds, tid],
+                        }))
+                      },
+                    })
+                  }
                   return
                 }
               } else if (hasToolCalls) {
@@ -541,9 +583,39 @@ export function initTaskListeners(): () => void {
               if (result.action === 'complete') {
                 useGoalStore.getState().completeGoal(taskId)
                 record('goal_completed', { thread: taskId, value: result.iteration })
+                // Notify: goal completed
+                const completedTask = useTaskStore.getState().tasks[taskId]
+                if (completedTask) {
+                  sendTaskNotification({
+                    task: completedTask,
+                    status: 'completed',
+                    isNotificationsEnabled: settings.notifications ?? true,
+                    isSoundEnabled: settings.soundNotifications ?? true,
+                    onNotified: (tid) => {
+                      useTaskStore.setState((s) => ({
+                        notifiedTaskIds: s.notifiedTaskIds.includes(tid) ? s.notifiedTaskIds : [...s.notifiedTaskIds, tid],
+                      }))
+                    },
+                  })
+                }
               } else if (result.action === 'budget_limited' || result.action === 'iteration_cap') {
                 useGoalStore.getState().budgetLimitGoal(taskId)
                 record('goal_budget_limited', { thread: taskId, value: result.iteration })
+                // Notify: goal budget exhausted
+                const budgetTask = useTaskStore.getState().tasks[taskId]
+                if (budgetTask) {
+                  sendTaskNotification({
+                    task: budgetTask,
+                    status: 'completed',
+                    isNotificationsEnabled: settings.notifications ?? true,
+                    isSoundEnabled: settings.soundNotifications ?? true,
+                    onNotified: (tid) => {
+                      useTaskStore.setState((s) => ({
+                        notifiedTaskIds: s.notifiedTaskIds.includes(tid) ? s.notifiedTaskIds : [...s.notifiedTaskIds, tid],
+                      }))
+                    },
+                  })
+                }
                 // Send the budget limit prompt as the final message
                 if (result.prompt) {
                   const currentTask = useTaskStore.getState().tasks[taskId]
