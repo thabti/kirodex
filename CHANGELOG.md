@@ -1,5 +1,20 @@
 # Changelog
 
+## [v0.55.0] - 2026-05-20
+
+### Features
+
+- add remote branch checkout and branch name sanitization ([`8446416`](https://github.com/thabti/kirodex/commit/84464161c7cddf6acaab99765890368b9107c542))
+
+### Bug fixes
+
+- prevent empty project names on import ([`b2503a5`](https://github.com/thabti/kirodex/commit/b2503a5ef3e0f0ae2305533170ba31e76734c0d8))
+
+### Chores
+
+- update downloads.json ([`a30a03e`](https://github.com/thabti/kirodex/commit/a30a03e53e89fd2d0dd3bf871e5912b831a18b0a))
+- update downloads.json ([`000f66d`](https://github.com/thabti/kirodex/commit/000f66d7124f4e8c509afa35550b0363e9207bbd))
+
 ## [v0.54.0] - 2026-05-17
 
 ### Bug fixes
