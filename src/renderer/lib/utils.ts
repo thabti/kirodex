@@ -34,6 +34,20 @@ export const slugify = (name: string): string => {
     .replace(/[-.]$/g, '')
 }
 
+/** Sanitize a git branch name, preserving slashes (e.g. feature/my-branch). */
+export const sanitizeBranchName = (name: string): string => {
+  return name
+    .replace(/[^\w/._-]/g, '-')
+    .replace(/\.{2,}/g, '.')
+    .replace(/-{2,}/g, '-')
+    .replace(/\/{2,}/g, '/')
+    .replace(/^[/.-]+|[/.-]+$/g, '')
+    .replace(/\/\./g, '/')
+    .replace(/\.lock(\/|$)/g, '$1')
+    .slice(0, 100)
+    .replace(/[/.-]+$/g, '')
+}
+
 /** Validate a slug matches the Rust-side rules. */
 export const isValidWorktreeSlug = (slug: string): boolean => {
   if (slug.length === 0 || slug.length > MAX_SLUG_LENGTH) return false

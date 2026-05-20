@@ -89,6 +89,8 @@ export const ipc = {
     invoke('git_list_branches', { cwd }),
   gitCheckout: (cwd: string, branch: string, force?: boolean): Promise<{ branch: string }> =>
     invoke('git_checkout', { cwd, branch, force }),
+  gitCheckoutRemote: (cwd: string, remoteRef: string, force?: boolean): Promise<{ branch: string }> =>
+    invoke('git_checkout_remote', { cwd, remoteRef, force }),
   gitCreateBranch: (cwd: string, branch: string): Promise<{ branch: string }> =>
     invoke('git_create_branch', { cwd, branch }),
   gitDeleteBranch: (cwd: string, branch: string): Promise<{ branch: string }> =>

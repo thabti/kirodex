@@ -1,6 +1,6 @@
 import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import { IconGitBranch, IconChevronDown } from '@tabler/icons-react'
-import { cn, slugify } from '@/lib/utils'
+import { cn, slugify, sanitizeBranchName } from '@/lib/utils'
 import { ipc } from '@/lib/ipc'
 import { useTaskStore } from '@/stores/taskStore'
 import { BranchList } from './BranchList'
@@ -82,7 +82,7 @@ export const BranchSelector = memo(function BranchSelector({ workspace, isWorktr
 
   const friendlyGitError = (raw: string): { message: string; isConflict: boolean } => {
     const lower = raw.toLowerCase()
-    if (lower.includes('conflict')) return { message: 'Uncommitted changes conflict with this branch. Commit or stash your changes first.', isConflict: true }
+    if (lower.includes('conflict') || lower.includes('overwritten by checkout') || lower.includes('would be overwritten') || lower.includes('local changes')) return { message: 'Uncommitted changes conflict with this branch. Commit or stash your changes first.', isConflict: true }
     if (lower.includes('not found') || lower.includes('revspec')) return { message: 'Branch not found. It may have been deleted.', isConflict: false }
     if (lower.includes('worktree') || lower.includes('checked out')) return { message: 'This branch is checked out in another worktree and cannot be switched to.', isConflict: false }
     if (lower.includes('lock') || lower.includes('locked')) return { message: 'The repository is locked by another process. Try again in a moment.', isConflict: false }
@@ -95,7 +95,13 @@ export const BranchSelector = memo(function BranchSelector({ workspace, isWorktr
     if (isWorktree) { setError('Cannot switch branches in a worktree thread. The branch is locked to this worktree.'); return }
     setCheckingOut(true); setError(null); setConflictBranch(null)
     try {
-      await ipc.gitCheckout(workspace, branch, force)
+      // If the branch contains a slash and matches a remote ref, use remote checkout
+      const isRemoteRef = data?.remotes && Object.values(data.remotes).some((branches) => branches.some((b) => b.fullRef === branch))
+      if (isRemoteRef) {
+        await ipc.gitCheckoutRemote(workspace, branch, force)
+      } else {
+        await ipc.gitCheckout(workspace, branch, force)
+      }
       await fetchBranches()
       setOpen(false)
     } catch (err) {
@@ -104,11 +110,11 @@ export const BranchSelector = memo(function BranchSelector({ workspace, isWorktr
       if (isConflict && !force) { setError(message); setConflictBranch(branch) }
       else { setError(message); setConflictBranch(null) }
     } finally { setCheckingOut(false) }
-  }, [workspace, checkingOut, fetchBranches, isWorktree])
+  }, [workspace, checkingOut, fetchBranches, isWorktree, data])
 
   const handleCreate = useCallback(async (name: string) => {
     if (!workspace || checkingOut) return
-    const branchName = slugify(name.trim())
+    const branchName = sanitizeBranchName(name.trim())
     if (!branchName) return
     setCheckingOut(true); setError(null)
     try {

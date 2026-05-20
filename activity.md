@@ -1,3 +1,51 @@
+## 2026-05-20 11:26 GST (Dubai)
+
+### Config: Copy goal files to ~/.kiro/ and version the directory
+
+Copied `.kiro/goal/` files (initial.md, budget_limit.md, continuation.md) to `~/.kiro/goal/` using no-clobber so existing files are skipped. Initialized a git repo in `~/.kiro/`, added a `.gitignore` (excludes extensions/, .DS_Store, history), and committed all user config (steering, skills, agents, settings, goal) in two commits.
+
+**Modified:** `~/.kiro/goal/initial.md`, `~/.kiro/goal/budget_limit.md`, `~/.kiro/goal/continuation.md`, `~/.kiro/.gitignore`
+
+## 2026-05-19 13:04 GST (Dubai)
+
+### Chat: Redesign PlanHandoffCard to match new design language
+
+Replaced the teal card with rocket icon with a subtle inline design matching `TaskCompletionCard` — border-top separator, muted descriptive text, and a minimal "Execute" button with a play icon. Same functionality (switches to coding agent and sends the handoff message), cleaner visual weight.
+
+**Modified:** src/renderer/components/chat/PlanHandoffCard.tsx
+
+## 2026-05-19 12:58 GST (Dubai)
+
+### Git: Preserve slashes in branch names during creation
+
+Added `sanitizeBranchName` utility that preserves `/` characters (valid in git branch names like `feature/my-branch`) while still sanitizing invalid characters. The existing `slugify` function was stripping slashes because it was designed for worktree slugs. Branch creation in BranchSelector and GitPanels now uses `sanitizeBranchName`; worktree slug creation still uses `slugify`.
+
+**Modified:** src/renderer/lib/utils.ts, src/renderer/components/chat/BranchSelector.tsx, src/renderer/components/chat/GitPanels.tsx
+
+## 2026-05-19 12:54 GST (Dubai)
+
+### Git: Fix remote branch checkout causing detached HEAD
+
+Added `try_create_tracking_branch` helper to `git_checkout`. When `revparse_ext` returns `reference=None` (which happens for remote refs like `origin/develop`), the function now detects remote tracking branches and creates a local branch tracking them instead of setting a detached HEAD. Handles both explicit remote refs (`origin/develop`) and bare names (`develop`) that match a single remote branch.
+
+**Modified:** src-tauri/src/commands/git.rs
+
+## 2026-05-19 12:42 GST (Dubai)
+
+### Git: Fix checkout UX for local changes conflicts
+
+Fixed `git_checkout_remote` to do a safe checkout by default instead of unconditionally using `.force()` which silently discarded local changes. Added `force` parameter so the frontend can offer the same "Force checkout (discard local changes)" button for remote branches. Improved `friendlyGitError` to also catch git2's "would be overwritten" and "local changes" error messages as conflict indicators.
+
+**Modified:** src-tauri/src/commands/git.rs, src/renderer/lib/ipc.ts, src/renderer/components/chat/BranchSelector.tsx
+
+## 2026-05-19 11:49 GST (Dubai)
+
+### Git: Add remote branch checkout with local tracking branch
+
+Added a `git_checkout_remote` Rust command that creates a local tracking branch from a remote ref (e.g., "origin/feature-x" creates local "feature-x" tracking the remote). Updated the frontend BranchSelector to detect remote refs and call the new command instead of the generic checkout which left HEAD detached. Remote branches were already listed, displayed, and searchable; this fixes the checkout behavior.
+
+**Modified:** src-tauri/src/commands/git.rs, src-tauri/src/lib.rs, src/renderer/lib/ipc.ts, src/renderer/components/chat/BranchSelector.tsx
+
 ## 2026-05-18 07:51 GST (Dubai)
 
 ### Sidebar: Fix projects imported without a name showing empty

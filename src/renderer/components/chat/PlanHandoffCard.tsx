@@ -1,5 +1,5 @@
 import { memo, useCallback, useState } from 'react'
-import { IconRocket, IconArrowRight } from '@tabler/icons-react'
+import { IconPlayerPlay } from '@tabler/icons-react'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useTaskStore } from '@/stores/taskStore'
 import { usePanelResolvedTaskId } from './PanelContext'
@@ -20,7 +20,7 @@ export const PlanHandoffCard = memo(function PlanHandoffCard() {
   const isPlan = currentModeId === 'kiro_planner'
   const [isSwitching, setIsSwitching] = useState(false)
 
-  const handleSwitch = useCallback(() => {
+  const handleExecute = useCallback(() => {
     const taskId = resolvedTaskId
     if (!taskId || isSwitching) return
     setIsSwitching(true)
@@ -40,26 +40,29 @@ export const PlanHandoffCard = memo(function PlanHandoffCard() {
   if (!isPlan) return null
 
   return (
-    <button
-      type="button"
-      onClick={handleSwitch}
-      disabled={isSwitching}
+    <div
+      className="mt-3 pt-3 border-t border-border/40"
       data-testid="plan-handoff-card"
-      aria-label="Start building from this plan"
-      className="mt-3 flex w-full items-center gap-3 rounded-lg border border-teal-400/20 bg-teal-400/5 px-4 py-3 text-left transition-colors hover:border-teal-400/40 hover:bg-teal-400/10 disabled:opacity-50 disabled:pointer-events-none"
+      role="status"
+      aria-label="Plan ready to execute"
     >
-      <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-teal-400/15">
-        <IconRocket className="size-4 text-teal-600 dark:text-teal-400" aria-hidden />
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="text-[13px] font-medium text-foreground">
-          {isSwitching ? 'Switching...' : 'Start building'}
+      <div className="flex items-center gap-2">
+        <p className="text-[13px] text-muted-foreground">
+          <span className="font-medium text-foreground/90">Plan ready</span>
+          <span className="mx-1.5 text-border">·</span>
+          Switch to the coding agent and start building
         </p>
-        <p className="text-[11px] text-muted-foreground">
-          Switch to the coding agent and execute this plan
-        </p>
+        <button
+          type="button"
+          onClick={handleExecute}
+          disabled={isSwitching}
+          aria-label="Execute plan"
+          className="ml-auto inline-flex shrink-0 items-center gap-1 rounded-md border border-border/60 bg-background px-2.5 py-1 text-[12px] font-medium text-foreground/80 transition-colors hover:bg-accent hover:text-foreground disabled:opacity-50 disabled:pointer-events-none"
+        >
+          <IconPlayerPlay className="size-3" aria-hidden />
+          {isSwitching ? 'Switching…' : 'Execute'}
+        </button>
       </div>
-      <IconArrowRight className="size-4 shrink-0 text-teal-600/60 dark:text-teal-400/60" aria-hidden />
-    </button>
+    </div>
   )
 })

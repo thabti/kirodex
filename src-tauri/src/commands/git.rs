@@ -155,6 +155,35 @@ pub fn git_list_branches(cwd: String) -> Result<BranchInfo, AppError> {
     Ok(BranchInfo { local, remotes, current_branch: current })
 }
 
+/// If `branch` matches a remote tracking branch (e.g. "origin/develop" or bare "develop"
+/// when only one remote has it), create a local branch tracking it and return the local name.
+fn try_create_tracking_branch(repo: &Repository, branch: &str) -> Option<String> {
+    // Case 1: explicit remote ref like "origin/develop"
+    if let Some((_, local_name)) = branch.split_once('/') {
+        if let Ok(remote_branch) = repo.find_branch(branch, BranchType::Remote) {
+            if repo.find_branch(local_name, BranchType::Local).is_err() {
+                let commit = remote_branch.get().peel_to_commit().ok()?;
+                let mut local = repo.branch(local_name, &commit, false).ok()?;
+                let _ = local.set_upstream(Some(branch));
+                return Some(local_name.to_string());
+            }
+        }
+    }
+    // Case 2: bare name like "develop" — find a unique remote match
+    for remote_branch in repo.branches(Some(BranchType::Remote)).ok()?.flatten() {
+        let full_name = remote_branch.0.name().ok().flatten().unwrap_or("");
+        if let Some((_, name)) = full_name.split_once('/') {
+            if name == branch {
+                let commit = remote_branch.0.get().peel_to_commit().ok()?;
+                let mut local = repo.branch(branch, &commit, false).ok()?;
+                let _ = local.set_upstream(Some(full_name));
+                return Some(branch.to_string());
+            }
+        }
+    }
+    None
+}
+
 #[tauri::command]
 pub fn git_checkout(cwd: String, branch: String, force: Option<bool>) -> Result<BranchResult, AppError> {
     let repo = Repository::discover(&cwd)?;
@@ -167,6 +196,12 @@ pub fn git_checkout(cwd: String, branch: String, force: Option<bool>) -> Result<
     if let Some(reference) = reference {
         repo.set_head(reference.name().unwrap_or(&format!("refs/heads/{branch}")))?;
     } else {
+        // No local ref found — check if this matches a remote tracking branch.
+        // If so, create a local branch tracking it instead of detaching HEAD.
+        if let Some(local_name) = try_create_tracking_branch(&repo, &branch) {
+            repo.set_head(&format!("refs/heads/{local_name}"))?;
+            return Ok(BranchResult { branch: local_name });
+        }
         repo.set_head(&format!("refs/heads/{branch}"))?;
     }
     Ok(BranchResult { branch })
@@ -599,6 +634,35 @@ pub fn git_commit_files(
     };
     let oid = repo.commit(Some("HEAD"), &sig, &sig, &message, &tree, &[&parent])?;
     Ok(oid.to_string())
+}
+
+/// Checkout a remote branch by creating a local tracking branch.
+/// Given a full remote ref like "origin/feature-x", creates a local branch
+/// "feature-x" that tracks the remote branch, then checks it out.
+#[tauri::command]
+pub fn git_checkout_remote(cwd: String, remote_ref: String, force: Option<bool>) -> Result<BranchResult, AppError> {
+    let repo = Repository::discover(&cwd)?;
+    let (remote_name, branch_name) = remote_ref.split_once('/')
+        .ok_or_else(|| AppError::Other(format!("Invalid remote ref: {remote_ref}")))?;
+    // Resolve the remote branch commit
+    let remote_branch = repo.find_branch(&remote_ref, BranchType::Remote)?;
+    let commit = remote_branch.get().peel_to_commit()?;
+    // Check if local branch already exists — if so, just check it out
+    let local_exists = repo.find_branch(branch_name, BranchType::Local).is_ok();
+    if !local_exists {
+        let mut local_branch = repo.branch(branch_name, &commit, false)?;
+        local_branch.set_upstream(Some(&remote_ref))?;
+    }
+    // Checkout the local branch (safe by default, force if requested)
+    let refname = format!("refs/heads/{branch_name}");
+    repo.set_head(&refname)?;
+    let mut opts = git2::build::CheckoutBuilder::new();
+    if force.unwrap_or(false) {
+        opts.force();
+    }
+    repo.checkout_head(Some(&mut opts))?;
+    let _ = remote_name;
+    Ok(BranchResult { branch: branch_name.to_string() })
 }
 
 /// Create a new branch from the current HEAD and switch to it.

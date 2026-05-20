@@ -1,6 +1,6 @@
 import { memo, useCallback, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
-import { isValidWorktreeSlug, slugify } from '@/lib/utils'
+import { isValidWorktreeSlug, slugify, sanitizeBranchName } from '@/lib/utils'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useTaskStore } from '@/stores/taskStore'
 import { ipc } from '@/lib/ipc'
@@ -16,7 +16,7 @@ export const BranchPanel = memo(function BranchPanel({ onDismiss }: { onDismiss:
   const handleCreate = useCallback(async () => {
     const trimmed = name.trim()
     if (!trimmed || !workspace) return
-    const branchName = slugify(trimmed)
+    const branchName = sanitizeBranchName(trimmed)
     if (!branchName) return
     setIsCreating(true); setError(null)
     try {
