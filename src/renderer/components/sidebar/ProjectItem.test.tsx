@@ -95,10 +95,10 @@ describe('ProjectItem — project name visibility', () => {
     expect(screen.getByText('my-project')).toBeInTheDocument()
   })
 
-  it('hides name when icon is favicon', () => {
+  it('shows name when icon is favicon', () => {
     mockIcon = { type: 'favicon', dataUrl: 'data:image/png;base64,abc' }
     render(wrap(<ProjectItem {...defaultProps} />))
-    expect(screen.queryByText('my-project')).not.toBeInTheDocument()
+    expect(screen.getByText('my-project')).toBeInTheDocument()
   })
 })
 
