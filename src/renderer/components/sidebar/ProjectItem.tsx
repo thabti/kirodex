@@ -87,9 +87,7 @@ export const ProjectItem = memo(function ProjectItem({
           )}
         >
           <ProjectIcon icon={projectIcon} />
-          {projectIcon?.type !== 'favicon' && (
-            <span className={cn('flex-1 truncate text-[13px] text-foreground/85', isActiveProject ? 'font-medium' : 'font-normal')}>{name}</span>
-          )}
+          <span className={cn('flex-1 truncate text-[13px] text-foreground/85', isActiveProject ? 'font-medium' : 'font-normal')}>{name}</span>
           {jumpLabel && (
             <kbd className="pointer-events-none ml-auto mr-1 inline-flex h-4 shrink-0 items-center rounded-sm bg-muted px-1 font-mono text-[10px] font-medium text-muted-foreground select-none">
               {jumpLabel}
@@ -97,9 +95,9 @@ export const ProjectItem = memo(function ProjectItem({
           )}
         </button>
 
-        {/* Always-visible action buttons with gradient fade */}
+        {/* Action buttons visible on hover */}
         <div
-          className="absolute inset-y-0 right-0 z-10 flex w-16 items-center justify-end gap-0.5 pr-1"
+          className="absolute inset-y-0 right-0 z-10 hidden w-16 items-center justify-end gap-0.5 pr-1 group-hover/menu-item:flex"
           style={{ background: 'linear-gradient(to right, transparent 0%, var(--sidebar) 35%)' }}
         >
           <Tooltip>

@@ -1,3 +1,19 @@
+## 2026-05-22 06:18 GST (Dubai)
+
+### Sidebar: Always show project name regardless of icon type
+
+Fixed a bug where projects with a `favicon` icon type (e.g. Vercel ▲) had their name hidden in the sidebar. The condition `projectIcon?.type !== 'favicon'` was suppressing the name text. Removed the condition so the name always renders alongside the icon.
+
+**Modified:** `src/renderer/components/sidebar/ProjectItem.tsx`, `src/renderer/components/sidebar/ProjectItem.test.tsx`
+
+## 2026-05-22 06:17 GST (Dubai)
+
+### Sidebar: Show new thread and delete icons only on hover
+
+Changed the action buttons in `ProjectItem.tsx` to be hidden by default and appear on hover via `group-hover/menu-item:flex`.
+
+**Modified:** `src/renderer/components/sidebar/ProjectItem.tsx`
+
 ## 2026-05-20 11:26 GST (Dubai)
 
 ### Config: Copy goal files to ~/.kiro/ and version the directory
