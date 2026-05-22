@@ -1,20 +1,63 @@
 {
-  "updated_at": "2026-05-21T07:44:36Z",
+  "updated_at": "2026-05-22T07:44:07Z",
   "releases": [
+    {
+      "tag": "v0.57.0",
+      "published": "2026-05-22T03:45:29Z",
+      "total": 5,
+      "update_checks": 16,
+      "assets": [
+        {
+          "name": "Kirodex_0.57.0_aarch64.dmg",
+          "downloads": 2,
+          "platform": "macos"
+        },
+        {
+          "name": "Kirodex_0.57.0_amd64.AppImage",
+          "downloads": 0,
+          "platform": "linux"
+        },
+        {
+          "name": "Kirodex_0.57.0_amd64.AppImage.tar.gz",
+          "downloads": 0,
+          "platform": "linux"
+        },
+        {
+          "name": "Kirodex_0.57.0_amd64.deb",
+          "downloads": 0,
+          "platform": "linux"
+        },
+        {
+          "name": "Kirodex_0.57.0_x64-setup.exe",
+          "downloads": 0,
+          "platform": "windows"
+        },
+        {
+          "name": "Kirodex_0.57.0_x64-setup.nsis.zip",
+          "downloads": 0,
+          "platform": "windows"
+        },
+        {
+          "name": "Kirodex_aarch64.app.tar.gz",
+          "downloads": 3,
+          "platform": "macos"
+        }
+      ]
+    },
     {
       "tag": "v0.55.0",
       "published": "2026-05-20T07:39:08Z",
-      "total": 20,
-      "update_checks": 252,
+      "total": 28,
+      "update_checks": 403,
       "assets": [
         {
           "name": "Kirodex_0.55.0_aarch64.dmg",
-          "downloads": 5,
+          "downloads": 7,
           "platform": "macos"
         },
         {
           "name": "Kirodex_0.55.0_amd64.AppImage",
-          "downloads": 1,
+          "downloads": 3,
           "platform": "linux"
         },
         {
@@ -24,12 +67,12 @@
         },
         {
           "name": "Kirodex_0.55.0_amd64.deb",
-          "downloads": 0,
+          "downloads": 2,
           "platform": "linux"
         },
         {
           "name": "Kirodex_0.55.0_x64-setup.exe",
-          "downloads": 7,
+          "downloads": 8,
           "platform": "windows"
         },
         {
@@ -39,7 +82,7 @@
         },
         {
           "name": "Kirodex_aarch64.app.tar.gz",
-          "downloads": 6,
+          "downloads": 7,
           "platform": "macos"
         }
       ]
@@ -3054,11 +3097,11 @@
     }
   ],
   "totals": {
-    "all": 845,
-    "update_checks": 5835,
-    "macos": 427,
-    "windows": 246,
-    "linux": 172
+    "all": 858,
+    "update_checks": 6002,
+    "macos": 435,
+    "windows": 247,
+    "linux": 176
   },
   "homebrew_tap": null
 }
