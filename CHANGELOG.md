@@ -1,5 +1,15 @@
 # Changelog
 
+## [v0.57.0] - 2026-05-22
+
+### Styling
+
+- show project action icons only on hover ([`015b5dd`](https://github.com/thabti/kirodex/commit/015b5dde2c49c53e29fdddb84d1ee665eead2ca9))
+
+### Tests
+
+- update favicon test to expect name always visible ([`2eafe06`](https://github.com/thabti/kirodex/commit/2eafe068adac1b1938bcf9e61ab9075403190746))
+
 ## [v0.55.0] - 2026-05-20
 
 ### Features
