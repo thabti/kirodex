@@ -50,6 +50,7 @@ const makeState = (overrides: Partial<TaskStore> = {}): TaskStore => ({
   connected: true,
   terminalOpenTasks: new Set(),
   isWorkspaceTerminalOpen: false,
+  pendingTerminalRequests: {},
   drafts: {},
   draftAttachments: {},
   draftPastedChunks: {},

@@ -10,6 +10,9 @@ import type { PastedChunk } from '@/hooks/useChatInput'
 import { Checkbox } from '@/components/ui/checkbox'
 import { ChatInput } from './ChatInput'
 import { EmptyThreadSplash } from './EmptyThreadSplash'
+import { TerminalDrawer } from './TerminalDrawer'
+
+const WORKSPACE_TERMINAL_SLOT = '__workspace__'
 
 interface PendingChatProps {
   workspace: string
@@ -168,6 +171,8 @@ export function PendingChat({ workspace }: PendingChatProps) {
   const openLogin = useSettingsStore((s) => s.openLogin)
   const isLoggedOut = kiroAuthChecked && !kiroAuth
   const isSlugValid = !worktreeSlug || isValidWorktreeSlug(worktreeSlug)
+  const isWorkspaceTerminalOpen = useTaskStore((s) => s.isWorkspaceTerminalOpen)
+  const toggleWorkspaceTerminal = useTaskStore((s) => s.toggleWorkspaceTerminal)
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -249,6 +254,14 @@ export function PendingChat({ workspace }: PendingChatProps) {
         </div>
       )}
       <ChatInput autoFocus disabled={isLoggedOut} initialValue={draft} initialAttachments={draftAttachments} initialPastedChunks={draftPastedChunks} initialMentionedFiles={draftMentionedFiles} onDraftChange={handleDraftChange} onAttachmentsChange={handleAttachmentsChange} onPastedChunksChange={handlePastedChunksChange} onMentionedFilesChange={handleMentionedFilesChange} onSendMessage={handleSend} workspace={workspace} isWorktree={useWorktree} />
+      {isWorkspaceTerminalOpen && (
+        <TerminalDrawer
+          key={`pending:${workspace}`}
+          cwd={workspace}
+          slotId={WORKSPACE_TERMINAL_SLOT}
+          onClose={toggleWorkspaceTerminal}
+        />
+      )}
     </div>
   )
 }

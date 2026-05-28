@@ -15,6 +15,19 @@ export interface BtwCheckpoint {
   readonly question: string
 }
 
+/**
+ * A one-shot request to open the built-in terminal at a specific directory.
+ * Each request gets a unique `requestId` so consumers can distinguish a
+ * fresh "Open in Terminal" click from a stale state read.
+ */
+export interface PendingTerminalRequest {
+  readonly taskId: string
+  /** Absolute path to the directory the new terminal should `cd` into. */
+  readonly cwd: string
+  /** Monotonic id; incremented on every new request. */
+  readonly requestId: number
+}
+
 export interface TaskStore {
   tasks: Record<string, AgentTask>
   /** Lazy metadata for archived threads not currently inflated into `tasks`.
@@ -58,6 +71,15 @@ export interface TaskStore {
   terminalOpenTasks: Set<string>
   /** Workspace-level terminal open state (for PendingChat when no task is selected) */
   isWorkspaceTerminalOpen: boolean
+  /**
+   * One-shot request to open the in-app terminal at a specific cwd.
+   * The {@link TerminalDrawer} watches this and opens a new tab. We use
+   * a record keyed by taskId so split-view panels each get their own slot
+   * and a stale request from another panel doesn't reopen here.
+   * `__workspace__` is the special key for the workspace-level drawer in
+   * {@link PendingChat}.
+   */
+  pendingTerminalRequests: Record<string, PendingTerminalRequest>
   /** Per-workspace draft text (in-memory only, not persisted to disk) */
   drafts: Record<string, string>
   /** Per-workspace draft attachments (in-memory only) */
@@ -146,6 +168,15 @@ export interface TaskStore {
   removeDraftMentionedFiles: (workspace: string) => void
   toggleTerminal: (taskId: string) => void
   toggleWorkspaceTerminal: () => void
+  /**
+   * Open the in-app terminal at the given absolute cwd. If the terminal
+   * drawer is closed it will be opened, otherwise a new tab is spawned.
+   * `taskId` is the panel id, or `'__workspace__'` for the pending-chat
+   * workspace drawer.
+   */
+  requestOpenTerminalAt: (taskId: string, cwd: string) => void
+  /** Mark a pending terminal request as consumed by the drawer. */
+  consumeTerminalRequest: (taskId: string, requestId: number) => void
   setTaskMode: (taskId: string, modeId: string) => void
   setTaskModel: (taskId: string, modelId: string) => void
   loadTasks: () => Promise<void>
