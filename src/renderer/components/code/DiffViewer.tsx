@@ -5,7 +5,7 @@ import { ipc } from '@/lib/ipc'
 import { useDiffStore } from '@/stores/diffStore'
 import { useResizeHandle } from '@/hooks/useResizeHandle'
 import { getPreferredEditor } from '@/components/OpenInEditorGroup'
-import { UNSAFE_CSS, getFileStats } from './diff-viewer-utils'
+import { buildUnsafeCSS, getFileStats } from './diff-viewer-utils'
 import { DiffToolbar } from './DiffToolbar'
 import { DiffFileActionBar } from './DiffFileActionBar'
 import { DiffFileSidebar } from './DiffFileSidebar'
@@ -146,7 +146,7 @@ export function DiffViewer({ diff, taskId, workspace, onRefreshDiff }: DiffViewe
                         overflow: wordWrap ? 'wrap' : 'scroll',
                         theme: isDark ? 'pierre-dark' : 'pierre-light',
                         themeType: isDark ? 'dark' : 'light',
-                        unsafeCSS: UNSAFE_CSS,
+                        unsafeCSS: buildUnsafeCSS(isDark),
                       }}
                     />
                   )}

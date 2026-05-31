@@ -3,8 +3,7 @@ import type { AppSettings, ProjectPrefs } from '@/types'
 import { ipc } from '@/lib/ipc'
 import { track } from '@/lib/analytics'
 
-/** Workspaces where .kiro/goal/ has already been ensured this session. */
-const goalDirEnsured = new Set<string>()
+
 
 export interface ModelOption {
   modelId: string
@@ -162,11 +161,6 @@ export const useSettingsStore = create<SettingsStore>((set, get) => ({
     const current = get()
     if (current.activeWorkspace === workspace && current.currentModelId === newModelId && current.operationalWorkspace === opWs) return
     set({ activeWorkspace: workspace, operationalWorkspace: opWs, currentModelId: newModelId ?? null })
-    // Ensure .kiro/goal/ directory exists for this project (once per session)
-    if (!goalDirEnsured.has(workspace)) {
-      goalDirEnsured.add(workspace)
-      ipc.goalEnsureDir(workspace).catch(() => {})
-    }
   },
 
   setProjectPref: (workspace, patch) => {

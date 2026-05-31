@@ -8,7 +8,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { Checkbox } from '@/components/ui/checkbox'
 import { FileTypeIcon } from '@/components/file-tree/FileTypeIcon'
 import { cn } from '@/lib/utils'
-import { UNSAFE_CSS } from '@/components/code/diff-viewer-utils'
+import { buildUnsafeCSS } from '@/components/code/diff-viewer-utils'
 
 // ── File stats helper ────────────────────────────────────────────
 
@@ -351,7 +351,7 @@ export const DiffPanel = memo(function DiffPanel() {
                     overflow: wordWrap ? 'wrap' : 'scroll',
                     theme: isDark ? 'pierre-dark' : 'pierre-light',
                     themeType: isDark ? 'dark' : 'light',
-                    unsafeCSS: UNSAFE_CSS,
+                    unsafeCSS: buildUnsafeCSS(isDark),
                     disableFileHeader: true,
                   }}
                 />

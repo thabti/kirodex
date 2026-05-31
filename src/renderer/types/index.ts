@@ -232,14 +232,6 @@ export interface AppSettings {
    * null or 0 = disabled. Default: null (disabled).
    */
   autoArchiveDays?: number | null
-  /** Enable /goal autonomous agent loop. Default: true. */
-  goalEnabled?: boolean
-  /** Default token budget for new goals. Default: 500000. */
-  goalDefaultBudget?: number
-  /** Default max iterations for new goals. Default: 25. */
-  goalDefaultMaxIterations?: number
-  /** Default consecutive failure threshold. Default: 3. */
-  goalDefaultFailureThreshold?: number
 }
 
 export interface ProjectFile {

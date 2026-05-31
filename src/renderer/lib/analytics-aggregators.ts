@@ -48,12 +48,6 @@ export interface PartitionedEvents {
   thread_created: AnalyticsEvent[]
   mcp_used: AnalyticsEvent[]
   skill_used: AnalyticsEvent[]
-  goal_started: AnalyticsEvent[]
-  goal_iteration: AnalyticsEvent[]
-  goal_completed: AnalyticsEvent[]
-  goal_budget_limited: AnalyticsEvent[]
-  goal_paused: AnalyticsEvent[]
-  goal_cleared: AnalyticsEvent[]
 }
 
 const EMPTY: AnalyticsEvent[] = []
@@ -63,8 +57,6 @@ export const partitionEvents = (events: AnalyticsEvent[]): PartitionedEvents => 
     session: [], message_sent: [], message_received: [], token_usage: [],
     tool_call: [], file_edited: [], diff_stats: [], slash_cmd: [],
     model_used: [], mode_switch: [], thread_created: [], mcp_used: [], skill_used: [],
-    goal_started: [], goal_iteration: [], goal_completed: [],
-    goal_budget_limited: [], goal_paused: [], goal_cleared: [],
   }
   for (const e of events) {
     const bucket = p[e.kind as AnalyticsEventKind]

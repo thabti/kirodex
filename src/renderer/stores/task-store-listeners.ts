@@ -4,7 +4,6 @@ import { joinChunk } from '@/lib/utils'
 import { sendTaskNotification } from '@/lib/notifications'
 import { useDebugStore } from '@/stores/debugStore'
 import { useSettingsStore } from '@/stores/settingsStore'
-import { useGoalStore } from '@/stores/goalStore'
 import { useKiroStore } from '@/stores/kiroStore'
 import { useDiffStore } from '@/stores/diffStore'
 import { useTaskStore } from './taskStore'
@@ -490,159 +489,18 @@ export function initTaskListeners(): () => void {
     const settings = useSettingsStore.getState().settings
     const task = useTaskStore.getState().tasks[taskId]
     if (task) {
-      // Suppress notifications during active goal mode — only notify on completion/pause/budget
-      const isGoalRunning = useGoalStore.getState().isGoalActive(taskId)
-      if (!isGoalRunning) {
-        const notifStatus = task.status === 'error' ? 'error' : 'completed'
-        sendTaskNotification({
-          task,
-          status: notifStatus,
-          isNotificationsEnabled: settings.notifications ?? true,
-          isSoundEnabled: settings.soundNotifications ?? true,
-          onNotified: (tid) => {
-            useTaskStore.setState((s) => ({
-              notifiedTaskIds: s.notifiedTaskIds.includes(tid) ? s.notifiedTaskIds : [...s.notifiedTaskIds, tid],
-            }))
-          },
-        })
-      }
-    }
-
-    // ── Goal mode: auto-continue if goal is active ──────────────────────────
-    // Check if this thread has an active goal. If so, send the continuation
-    // prompt via the Rust orchestrator instead of processing the queue.
-    // Skip if the turn was cancelled — user explicitly stopped the agent.
-    if (stopReason === 'cancelled') {
-      const goalState = useGoalStore.getState()
-      if (goalState.isGoalActive(taskId)) {
-        goalState.pauseGoal(taskId)
-        const t = useTaskStore.getState().tasks[taskId]
-        const workspace = t ? (t.worktreePath ?? t.workspace) : ''
-        if (workspace) ipc.goalPause(workspace, taskId).catch(() => {})
-        record('goal_paused', { thread: taskId, detail: 'user_cancelled' })
-        // Notify user that goal was paused due to cancellation
-        sendTaskNotification({
-          task: useTaskStore.getState().tasks[taskId]!,
-          status: 'completed',
-          isNotificationsEnabled: settings.notifications ?? true,
-          isSoundEnabled: settings.soundNotifications ?? true,
-          onNotified: (tid) => {
-            useTaskStore.setState((s) => ({
-              notifiedTaskIds: s.notifiedTaskIds.includes(tid) ? s.notifiedTaskIds : [...s.notifiedTaskIds, tid],
-            }))
-          },
-        })
-      }
-    }
-    {
-      const goalState = useGoalStore.getState()
-      if (goalState.isGoalActive(taskId)) {
-        const t = useTaskStore.getState().tasks[taskId]
-        if (t) {
-          const lastMsg = t.messages[t.messages.length - 1]
-          const lastContent = lastMsg?.role === 'assistant' ? lastMsg.content : ''
-          const tokensThisTurn = t.contextUsage?.used ?? 0
-          const workspace = t.worktreePath ?? t.workspace
-          // Delay 500ms to let UI settle and avoid hammering
-          setTimeout(() => {
-            ipc.goalContinue(workspace, taskId, lastContent, tokensThisTurn).then((result) => {
-              useGoalStore.getState().incrementIteration(taskId, tokensThisTurn)
-              record('goal_iteration', { thread: taskId, value: result.iteration })
-              // Detect consecutive failures: no tool calls and short response = likely stuck
-              const currentTask = useTaskStore.getState().tasks[taskId]
-              const lastAssistantMsg = currentTask?.messages[currentTask.messages.length - 1]
-              const hasToolCalls = (lastAssistantMsg?.toolCalls?.length ?? 0) > 0
-              // Codex pattern: if a continuation turn makes no tool call,
-              // count it as a potential stuck state. Consecutive no-tool-call
-              // turns trigger auto-pause at the configured threshold.
-              if (!hasToolCalls && result.action === 'continue') {
-                const shouldPause = useGoalStore.getState().recordFailure(taskId)
-                if (shouldPause) {
-                  ipc.goalPause(workspace, taskId).catch(() => {})
-                  record('goal_paused', { thread: taskId, detail: 'consecutive_no_tool_calls' })
-                  // Notify: goal auto-paused due to stuck detection
-                  const pausedTask = useTaskStore.getState().tasks[taskId]
-                  if (pausedTask) {
-                    sendTaskNotification({
-                      task: pausedTask,
-                      status: 'completed',
-                      isNotificationsEnabled: settings.notifications ?? true,
-                      isSoundEnabled: settings.soundNotifications ?? true,
-                      onNotified: (tid) => {
-                        useTaskStore.setState((s) => ({
-                          notifiedTaskIds: s.notifiedTaskIds.includes(tid) ? s.notifiedTaskIds : [...s.notifiedTaskIds, tid],
-                        }))
-                      },
-                    })
-                  }
-                  return
-                }
-              } else if (hasToolCalls) {
-                useGoalStore.getState().resetFailures(taskId)
-              }
-              if (result.action === 'complete') {
-                useGoalStore.getState().completeGoal(taskId)
-                record('goal_completed', { thread: taskId, value: result.iteration })
-                // Notify: goal completed
-                const completedTask = useTaskStore.getState().tasks[taskId]
-                if (completedTask) {
-                  sendTaskNotification({
-                    task: completedTask,
-                    status: 'completed',
-                    isNotificationsEnabled: settings.notifications ?? true,
-                    isSoundEnabled: settings.soundNotifications ?? true,
-                    onNotified: (tid) => {
-                      useTaskStore.setState((s) => ({
-                        notifiedTaskIds: s.notifiedTaskIds.includes(tid) ? s.notifiedTaskIds : [...s.notifiedTaskIds, tid],
-                      }))
-                    },
-                  })
-                }
-              } else if (result.action === 'budget_limited' || result.action === 'iteration_cap') {
-                useGoalStore.getState().budgetLimitGoal(taskId)
-                record('goal_budget_limited', { thread: taskId, value: result.iteration })
-                // Notify: goal budget exhausted
-                const budgetTask = useTaskStore.getState().tasks[taskId]
-                if (budgetTask) {
-                  sendTaskNotification({
-                    task: budgetTask,
-                    status: 'completed',
-                    isNotificationsEnabled: settings.notifications ?? true,
-                    isSoundEnabled: settings.soundNotifications ?? true,
-                    onNotified: (tid) => {
-                      useTaskStore.setState((s) => ({
-                        notifiedTaskIds: s.notifiedTaskIds.includes(tid) ? s.notifiedTaskIds : [...s.notifiedTaskIds, tid],
-                      }))
-                    },
-                  })
-                }
-                // Send the budget limit prompt as the final message
-                if (result.prompt) {
-                  const currentTask = useTaskStore.getState().tasks[taskId]
-                  if (currentTask) {
-                    useTaskStore.getState().upsertTask({ ...currentTask, status: 'running' })
-                    useTaskStore.getState().clearTurn(taskId)
-                    ipc.sendMessage(taskId, result.prompt)
-                  }
-                }
-              } else if (result.action === 'continue' && result.prompt) {
-                // Send continuation prompt — Rust-side injection
-                const currentTask = useTaskStore.getState().tasks[taskId]
-                if (currentTask) {
-                  useTaskStore.getState().upsertTask({ ...currentTask, status: 'running' })
-                  useTaskStore.getState().clearTurn(taskId)
-                  ipc.sendMessage(taskId, result.prompt)
-                }
-              }
-              // 'paused' action: do nothing, goal was paused externally
-            }).catch((err) => {
-              console.warn('[goal] continuation failed:', err)
-              useGoalStore.getState().pauseGoal(taskId)
-            })
-          }, 500)
-          return // skip queue processing when goal is active
-        }
-      }
+      const notifStatus = task.status === 'error' ? 'error' : 'completed'
+      sendTaskNotification({
+        task,
+        status: notifStatus,
+        isNotificationsEnabled: settings.notifications ?? true,
+        isSoundEnabled: settings.soundNotifications ?? true,
+        onNotified: (tid) => {
+          useTaskStore.setState((s) => ({
+            notifiedTaskIds: s.notifiedTaskIds.includes(tid) ? s.notifiedTaskIds : [...s.notifiedTaskIds, tid],
+          }))
+        },
+      })
     }
 
     // Auto-send the first queued message if any exist

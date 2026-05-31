@@ -1,12 +1,11 @@
 import { useCallback, useState } from 'react'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useTaskStore } from '@/stores/taskStore'
-import { useGoalStore } from '@/stores/goalStore'
 import { ipc } from '@/lib/ipc'
 import { track } from '@/lib/analytics'
 import { record } from '@/lib/analytics-collector'
 
-export type SlashPanel = 'model' | 'agent' | 'branch' | 'worktree' | 'goal' | 'goal-status' | null
+export type SlashPanel = 'model' | 'agent' | 'branch' | 'worktree' | null
 
 export interface SlashActionResult {
   panel: SlashPanel
@@ -54,7 +53,7 @@ export const useSlashAction = (): SlashActionResult => {
     // Track every recognized slash command. The switch below rejects unknown
     // names by returning false, so we gate the track call on that path via
     // the `default` case.
-    const KNOWN = new Set(['clear', 'model', 'agent', 'settings', 'upload', 'plan', 'usage', 'data', 'close', 'exit', 'branch', 'worktree', 'btw', 'tangent', 'fork', 'goal'])
+    const KNOWN = new Set(['clear', 'model', 'agent', 'settings', 'upload', 'plan', 'usage', 'data', 'close', 'exit', 'branch', 'worktree', 'btw', 'tangent', 'fork'])
     if (KNOWN.has(name)) {
       const mode = useSettingsStore.getState().currentModeId === 'kiro_planner' ? 'plan' : 'command'
       track('feature_used', { feature: 'slash_command', detail: name })
@@ -141,9 +140,6 @@ export const useSlashAction = (): SlashActionResult => {
         setPanel(null)
         return true
       }
-      case 'goal':
-        // Return false so the picker inserts "/goal " into the input for the user to type an objective
-        return false
       default:
         setPanel(null)
         return false
@@ -152,58 +148,6 @@ export const useSlashAction = (): SlashActionResult => {
 
   const executeFullInput = useCallback((input: string): boolean => {
     const trimmed = input.trim()
-    // Match /goal subcommands: /goal pause, /goal resume, /goal clear, /goal (bare)
-    const goalMatch = trimmed.match(/^\/goal\b(.*)$/i)
-    if (goalMatch) {
-      const arg = goalMatch[1].trim().toLowerCase()
-      const { selectedTaskId } = useTaskStore.getState()
-      if (!selectedTaskId) return true // no-op without a thread
-      const task = useTaskStore.getState().tasks[selectedTaskId]
-      if (!task) return true
-      // Feature gate check
-      const { settings } = useSettingsStore.getState()
-      if (settings.goalEnabled === false) {
-        addSystemMessage('⚠️ Goal mode is disabled. Enable it in Settings → Advanced.')
-        return true
-      }
-      const workspace = task.worktreePath ?? task.workspace
-      track('feature_used', { feature: 'slash_command', detail: `goal:${arg || 'status'}` })
-      if (arg === 'pause') {
-        useGoalStore.getState().pauseGoal(selectedTaskId)
-        ipc.goalPause(workspace, selectedTaskId).catch(() => {})
-        addSystemMessage('⏸️ Goal paused. Use `/goal resume` to continue.')
-        return true
-      }
-      if (arg === 'resume') {
-        useGoalStore.getState().resumeGoal(selectedTaskId)
-        ipc.goalResume(workspace, selectedTaskId).catch(() => {})
-        addSystemMessage('▶️ Goal resumed. The loop will continue on the next turn.')
-        return true
-      }
-      if (arg === 'clear') {
-        useGoalStore.getState().clearGoal(selectedTaskId)
-        ipc.goalClear(workspace, selectedTaskId).catch(() => {})
-        addSystemMessage('🗑️ Goal cleared. Thread returned to normal chat mode.')
-        return true
-      }
-      if (arg === 'status') {
-        setPanel('goal-status')
-        return true
-      }
-      if (arg === '') {
-        // Bare /goal: open status overlay if goal exists, otherwise open goal modal
-        const goal = useGoalStore.getState().getGoal(selectedTaskId)
-        if (goal) {
-          setPanel('goal-status')
-          return true
-        }
-        // No active goal — return false so "/goal " is inserted for the user to type an objective
-        return false
-      }
-      // /goal <objective text> — open the goal panel (the objective will be pre-filled by the caller)
-      setPanel('goal')
-      return false // return false so the text stays in the input for the modal to read
-    }
     // Match /btw or /tangent at the start
     const match = trimmed.match(/^\/(?:btw|tangent)\b(.*)$/i)
     if (!match) return false

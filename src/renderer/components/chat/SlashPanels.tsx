@@ -2,8 +2,6 @@ import { memo } from 'react'
 import { ModelPickerPanel } from './ModelPickerPanel'
 import { AgentPanel } from './AgentPanel'
 import { BranchPanel, WorktreePanel } from './GitPanels'
-import { GoalStatusOverlay } from './GoalStatusOverlay'
-import { useTaskStore } from '@/stores/taskStore'
 import type { SlashPanel } from '@/hooks/useSlashAction'
 
 // Re-exports for backwards compatibility
@@ -22,9 +20,5 @@ export const SlashActionPanel = memo(function SlashActionPanel({
   if (panel === 'agent') return <AgentPanel onDismiss={onDismiss} />
   if (panel === 'branch') return <BranchPanel onDismiss={onDismiss} />
   if (panel === 'worktree') return <WorktreePanel onDismiss={onDismiss} />
-  if (panel === 'goal-status') {
-    const taskId = useTaskStore.getState().selectedTaskId
-    if (taskId) return <GoalStatusOverlay taskId={taskId} onClose={onDismiss} />
-  }
   return null
 })
