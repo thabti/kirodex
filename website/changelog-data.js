@@ -5,9 +5,56 @@
  */
 export const CHANGELOG_DATA = [
   {
+    version: 'v0.63.0',
+    date: '2026-06-01',
+    latest: true,
+    sections: {
+      Features: [
+        'Mac-native UX pass: floating sidebar card, warm dark theme (#1C1C1E bg, #28282A elevated panels)',
+        'Bear-inspired shell with rounded sidebar that wraps the traffic-light row',
+        'Inline /model and /agent quick-swap pickers above the composer',
+        'Per-file Viewed checkbox in diff viewer with N/M progress strip',
+        'Right-rail Agent Summary panel beside diff hunks (collapsed by default)',
+        'Diff keyboard navigation: j/k file, a all, s stage, r revert, o editor, v viewed, [ sidebar',
+        'Worktree-dirty indicator: amber triangle in app header, opens diff on click',
+        'Browser-style thread history backed by navHistory store (Cmd+[ / Cmd+] shortcuts)',
+        'Inline file-path and branch tokens in agent prose (clickable, open in editor)',
+        'Cold-open command palette seeds recent threads + recent slash commands',
+        'Route "Open in Terminal" through the built-in terminal',
+        'Remote branch checkout and branch name sanitization for /branch',
+      ],
+      'Bug fixes': [
+        'Fix bundle identifier mismatch (com.kirodex.dev → com.kirodex.app) that broke v0.61.0 Gatekeeper signing',
+        'Hide action buttons until hover instead of showing at low opacity (calmer sidebar)',
+        'Prevent empty project names on import',
+        'Stop gitignore from excluding components/diff/SelectionToolbar',
+        'Allow empty branch in vcs_status test for detached HEAD',
+        'Swap /model for /branch in slash-action panel test (model is now pass-through)',
+      ],
+      Refactoring: [
+        'Remove goal feature and refactor diff theme CSS (goal autonomous loop dropped)',
+        'Codex-calm thread row: softer active bg, time stamp always visible, trash overlays on hover without layout shift',
+        'Segmented Scope control in Add MCP server dialog (wider dialog, label-only cells, mono path tooltip)',
+        'Sidebar footer slimmed to single kebab + connection dot; version moved into menu',
+        'KiroConfigPanel nested rails softened to border-border/30',
+        'Timeline stability: TurnChip stripped to minimal Rollback affordance',
+        'Project icons drop colored tints; status indicator unified to shape variants (spin/half/ring/x)',
+        'Drop hard borders on sidebar — separation via bg color shift only',
+      ],
+      Styling: [
+        'Warmer dark theme: --background #0D0D0D → #1C1C1E, --card/--sidebar → #28282A',
+        'Softer off-white text (--foreground → #E4E4E6)',
+        'AppHeader border softened to border-border/40',
+        'Show project action icons only on hover (calmer rows)',
+        'Active project no longer paints a bg pill; only font-medium bump on name',
+        'Symmetric p-3 outer inset so sidebar reads as elevated floating card',
+        'Traffic-light row baseline-aligned with NavHistoryButtons and collapse chrome',
+      ],
+    },
+  },
+  {
     version: 'v0.53.0',
     date: '2026-05-17',
-    latest: true,
     sections: {
       Features: [
         '/goal autonomous agent loop with orchestrator, templates, and analytics',

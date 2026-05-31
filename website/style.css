@@ -14,14 +14,14 @@
 }
 
 :root {
-  --background: #0a0a0a;
-  --foreground: #f5f5f7;
-  --card: #111111;
-  --card-foreground: #f5f5f7;
+  --background: #1C1C1E;
+  --foreground: #E4E4E6;
+  --card: #28282A;
+  --card-foreground: #E4E4E6;
   --primary: #0000FF;
   --primary-foreground: #ffffff;
-  --muted-foreground: #888888;
-  --border: rgba(255, 255, 255, 0.06);
+  --muted-foreground: #8A8A8C;
+  --border: rgba(255, 255, 255, 0.08);
   --info: #60a5fa;
   --success: #34d399;
 }
@@ -95,15 +95,15 @@ pre, code {
   justify-content: center;
   padding: 1.25rem 0.75rem;
   border-radius: 0.75rem;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  background: #111111;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #28282A;
   text-decoration: none;
   transition: all 0.2s ease;
   cursor: pointer;
 }
 .download-card:hover {
-  border-color: rgba(255, 255, 255, 0.15);
-  background: #161616;
+  border-color: rgba(255, 255, 255, 0.18);
+  background: #323234;
 }
 .download-card--active {
   border-color: rgba(255, 255, 255, 0.2);
@@ -138,7 +138,7 @@ html.light .download-card--active:hover {
 
 /* Nav backdrop */
 .nav-backdrop {
-  background: rgba(10, 10, 10, 0.8);
+  background: rgba(28, 28, 30, 0.85);
 }
 html.light .nav-backdrop {
   background: rgba(255, 255, 255, 0.8);
