@@ -164,8 +164,8 @@ describe('useSlashAction /fork', () => {
 
   it('/fork clears panel', () => {
     const { result } = renderHook(() => useSlashAction())
-    act(() => { result.current.execute('/model') })
-    expect(result.current.panel).toBe('model')
+    act(() => { result.current.execute('/branch') })
+    expect(result.current.panel).toBe('branch')
     act(() => { result.current.execute('/fork') })
     expect(result.current.panel).toBeNull()
   })
