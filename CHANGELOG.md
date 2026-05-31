@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.64.0] - 2026-06-01
+
+### Documentation
+
+- consolidate v0.6x releases under v0.63.0 + lift theme darkness ([`0cea2f2`](https://github.com/thabti/kirodex/commit/0cea2f22ee278f20d5ea3c35d2e5468d72dda7c4))
+
 ## [v0.63.0] - 2026-06-01
 
 ### Bug fixes
