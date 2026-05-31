@@ -9,6 +9,8 @@ import { startConnectionHealthMonitor } from "@/lib/connection-health";
 import { getReceiptBus } from "@/lib/typed-receipts";
 import { AppHeader } from "@/components/AppHeader";
 import { TaskSidebar } from "@/components/sidebar/TaskSidebar";
+
+const IS_MAC = typeof navigator !== 'undefined' && navigator.userAgent.toLowerCase().includes('mac')
 const ChatPanel = lazy(() =>
   import("@/components/chat/ChatPanel").then((m) => ({ default: m.ChatPanel })),
 );
@@ -696,14 +698,14 @@ export function App() {
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div data-testid="app-container" className="flex h-full bg-background text-foreground">
+      <div data-testid="app-container" className="flex h-full gap-3 p-3 bg-background text-foreground">
         {/* Sidebar — full height, bleeds into top */}
         <ErrorBoundary>
           {!isSidebarCollapsed && <TaskSidebar width={sidebarWidth} onResize={setSidebarWidth} position={sidebarPosition} onCollapse={toggleSidebar} onCloneFromGitHub={() => setIsCloneDialogOpen(true)} />}
         </ErrorBoundary>
 
         {/* Right column: header + content */}
-        <div className={cn("flex min-h-0 min-w-0 flex-1 flex-col", isRightSidebar && "order-first")}>
+        <div className={cn("flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden", isRightSidebar && "order-first")}>
           {/* Top-level breadcrumb header */}
           <ErrorBoundary>
             <AppHeader
@@ -720,7 +722,7 @@ export function App() {
             <main data-testid="main-content" className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
             <ErrorBoundary>
               <div
-                className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-xl"
+                className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
                 style={{ fontSize: 'var(--app-font-size, 13px)' }}
               >
                 <Suspense>

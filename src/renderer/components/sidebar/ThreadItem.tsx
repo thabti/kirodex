@@ -196,8 +196,8 @@ export const ThreadItem = memo(function ThreadItem({ task, isActive, jumpLabel, 
         className={cn(
           'relative flex min-w-0 h-8 w-full cursor-pointer items-center gap-1.5 overflow-hidden rounded-lg px-2 pr-2 text-[13px] select-none',
           'outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring transition-colors',
-          'text-foreground/80 hover:bg-accent/40 hover:text-foreground',
-          isActive && 'bg-accent/50 text-foreground',
+          'text-foreground/80 hover:bg-accent/30 hover:text-foreground',
+          isActive && 'bg-accent/60 text-foreground',
         )}
       >
         <span className="flex size-3 shrink-0 items-center justify-center" aria-hidden={!dot && !task.isDraft}>

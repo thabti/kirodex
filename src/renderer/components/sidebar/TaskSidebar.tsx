@@ -28,7 +28,7 @@ const NavHistoryButtons = memo(function NavHistoryButtons({ isRight }: { isRight
   const modKey = IS_MAC ? '⌘' : 'Ctrl+'
   // Mac left-sidebar: traffic lights occupy ~70px on left, nav sits right after them.
   // Mac right-sidebar / non-Mac: just hug the leading edge.
-  const positionClass = IS_MAC && !isRight ? 'left-[78px] top-2' : 'left-2 top-2'
+  const positionClass = IS_MAC && !isRight ? 'left-[68px] top-1' : 'left-2 top-1'
   return (
     <div className={cn('absolute z-20 flex items-center gap-0.5', positionClass)} data-no-drag>
       <Tooltip>
@@ -252,7 +252,7 @@ const SplitViewsList = memo(function SplitViewsList() {
 
   return (
     <div className="pb-1">
-      <div className="px-4 py-2 pr-3">
+      <div className="px-3 py-2">
         <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Side-by-side</span>
       </div>
       <ul className="flex flex-col gap-0.5 px-2">
@@ -367,7 +367,7 @@ const PinnedThreadsList = memo(function PinnedThreadsList({ tasks, selectedTaskI
   if (tasks.length === 0) return null
   return (
     <div className="flex flex-col">
-      <div className="px-4 py-2">
+      <div className="px-3 py-2">
         <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Pinned</span>
       </div>
       <ul className="flex min-w-0 flex-col gap-0 px-2 pb-1">
@@ -395,7 +395,7 @@ const SidebarDivider = memo(function SidebarDivider() {
   if (!hasSplits) return null
   return (
     <div className="flex justify-center py-1">
-      <div className="h-px w-8 bg-border/40" />
+      <div className="h-px w-8 bg-border/30" />
     </div>
   )
 })
@@ -527,15 +527,15 @@ export const TaskSidebar = memo(function TaskSidebar({ width, onResize, position
   })
 
   return (
-    <div data-testid="task-sidebar" onContextMenu={handleContextMenu} className={cn('relative flex h-full min-h-0 shrink-0 flex-col overflow-hidden bg-sidebar pt-9 text-foreground', isRight ? 'border-l pr-1 order-last' : 'border-r pl-1')} style={{ width }}>
-      <NavHistoryButtons isRight={isRight} />
+    <div data-testid="task-sidebar" onContextMenu={handleContextMenu} className={cn('relative flex h-full min-h-0 shrink-0 flex-col overflow-hidden rounded-xl bg-sidebar pt-9 text-foreground', isRight && 'order-last')} style={{ width }}>
+      {/* NavHistoryButtons disabled for now */}
       {/* Collapse button in traffic lights zone */}
       {onCollapse && (
         <button
           type="button"
           aria-label="Collapse sidebar"
           onClick={onCollapse}
-          className="absolute right-2 top-2 z-20 inline-flex size-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          className="absolute right-2 top-1 z-20 inline-flex size-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
         >
           {isRight ? <IconLayoutSidebarRightCollapse className="size-4" aria-hidden /> : <IconLayoutSidebarLeftCollapse className="size-4" aria-hidden />}
         </button>
@@ -568,7 +568,7 @@ export const TaskSidebar = memo(function TaskSidebar({ width, onResize, position
         onDeleteTask={handleDeleteTask}
         onRenameTask={renameTask}
       />
-      <div className="flex items-center justify-between px-4 py-2 pr-3">
+      <div className="flex items-center justify-between px-3 py-2">
         <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Projects</span>
         <div className="flex shrink-0 items-center gap-1">
           <SortDropdown sort={sort} onChange={handleSortChange} />

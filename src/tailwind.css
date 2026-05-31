@@ -108,21 +108,21 @@
 
 .dark {
     color-scheme: dark;
-    --background: #0D0D0D;
-    --foreground: #f0f0f0;
-    --card: #141414;
-    --card-foreground: #f0f0f0;
-    --popover: #161616;
-    --popover-foreground: #f0f0f0;
+    --background: #1C1C1E;
+    --foreground: #E4E4E6;
+    --card: #28282A;
+    --card-foreground: #E4E4E6;
+    --popover: #28282A;
+    --popover-foreground: #E4E4E6;
     --primary: #60a5fa;
     --primary-foreground: #ffffff;
     --secondary: color-mix(in srgb, white 6%, transparent);
-    --secondary-foreground: #f0f0f0;
+    --secondary-foreground: #E4E4E6;
     --muted: color-mix(in srgb, white 6%, transparent);
-    --muted-foreground: #9a9a9a;
-    --accent: color-mix(in srgb, white 7%, transparent);
-    --sidebar: #111111;
-    --accent-foreground: #f0f0f0;
+    --muted-foreground: #8A8A8C;
+    --accent: color-mix(in srgb, white 8%, transparent);
+    --sidebar: #28282A;
+    --accent-foreground: #E4E4E6;
     --destructive: #f87171;
     --border: color-mix(in srgb, white 3%, transparent);
     --input: color-mix(in srgb, white 12%, transparent);

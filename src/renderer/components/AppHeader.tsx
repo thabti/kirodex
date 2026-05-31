@@ -76,7 +76,7 @@ const AppHeaderInner = memo(function AppHeaderInner({
       data-tauri-drag-region
       onMouseDown={handleHeaderMouseDown}
       className={cn(
-        "flex h-[38px] shrink-0 items-center gap-3 border-b border-border bg-background p-0 pt-1 select-none [-webkit-user-select:none]",
+        "flex h-[38px] shrink-0 items-center gap-3 border-b border-border/40 bg-background p-0 pt-1 select-none [-webkit-user-select:none]",
         IS_MAC ? (isFullscreen ? "pl-2 pr-2" : isSidebarCollapsed ? "pl-[74px] pr-2" : "pl-2 pr-2") : "pl-2 pr-[138px]",
       )}
     >

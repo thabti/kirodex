@@ -406,7 +406,7 @@ export const KiroConfigPanel = memo(function KiroConfigPanel({
               <SectionToggle icon={IconCompass} iconColor="text-emerald-600 dark:text-emerald-400" label="Steering" count={filteredRules.length} expanded={rulesOpen} onToggle={() => setRulesOpen((v) => !v)} />
             )}
             {rulesOpen && filteredRules.length > 0 && (
-              <ul className="flex min-w-0 flex-col gap-px border-l mx-1 px-1.5 py-px" style={{ borderColor: 'var(--border)' }}>
+              <ul className="flex min-w-0 flex-col gap-px border-l border-border/30 mx-1 px-1.5 py-px">
                 {filteredRules.map((rule) => <SteeringRow key={`${rule.source}-${rule.name}`} rule={rule} onOpen={openViewer} />)}
               </ul>
             )}
@@ -415,7 +415,7 @@ export const KiroConfigPanel = memo(function KiroConfigPanel({
               <SectionToggle icon={IconBolt} iconColor="text-amber-600 dark:text-amber-400" label="Skills" count={filteredSkills.length} expanded={skillsOpen} onToggle={() => setSkillsOpen((v) => !v)} />
             )}
             {skillsOpen && filteredSkills.length > 0 && (
-              <ul className="flex min-w-0 flex-col gap-px border-l mx-1 px-1.5 py-px" style={{ borderColor: 'var(--border)' }}>
+              <ul className="flex min-w-0 flex-col gap-px border-l border-border/30 mx-1 px-1.5 py-px">
                 {filteredSkills.map((skill) => <SkillRow key={`${skill.source}-${skill.name}`} skill={skill} onOpen={openViewer} />)}
               </ul>
             )}
@@ -424,7 +424,7 @@ export const KiroConfigPanel = memo(function KiroConfigPanel({
               <SectionToggle icon={IconRobot} iconColor="text-violet-600 dark:text-violet-400" label="Agents" count={totalAgents} expanded={agentsOpen} onToggle={() => setAgentsOpen((v) => !v)} />
             )}
             {agentsOpen && totalAgents > 0 && (
-              <ul className="flex min-w-0 flex-col gap-px border-l mx-1 px-1.5 py-px" style={{ borderColor: 'var(--border)' }}>
+              <ul className="flex min-w-0 flex-col gap-px border-l border-border/30 mx-1 px-1.5 py-px">
                 {agentGroups.map(([stack, agentList]) =>
                   agentList.length === 1
                     ? <AgentRow key={`${agentList[0].source}-${agentList[0].name}`} agent={agentList[0]} onOpen={openViewer} />
@@ -478,7 +478,7 @@ export const KiroConfigPanel = memo(function KiroConfigPanel({
               </button>
             )}
             {mcpOpen && filteredMcp.length > 0 && (
-              <ul className="flex min-w-0 flex-col gap-px border-l mx-1 px-1.5 py-px" style={{ borderColor: 'var(--border)' }}>
+              <ul className="flex min-w-0 flex-col gap-px border-l border-border/30 mx-1 px-1.5 py-px">
                 {filteredMcp.map((server) => <McpRow key={server.name} server={server} onOpen={openViewer} />)}
               </ul>
             )}
@@ -487,7 +487,7 @@ export const KiroConfigPanel = memo(function KiroConfigPanel({
               <SectionToggle icon={IconAlignLeft} iconColor="text-indigo-600 dark:text-indigo-400" label="Prompts" count={filteredPrompts.length} expanded={promptsOpen} onToggle={() => setPromptsOpen((v) => !v)} />
             )}
             {promptsOpen && filteredPrompts.length > 0 && (
-              <ul className="flex min-w-0 flex-col gap-px border-l mx-1 px-1.5 py-px" style={{ borderColor: 'var(--border)' }}>
+              <ul className="flex min-w-0 flex-col gap-px border-l border-border/30 mx-1 px-1.5 py-px">
                 {filteredPrompts.map((prompt) => (
                   <li key={`${prompt.source}-${prompt.name}`}>
                     <button

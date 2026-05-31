@@ -72,10 +72,7 @@ export const ProjectItem = memo(function ProjectItem({
 
   return (
     <li
-      className={cn(
-        'group/menu-item relative min-w-0 rounded-md transition-colors',
-        isActiveProject && 'bg-accent/30',
-      )}
+      className="group/menu-item relative min-w-0 rounded-md transition-colors"
     >
       <div className="relative flex items-center">
         <button
@@ -98,20 +95,17 @@ export const ProjectItem = memo(function ProjectItem({
           )}
         </button>
 
-        {/* Action buttons — hidden until hover/focus */}
-        <div
-          className="absolute inset-y-0 right-0 z-10 flex w-16 items-center justify-end gap-0.5 pr-1 opacity-0 transition-opacity group-hover/menu-item:opacity-100 focus-within:opacity-100"
-          style={{ background: 'linear-gradient(to right, transparent 0%, var(--sidebar) 35%)' }}
-        >
+        {/* Action buttons — hidden until hover/focus, no bg mask */}
+        <div className="absolute inset-y-0 right-1 z-10 flex items-center gap-0.5 opacity-0 transition-opacity group-hover/menu-item:opacity-100 focus-within:opacity-100">
           <Tooltip>
             <TooltipTrigger asChild>
               <button
                 type="button"
                 aria-label={`New thread in ${name}`}
                 onClick={onNewThread}
-                className="flex size-5 cursor-pointer items-center justify-center rounded-md text-muted-foreground hover:bg-secondary hover:text-foreground outline-none focus-visible:opacity-100"
+                className="flex size-5 cursor-pointer items-center justify-center rounded-md text-muted-foreground/80 hover:text-foreground outline-none focus-visible:opacity-100"
               >
-                <IconEdit className="size-3.5" />
+                <IconEdit className="size-3" />
               </button>
             </TooltipTrigger>
             <TooltipContent side="top">New thread</TooltipContent>
@@ -123,7 +117,7 @@ export const ProjectItem = memo(function ProjectItem({
                 type="button"
                 aria-label={`Remove ${name}`}
                 onClick={onRemoveProject}
-                className="flex size-5 cursor-pointer items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/15 hover:text-destructive outline-none focus-visible:opacity-100"
+                className="flex size-5 cursor-pointer items-center justify-center rounded-md text-muted-foreground/80 hover:text-destructive outline-none focus-visible:opacity-100"
               >
                 <IconTrash className="size-3" />
               </button>
