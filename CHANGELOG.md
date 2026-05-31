@@ -1,5 +1,15 @@
 # Changelog
 
+## [v0.63.0] - 2026-06-01
+
+### Bug fixes
+
+- swap /model for /branch in slash-action panel test ([`a5b067f`](https://github.com/thabti/kirodex/commit/a5b067fccabc4292382de4312d26b1b869781376))
+
+### Refactoring
+
+- Bear-inspired shell + sidebar polish + warm theme ([`4b3ebf5`](https://github.com/thabti/kirodex/commit/4b3ebf52f80703579f62043041f6dd8a87cd4249))
+
 ## [v0.62.0] - 2026-06-01
 
 No notable changes.
