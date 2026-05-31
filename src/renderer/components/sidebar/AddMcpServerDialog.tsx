@@ -11,6 +11,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { toast } from 'sonner'
 import { ipc } from '@/lib/ipc'
 import { useSettingsStore } from '@/stores/settingsStore'
@@ -138,7 +139,7 @@ export function AddMcpServerDialog({ open, onOpenChange, workspace }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md" onKeyDown={handleKeyDown}>
+      <DialogContent className="max-w-lg" onKeyDown={handleKeyDown}>
         <DialogHeader>
           <DialogTitle>Add MCP server</DialogTitle>
           <DialogDescription>
@@ -195,7 +196,7 @@ export function AddMcpServerDialog({ open, onOpenChange, workspace }: Props) {
           {/* Scope */}
           <div className="flex flex-col gap-1">
             <label className="text-[11px] font-medium text-muted-foreground">Scope</label>
-            <div className="grid grid-cols-3 gap-1.5">
+            <div className="flex items-center rounded-md border border-border overflow-hidden">
               <ScopeButton active={scope === 'global'} onClick={() => setScope('global')} label="Global" hint="~/.kiro/settings/mcp.json" />
               <ScopeButton
                 active={scope === 'workspace'}
@@ -203,6 +204,7 @@ export function AddMcpServerDialog({ open, onOpenChange, workspace }: Props) {
                 label="Workspace"
                 hint=".kiro/settings/mcp.json"
                 disabled={!workspace}
+                divider
               />
               <ScopeButton
                 active={scope === 'agent'}
@@ -210,8 +212,16 @@ export function AddMcpServerDialog({ open, onOpenChange, workspace }: Props) {
                 label="Agent"
                 hint="Custom agent file"
                 disabled={agents.length === 0}
+                divider
               />
             </div>
+            <p className="font-mono text-[10px] text-muted-foreground/70">
+              {scope === 'global'
+                ? '~/.kiro/settings/mcp.json'
+                : scope === 'workspace'
+                  ? '.kiro/settings/mcp.json'
+                  : 'Custom agent file'}
+            </p>
             {scope === 'agent' && (
               <select
                 value={agentName}
@@ -299,29 +309,37 @@ export function AddMcpServerDialog({ open, onOpenChange, workspace }: Props) {
 }
 
 function ScopeButton({
-  active, onClick, label, hint, disabled,
+  active, onClick, label, hint, disabled, divider,
 }: {
   active: boolean
   onClick: () => void
   label: string
   hint: string
   disabled?: boolean
+  divider?: boolean
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className={cn(
-        'flex flex-col items-start gap-0.5 rounded-md border border-border px-2 py-1.5 text-left transition-colors',
-        active
-          ? 'bg-accent text-foreground'
-          : 'text-muted-foreground hover:bg-accent/50',
-        disabled && 'cursor-not-allowed opacity-40',
-      )}
-    >
-      <span className="text-[12px] font-medium">{label}</span>
-      <span className="truncate text-[10px] font-mono text-muted-foreground/80">{hint}</span>
-    </button>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          onClick={onClick}
+          disabled={disabled}
+          className={cn(
+            'flex flex-1 items-center justify-center px-3 py-1.5 text-[12px] font-medium transition-colors',
+            divider && 'border-l border-border',
+            active
+              ? 'bg-accent text-foreground'
+              : 'text-muted-foreground hover:bg-accent/50',
+            disabled && 'cursor-not-allowed opacity-40 hover:bg-transparent',
+          )}
+        >
+          {label}
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="bottom" className="font-mono text-[11px]">
+        {hint}
+      </TooltipContent>
+    </Tooltip>
   )
 }
