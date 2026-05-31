@@ -1,5 +1,15 @@
 # Changelog
 
+## [v0.65.0] - 2026-06-01
+
+### Features
+
+- align chat input, tighten panel gutters, polish diff rows ([`9db1db9`](https://github.com/thabti/kirodex/commit/9db1db9514a9217cd68525ac1a9b2a938c7b0716))
+
+### Styling
+
+- remove top padding on Projects header ([`87dca49`](https://github.com/thabti/kirodex/commit/87dca4945a4cf6a2c28aaed0907acbbf1057067c))
+
 ## [v0.64.0] - 2026-06-01
 
 ### Documentation
