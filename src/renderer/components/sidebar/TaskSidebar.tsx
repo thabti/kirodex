@@ -568,7 +568,7 @@ export const TaskSidebar = memo(function TaskSidebar({ width, onResize, position
         onDeleteTask={handleDeleteTask}
         onRenameTask={renameTask}
       />
-      <div className="flex items-center justify-between px-3 py-2">
+      <div className="flex items-center justify-between px-3 pt-0 pb-2">
         <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Projects</span>
         <div className="flex shrink-0 items-center gap-1">
           <SortDropdown sort={sort} onChange={handleSortChange} />
