@@ -282,7 +282,7 @@ export const ThreadItem = memo(function ThreadItem({ task, isActive, jumpLabel, 
                 type="button"
                 aria-label="Delete thread"
                 onClick={(e) => { e.stopPropagation(); onDelete() }}
-                className="flex size-5 shrink-0 items-center justify-center rounded-md text-muted-foreground opacity-50 transition-opacity group-hover/thread:opacity-100 focus-visible:opacity-100 hover:bg-destructive/15 hover:text-destructive"
+                className="flex size-5 shrink-0 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity group-hover/thread:opacity-100 focus-visible:opacity-100 hover:bg-destructive/15 hover:text-destructive"
               >
                 <IconTrash className="size-3" />
               </button>

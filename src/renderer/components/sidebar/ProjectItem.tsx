@@ -101,9 +101,9 @@ export const ProjectItem = memo(function ProjectItem({
           )}
         </button>
 
-        {/* Action buttons — always visible at low opacity, full on hover/focus */}
+        {/* Action buttons — hidden until hover/focus */}
         <div
-          className="absolute inset-y-0 right-0 z-10 flex w-16 items-center justify-end gap-0.5 pr-1 opacity-50 transition-opacity group-hover/menu-item:opacity-100 focus-within:opacity-100"
+          className="absolute inset-y-0 right-0 z-10 flex w-16 items-center justify-end gap-0.5 pr-1 opacity-0 transition-opacity group-hover/menu-item:opacity-100 focus-within:opacity-100"
           style={{ background: 'linear-gradient(to right, transparent 0%, var(--sidebar) 35%)' }}
         >
           <Tooltip>
