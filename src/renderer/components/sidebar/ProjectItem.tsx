@@ -78,9 +78,6 @@ export const ProjectItem = memo(function ProjectItem({
       )}
     >
       <div className="relative flex items-center">
-        {isActiveProject && (
-          <div className="absolute left-0 top-1 bottom-1 w-[3px] rounded-full bg-primary" aria-hidden />
-        )}
         <button
           ref={buttonRef}
           type="button"
@@ -200,7 +197,7 @@ export const ProjectItem = memo(function ProjectItem({
       />
 
       {expanded && tasks.length > 0 && (
-        <div className="flex min-w-0 flex-col overflow-hidden border-l mx-1 my-0 gap-0 px-1.5 py-0" style={{ borderColor: 'var(--border)' }}>
+        <div className="flex min-w-0 flex-col overflow-hidden">
           <ul className="flex min-w-0 flex-col gap-0">
             {visibleTasks.map((task, i) => {
               const threadJumpLabel = isMetaHeld && i < 9 ? `${i + 1}` : null
@@ -234,7 +231,7 @@ export const ProjectItem = memo(function ProjectItem({
       )}
 
       {expanded && tasks.length === 0 && (
-        <div className="flex items-center gap-2 px-4 py-2 mx-1 border-l" style={{ borderColor: 'var(--border)' }}>
+        <div className="flex items-center gap-2 px-2 py-2">
           <IconMessage className="size-3.5 text-muted-foreground/50" aria-hidden />
           <span className="text-[12px] text-muted-foreground/60">No threads yet</span>
         </div>

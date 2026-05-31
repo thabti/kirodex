@@ -1,3 +1,19 @@
+## 2026-05-31 18:50 GST (Dubai)
+
+### Chat: Simplify TurnChip to minimal rollback affordance
+
+Stripped model label, duration, border, and card styling from TurnChip. Now renders as a subtle right-aligned "Rollback" text with a violet IconHistory icon. Removed unused useSettingsStore import and model-related state.
+
+**Modified:** `src/renderer/components/chat/AssistantTextRow.tsx`
+
+## 2026-05-31 18:47 GST (Dubai)
+
+### Git: Commit sidebar fixes and remove Claude co-author from history
+
+Committed sidebar changes (hide action buttons until hover, add split views section header). Rewrote last 5 commits via filter-branch to remove Claude co-author trailers while preserving Kirodex co-author.
+
+**Modified:** `src/renderer/components/sidebar/ProjectItem.tsx`, `src/renderer/components/sidebar/TaskSidebar.tsx`, `src/renderer/components/sidebar/ThreadItem.tsx`, git history (5 commits rewritten)
+
 ## 2026-05-31 18:36 GST (Dubai)
 
 ### Sidebar: Merge footer row into KIRO header

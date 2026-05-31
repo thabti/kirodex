@@ -194,10 +194,10 @@ export const ThreadItem = memo(function ThreadItem({ task, isActive, jumpLabel, 
         onContextMenu={handleContextMenu}
         onKeyDown={(e) => e.key === 'Enter' && onSelect()}
         className={cn(
-          'flex min-w-0 h-8 w-full cursor-pointer items-center gap-1.5 overflow-hidden rounded-lg px-2 pr-1 text-[13px] select-none',
+          'relative flex min-w-0 h-8 w-full cursor-pointer items-center gap-1.5 overflow-hidden rounded-lg px-2 pr-2 text-[13px] select-none',
           'outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring transition-colors',
-          'text-foreground/80 hover:bg-accent hover:text-foreground',
-          isActive && 'bg-accent text-foreground',
+          'text-foreground/80 hover:bg-accent/40 hover:text-foreground',
+          isActive && 'bg-accent/50 text-foreground',
         )}
       >
         <span className="flex size-3 shrink-0 items-center justify-center" aria-hidden={!dot && !task.isDraft}>
@@ -266,29 +266,34 @@ export const ThreadItem = memo(function ThreadItem({ task, isActive, jumpLabel, 
           <>
             {isNotified && (
               <span
-                className="size-1.5 shrink-0 rounded-full bg-orange-400 group-hover/thread:hidden"
+                className="size-1.5 shrink-0 rounded-full bg-orange-400"
                 aria-label="New activity"
               />
             )}
-            <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground group-hover/thread:hidden">
+            <span className="shrink-0 text-[11px] leading-none tabular-nums text-muted-foreground">
               {relativeTime(task.lastActivityAt)}
             </span>
           </>
         )}
         {!editing && !jumpLabel && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                aria-label="Delete thread"
-                onClick={(e) => { e.stopPropagation(); onDelete() }}
-                className="flex size-5 shrink-0 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity group-hover/thread:opacity-100 focus-visible:opacity-100 hover:bg-destructive/15 hover:text-destructive"
-              >
-                <IconTrash className="size-3" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="top">Delete thread</TooltipContent>
-          </Tooltip>
+          <span
+            className="pointer-events-none absolute inset-y-0 right-1 z-10 flex items-center pl-4 opacity-0 transition-opacity group-hover/thread:pointer-events-auto group-hover/thread:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100"
+            style={{ background: 'linear-gradient(to right, transparent 0%, var(--sidebar) 40%)' }}
+          >
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  aria-label="Delete thread"
+                  onClick={(e) => { e.stopPropagation(); onDelete() }}
+                  className="flex size-5 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/15 hover:text-destructive focus-visible:ring-1 focus-visible:ring-ring outline-none"
+                >
+                  <IconTrash className="size-3" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top">Delete thread</TooltipContent>
+            </Tooltip>
+          </span>
         )}
       </div>
 

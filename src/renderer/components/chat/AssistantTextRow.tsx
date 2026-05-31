@@ -8,7 +8,6 @@ import { isPlanHandoff, PlanHandoffCard } from './PlanHandoffCard'
 import { TaskCompletionCard, parseReport, stripReport, shouldRenderReportCard } from './TaskCompletionCard'
 import { CompletionDivider } from './CompletionDivider'
 import { useTaskStore } from '@/stores/taskStore'
-import { useSettingsStore } from '@/stores/settingsStore'
 import { ipc } from '@/lib/ipc'
 import { toast } from 'sonner'
 import { useMessageListTaskId } from './MessageList'
@@ -42,41 +41,13 @@ function formatDurationLabel(ms: number): string {
 const TurnChip = memo(function TurnChip({
   taskId,
   messageIndex,
-  durationMs,
-  showModel,
 }: {
   taskId: string | null
   messageIndex: number
-  durationMs?: number
-  /**
-   * When true, render the model label (green dot + model name). When false,
-   * the chip shows only duration + Rollback. Follows the Slack date-divider
-   * pattern: only the first assistant turn or a turn whose model changed
-   * from the previous one shows the label.
-   */
-  showModel: boolean
 }) {
   const [confirm, setConfirm] = useState(false)
   const confirmTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  // Per-task model id, falling back to the global selection. Both can be
-  // stale relative to which model actually answered this turn — we don't
-  // record per-message model attribution yet.
-  const taskModelId = useTaskStore((s) => taskId ? s.taskModels[taskId] ?? null : null)
-  const globalModelId = useSettingsStore((s) => s.currentModelId)
-  const availableModels = useSettingsStore((s) => s.availableModels)
   const worktreePath = useTaskStore((s) => taskId ? s.tasks[taskId]?.worktreePath ?? null : null)
-
-  const modelId = taskModelId ?? globalModelId
-  const resolvedModelLabel = useMemo(() => {
-    if (!modelId) return null
-    const found = availableModels.find((m) => m.modelId === modelId)
-    return found?.name ?? modelId
-  }, [modelId, availableModels])
-  // Slack divider semantics: only render the label when the timeline asked
-  // for it AND we actually have a resolved label to show. When suppressed,
-  // the chip still renders duration + Rollback to keep the affordance.
-  const modelLabel = showModel ? resolvedModelLabel : null
 
   useEffect(() => {
     return () => {
@@ -122,21 +93,7 @@ const TurnChip = memo(function TurnChip({
   }, [taskId, messageIndex, confirm, fileRevertActive])
 
   return (
-    <div className="mb-2 flex w-full items-center justify-between gap-2 rounded-md border border-border bg-card/60 px-2 py-0.5 text-[11px] text-muted-foreground">
-      <div className="flex min-w-0 items-center gap-2 truncate">
-        {modelLabel && (
-          <>
-            <span aria-hidden className="inline-block size-1.5 shrink-0 rounded-full bg-emerald-500/70" />
-            <span className="truncate">{modelLabel}</span>
-          </>
-        )}
-        {durationMs != null && durationMs > 0 && (
-          <>
-            {modelLabel && <span className="text-muted-foreground/40">·</span>}
-            <span className="tabular-nums">{formatDurationLabel(durationMs)}</span>
-          </>
-        )}
-      </div>
+    <div className="mb-1.5 flex w-full items-center justify-end">
       <Tooltip>
         <TooltipTrigger asChild>
           <button
@@ -144,17 +101,17 @@ const TurnChip = memo(function TurnChip({
             onClick={handleRollback}
             aria-label="Rollback to this turn"
             className={cn(
-              'inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-0.5 text-[11px] transition-colors',
+              'inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] transition-colors',
               'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring/60',
               confirm
-                ? 'bg-destructive/15 text-destructive ring-1 ring-destructive/40 hover:bg-destructive/20'
-                : 'text-muted-foreground hover:bg-accent hover:text-foreground hover:ring-1 hover:ring-destructive/30',
+                ? 'bg-destructive/10 text-destructive'
+                : 'text-muted-foreground/50 hover:text-muted-foreground',
             )}
           >
             {confirm
-              ? <IconAlertTriangle className="size-3" aria-hidden />
-              : <IconHistory className="size-3" aria-hidden />}
-            <span>{confirm ? 'Confirm rollback' : 'Rollback to here'}</span>
+              ? <IconAlertTriangle className="size-3 text-destructive" aria-hidden />
+              : <IconHistory className="size-3 text-violet-400" aria-hidden />}
+            <span>{confirm ? 'Confirm' : 'Rollback'}</span>
           </button>
         </TooltipTrigger>
         <TooltipContent side="top" className="text-[11px]">
@@ -227,8 +184,6 @@ export const AssistantTextRow = memo(function AssistantTextRow({ row }: { row: A
         <TurnChip
           taskId={ctxTaskId}
           messageIndex={row.messageIndex!}
-          durationMs={row.durationMs}
-          showModel={row.showModelLabel === true}
         />
       )}
       {row.thinking && (
