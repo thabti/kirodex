@@ -8,7 +8,6 @@ vi.mock('@/lib/ipc', () => ({
     kiroWhoami: vi.fn().mockResolvedValue({ accountType: 'pro', email: 'test@test.com', region: 'us-east-1' }),
     kiroLogout: vi.fn().mockResolvedValue(undefined),
     openTerminalWithCommand: vi.fn().mockResolvedValue(undefined),
-    goalEnsureDir: vi.fn().mockResolvedValue(undefined),
   },
 }))
 

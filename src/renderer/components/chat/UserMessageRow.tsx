@@ -1,6 +1,6 @@
 import { memo, useState, useRef, useCallback, useContext, useMemo, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
-import { IconCopy, IconCheck, IconPhoto, IconFileText, IconFile, IconRobot, IconBolt, IconGitFork, IconX, IconTarget } from '@tabler/icons-react'
+import { IconCopy, IconCheck, IconPhoto, IconFileText, IconFile, IconRobot, IconBolt, IconGitFork, IconX } from '@tabler/icons-react'
 import {
   Tooltip,
   TooltipContent,
@@ -184,8 +184,7 @@ export const UserMessageRow = memo(function UserMessageRow({ row }: { row: UserM
   const { text: cleanText, attachments: parsedAttachments } = useMemo(() => parseAttachments(row.content), [row.content])
 
   const isQuestionAnswer = !!row.questionAnswers?.length
-  const isGoalMessage = cleanText.startsWith('/goal')
-  const displayText = isGoalMessage ? cleanText.replace(/^\/goal\s*/, '') : cleanText
+  const displayText = cleanText
 
   return (
     <div data-testid="user-message-row" className="pb-4" data-timeline-row-kind="user-message">
@@ -249,12 +248,6 @@ export const UserMessageRow = memo(function UserMessageRow({ row }: { row: UserM
             <span className="text-[11px] tabular-nums text-muted-foreground">
               {timeStr}
             </span>
-            {isGoalMessage && (
-              <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                <IconTarget className="size-3" aria-hidden />
-                Sent as goal
-              </span>
-            )}
           </div>
         </div>
       </div>

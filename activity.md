@@ -1,3 +1,49 @@
+## 2026-05-26 16:56 GST (Dubai)
+
+### Goal: Fully delete all goal-related code
+
+Deleted all goal files and removed every remaining reference. Deleted: `goalStore.ts`, `goalStore.test.ts`, `goal-integration.test.ts`, `GoalCard.tsx`, `GoalModal.tsx`, `GoalStatusOverlay.tsx`, `goal.rs`, `.kiro_goal_templates/`. Removed goal IPC functions from `ipc.ts`, goal settings fields from `types/index.ts`, goal analytics event types from `analytics.ts` and `analytics-aggregators.ts`, and the `goalEnsureDir` mock from `settingsStore.test.ts`. Build passes cleanly.
+
+**Modified:** src/renderer/lib/ipc.ts, src/renderer/types/index.ts, src/renderer/types/analytics.ts, src/renderer/lib/analytics-aggregators.ts, src/renderer/stores/settingsStore.test.ts
+
+## 2026-05-26 16:47 GST (Dubai)
+
+### Goal: Fully disable /goal feature and .kiro file injection
+
+Removed the /goal slash command, its UI components, and the Rust backend registration. The goal auto-continue loop in task-store-listeners, GoalCard in ChatPanel, GoalStatusOverlay in SlashPanels, goal message badges in UserMessageRow, and goal active indicators in ThreadItem are all disconnected. The Rust `goal.rs` file and `.kiro_goal_templates/` remain on disk as dead code (not compiled). Build passes cleanly on both TypeScript and Rust.
+
+**Modified:** src-tauri/src/commands/mod.rs, src-tauri/src/lib.rs, src/renderer/components/chat/ChatPanel.tsx, src/renderer/components/chat/EmptyThreadSplash.tsx, src/renderer/components/chat/SlashCommandPicker.tsx, src/renderer/components/chat/SlashPanels.tsx, src/renderer/components/chat/UserMessageRow.tsx, src/renderer/components/sidebar/ThreadItem.tsx, src/renderer/hooks/useChatInput.ts, src/renderer/hooks/useSlashAction.ts, src/renderer/stores/task-store-listeners.ts
+
+## 2026-05-25 12:49 GST (Dubai)
+
+### Goal: Disable feature by default, use global directory
+
+Disabled the `/goal` feature by default (requires explicit `goalEnabled: true` in settings). Removed auto-creation of `.kiro/goal/` in project directories on workspace open. Changed the Rust backend to store goal state and templates in `~/.kiro/goal/` globally instead of per-project. Filtered goal-related slash commands from the UI when the feature is disabled.
+
+**Modified:**
+- `src-tauri/src/commands/goal.rs`
+- `src/renderer/components/chat/EmptyThreadSplash.tsx`
+- `src/renderer/hooks/useChatInput.ts`
+- `src/renderer/hooks/useSlashAction.ts`
+- `src/renderer/stores/settingsStore.ts`
+- `src/renderer/types/index.ts`
+
+## 2026-05-22 06:23 GST (Dubai)
+
+### Diff: Fix dark background in light mode
+
+The `@pierre/diffs` web component uses shadow DOM, so CSS variables from the host page don't resolve inside it. Replaced `var(--card)` / `var(--background)` references in `UNSAFE_CSS` with a `buildUnsafeCSS(isDark)` function that injects hardcoded color values matching the current theme.
+
+**Modified:** `src/renderer/components/code/diff-viewer-utils.ts`, `src/renderer/components/code/DiffViewer.tsx`, `src/renderer/components/diff/DiffPanel.tsx`
+
+## 2026-05-22 06:17 GST (Dubai)
+
+### Chat: Strip image data from thread names
+
+Fixed thread names showing raw `<image src="data:ima...` when the first message contains an image attachment. Applied `stripImageDataForTitleGen` in `PendingChat.tsx` before deriving the thread name, so image-only messages get named "[Image attachment]" and mixed messages show only the text portion.
+
+**Modified:** src/renderer/components/chat/PendingChat.tsx
+
 ## 2026-05-22 06:18 GST (Dubai)
 
 ### Sidebar: Always show project name regardless of icon type
