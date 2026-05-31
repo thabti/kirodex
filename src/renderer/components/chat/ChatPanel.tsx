@@ -408,7 +408,7 @@ export const ChatPanel = memo(function ChatPanel({ taskId: taskIdProp }: ChatPan
         />
       </div>
       {terminalOpen && taskWorkspace && resolvedTaskId && (
-        <TerminalDrawer key={resolvedTaskId} cwd={taskWorkspace} onClose={() => toggleTerminal(resolvedTaskId)} />
+        <TerminalDrawer key={resolvedTaskId} cwd={taskWorkspace} slotId={resolvedTaskId} onClose={() => toggleTerminal(resolvedTaskId)} />
       )}
     </div>
   )

@@ -97,8 +97,21 @@ export const TreeContextMenu = memo(function TreeContextMenu({
   }, [entry, workspace, onClose])
 
   const handleOpenTerminal = useCallback(() => {
-    const path = entry?.path ?? ''
-    invoke('open_terminal_at', { workspace, relPath: path }).catch(console.error)
+    // Resolve the absolute folder path: a directory entry uses its own path;
+    // a file entry opens the terminal in its parent directory.
+    const relPath = entry?.path ?? ''
+    const absPath = relPath ? `${workspace}/${relPath}` : workspace
+    const isFile = entry && !entry.isDir
+    const cwd = isFile
+      ? absPath.split('/').slice(0, -1).join('/') || workspace
+      : absPath
+
+    // Route to the in-app terminal drawer for the currently focused panel.
+    // Falls back to the workspace-level drawer (PendingChat) when no task
+    // is open, mirroring how the toolbar terminal toggle picks its slot.
+    const taskState = useTaskStore.getState()
+    const slotId = taskState.selectedTaskId ?? '__workspace__'
+    taskState.requestOpenTerminalAt(slotId, cwd)
     onClose()
   }, [entry, workspace, onClose])
 
