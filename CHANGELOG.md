@@ -1,5 +1,43 @@
 # Changelog
 
+## [v0.58.0] - 2026-05-31
+
+### Features
+
+- Mac-native UX pass across chat, diff, sidebar, palette ([`cb96276`](https://github.com/thabti/kirodex/commit/cb962761a6e6752756dede1c01d82b67118f2494))
+- remove goal feature and refactor diff theme CSS ([`6894894`](https://github.com/thabti/kirodex/commit/68948944ed7b088c176ed24ae413de9bdafc012c))
+- route "Open in Terminal" through built-in terminal (#28) ([`ee3e695`](https://github.com/thabti/kirodex/commit/ee3e6953b522b213059732db9267ab91d83c7bd6)) — thanks @Hitesh-Sisara
+
+### Bug fixes
+
+- hide action buttons until hover instead of showing at low opacity ([`2767443`](https://github.com/thabti/kirodex/commit/27674433e9a46f3fb83c6473e9751bcad7590378))
+
+### Refactoring
+
+- segmented Scope control + wider dialog ([`09e4a4b`](https://github.com/thabti/kirodex/commit/09e4a4b2b1d8d066f9f416e8a5181bb3e693639b))
+- Codex-calm thread row + minimal TurnChip ([`11d770b`](https://github.com/thabti/kirodex/commit/11d770b87802b1729ccfba7614b3153c64f03dab))
+- timeline stability and sidebar UX improvements ([`9df6bd6`](https://github.com/thabti/kirodex/commit/9df6bd663c8afbde177f619f63ef1a4697686957))
+- remove GoalCard from ChatPanel and strip image data from title gen ([`675093c`](https://github.com/thabti/kirodex/commit/675093cbb918fc79f829f1b660ca37c678ad290d))
+
+### Chores
+
+- update downloads.json ([`39ba06d`](https://github.com/thabti/kirodex/commit/39ba06d0eeb9527b69c0effa12939883b0c426aa))
+- update downloads.json ([`f8c6763`](https://github.com/thabti/kirodex/commit/f8c6763cf953d595eb312c5147f6beb42ffe056d))
+- update downloads.json ([`ad7fe81`](https://github.com/thabti/kirodex/commit/ad7fe81d1cf5c27e791d729329598e0ec2ac119c))
+- update downloads.json ([`ed9bac2`](https://github.com/thabti/kirodex/commit/ed9bac296413bb542d917250c3fd578ebc897c66))
+- update downloads.json ([`eb29abe`](https://github.com/thabti/kirodex/commit/eb29abe259de0e3b0841ff08635ac66dfaa238e0))
+- update downloads.json ([`f37993b`](https://github.com/thabti/kirodex/commit/f37993b8805ea91598394e4e6505a174589035b0))
+- update downloads.json ([`c2377d6`](https://github.com/thabti/kirodex/commit/c2377d6d15520449348e02c6d1d05de4ce49e3c3))
+- update downloads.json ([`2ce88e7`](https://github.com/thabti/kirodex/commit/2ce88e712b94dc4723fb6ebcded2500d896a3f73))
+- update downloads.json ([`83c5cdd`](https://github.com/thabti/kirodex/commit/83c5cdd3bc7236f3a755be18d0a6828606dab955))
+- update downloads.json ([`06fe3d8`](https://github.com/thabti/kirodex/commit/06fe3d883209b313d315a2f6cdd0801b1b058a36))
+- update downloads.json ([`76c9964`](https://github.com/thabti/kirodex/commit/76c996454aed4e0a3edd3e319a86482b3f972109))
+- update downloads.json ([`e9c3025`](https://github.com/thabti/kirodex/commit/e9c30251b33d5f401cfbd8a646151ecf05b3589a))
+
+### Other changes
+
+- Merge branch 'main' of github.com:thabti/kirodex ([`35705c4`](https://github.com/thabti/kirodex/commit/35705c48e6e836f069626ea645e9f5a3860ad831))
+
 ## [v0.57.1] - 2026-05-31
 
 ### Features
