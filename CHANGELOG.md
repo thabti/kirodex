@@ -1,5 +1,15 @@
 # Changelog
 
+## [v0.59.0] - 2026-05-31
+
+### Features
+
+- remove goal feature and refactor diff theme CSS ([`44de0f1`](https://github.com/thabti/kirodex/commit/44de0f1b63a9db613731780ba75687d18435370f))
+
+### Other changes
+
+- Merge remote-tracking branch 'origin/main' ([`a3f5a4a`](https://github.com/thabti/kirodex/commit/a3f5a4a4abe024107233b0dbad5768e988c26892))
+
 ## [v0.58.0] - 2026-05-31
 
 ### Features
