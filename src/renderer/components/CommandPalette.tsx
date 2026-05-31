@@ -13,11 +13,11 @@
  */
 import { memo, useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import {
-  IconSearch, IconMessage, IconFolder, IconSettings, IconGitBranch,
-  IconPlus, IconHistory, IconTerminal2, IconCode, IconBug,
+  IconSearch, IconMessage, IconFolder, IconSettings,
+  IconPlus, IconHistory, IconTerminal2, IconCode,
   IconPlayerPause, IconPlayerStop, IconGitCommit, IconArrowUp,
   IconArrowDown, IconRefresh, IconArchive, IconCopy, IconBrain,
-  IconLayoutColumns, IconKeyboard, IconChartBar, IconDatabase,
+  IconLayoutColumns, IconKeyboard, IconChartBar, IconSlash,
 } from '@tabler/icons-react'
 import { useTaskStore } from '@/stores/taskStore'
 import { useSettingsStore } from '@/stores/settingsStore'
@@ -37,7 +37,20 @@ interface CommandItem {
   shortcut?: string
   icon: React.ReactNode
   action: () => void
-  category: 'thread' | 'project' | 'action' | 'git' | 'panel'
+  category: 'thread' | 'project' | 'action' | 'git' | 'panel' | 'recent-thread' | 'recent-command'
+}
+
+// Section label shown above a contiguous run of items with the same key.
+// Only used when the palette has no query (cold-open seed view).
+type SectionKey = 'recent-threads' | 'recent-commands' | null
+const sectionLabelFor = (cat: CommandItem['category']): SectionKey => {
+  if (cat === 'recent-thread') return 'recent-threads'
+  if (cat === 'recent-command') return 'recent-commands'
+  return null
+}
+const sectionTitle: Record<Exclude<SectionKey, null>, string> = {
+  'recent-threads': 'Recent threads',
+  'recent-commands': 'Recent commands',
 }
 
 // ── Frecency tracking ────────────────────────────────────────────
@@ -91,6 +104,33 @@ function getFrecencyOrder(): Map<string, number> {
   return map
 }
 
+// ── Recent slash command ring ────────────────────────────────────
+
+const RECENT_SLASH_KEY = 'kirodex:recent-slash-commands'
+const MAX_RECENT_SLASH = 5
+
+function loadRecentSlashCommands(): string[] {
+  try {
+    const raw = localStorage.getItem(RECENT_SLASH_KEY)
+    if (!raw) return []
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed.filter((s): s is string => typeof s === 'string').slice(0, MAX_RECENT_SLASH) : []
+  } catch { return [] }
+}
+
+/**
+ * Push a slash command onto the recent ring. Exported so chat input and slash
+ * handlers can record usage; safe no-op if storage is unavailable.
+ */
+export function recordRecentSlashCommand(command: string) {
+  if (!command.startsWith('/')) return
+  try {
+    const current = loadRecentSlashCommands().filter((c) => c !== command)
+    current.unshift(command)
+    localStorage.setItem(RECENT_SLASH_KEY, JSON.stringify(current.slice(0, MAX_RECENT_SLASH)))
+  } catch { /* storage unavailable */ }
+}
+
 // ── Component ────────────────────────────────────────────────────
 
 export const CommandPalette = memo(function CommandPalette({ open, onClose }: CommandPaletteProps) {
@@ -118,6 +158,49 @@ export const CommandPalette = memo(function CommandPalette({ open, onClose }: Co
     const result: CommandItem[] = []
     const lowerQuery = query.toLowerCase()
     const frecencyOrder = getFrecencyOrder()
+    const isColdOpen = lowerQuery.length === 0
+
+    // ── Cold-open seed: Recent threads + Recent slash commands ───
+    if (isColdOpen) {
+      // Recent threads — top 5 from live tasks sorted by last activity desc.
+      // lastActivityAt is derived from the last message timestamp, falling
+      // back to createdAt for never-replied threads. See projectMeta() in
+      // taskStore for the same derivation used by archived threads.
+      const recentThreads = Object.values(tasks)
+        .map((t) => ({
+          task: t,
+          lastActivityAt: t.messages.length > 0 ? t.messages[t.messages.length - 1].timestamp : t.createdAt,
+        }))
+        .sort((a, b) => (a.lastActivityAt < b.lastActivityAt ? 1 : -1))
+        .slice(0, 5)
+
+      for (const { task } of recentThreads) {
+        result.push({
+          id: `recent-thread:${task.id}`,
+          label: task.name,
+          description: task.workspace.split('/').pop(),
+          icon: <IconMessage className="size-3.5" />,
+          action: () => { setSelectedTask(task.id); setView('chat'); onClose() },
+          category: 'recent-thread',
+        })
+      }
+
+      // Recent slash commands — last 5 from the in-memory/localStorage ring.
+      const recentSlash = loadRecentSlashCommands()
+      for (const cmd of recentSlash) {
+        result.push({
+          id: `recent-command:${cmd}`,
+          label: cmd,
+          description: 'Slash command',
+          icon: <IconSlash className="size-3.5" />,
+          action: () => {
+            window.dispatchEvent(new CustomEvent('kirodex:prefill-chat-input', { detail: cmd }))
+            onClose()
+          },
+          category: 'recent-command',
+        })
+      }
+    }
 
     // ── Contextual commands (shown first when relevant) ──────────
     const currentTask = selectedTaskId ? tasks[selectedTaskId] : null
@@ -143,6 +226,13 @@ export const CommandPalette = memo(function CommandPalette({ open, onClose }: Co
         if (!lowerQuery || pauseItem.label.toLowerCase().includes(lowerQuery)) result.push(pauseItem)
         if (!lowerQuery || cancelItem.label.toLowerCase().includes(lowerQuery)) result.push(cancelItem)
       }
+    }
+
+    // On cold open we surface ONLY the seeded recent sections + contextual
+    // commands. The full catalog (panels, git, actions, all threads, all
+    // projects) is revealed once the user starts typing a query.
+    if (isColdOpen) {
+      return result.slice(0, 60)
     }
 
     // ── Panel toggle commands ────────────────────────────────────
@@ -377,14 +467,13 @@ export const CommandPalette = memo(function CommandPalette({ open, onClose }: Co
       })
     }
 
-    // ── Sort by frecency when no query ───────────────────────────
-    if (!lowerQuery) {
-      result.sort((a, b) => {
-        const aIdx = frecencyOrder.get(a.id) ?? 999
-        const bIdx = frecencyOrder.get(b.id) ?? 999
-        return aIdx - bIdx
-      })
-    }
+    // Frecency tie-break: bubble recently-used catalog items toward the top
+    // of the filtered list so habitual commands land first.
+    result.sort((a, b) => {
+      const aIdx = frecencyOrder.get(a.id) ?? 999
+      const bIdx = frecencyOrder.get(b.id) ?? 999
+      return aIdx - bIdx
+    })
 
     return result.slice(0, 60)
   }, [query, tasks, archivedMeta, projects, projectNames, selectedTaskId, diffOpen,
@@ -403,11 +492,13 @@ export const CommandPalette = memo(function CommandPalette({ open, onClose }: Co
     }
   }, [open])
 
-  // Scroll selected item into view
+  // Scroll selected item into view. We query by data-cmd-item rather than
+  // by raw child index because section headers are also rendered as direct
+  // children, which would otherwise shift the indices.
   useEffect(() => {
     if (!listRef.current) return
-    const selected = listRef.current.children[selectedIndex] as HTMLElement | undefined
-    selected?.scrollIntoView({ block: 'nearest' })
+    const nodes = listRef.current.querySelectorAll<HTMLElement>('[data-cmd-item]')
+    nodes[selectedIndex]?.scrollIntoView({ block: 'nearest' })
   }, [selectedIndex])
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
@@ -453,38 +544,70 @@ export const CommandPalette = memo(function CommandPalette({ open, onClose }: Co
               No results found
             </div>
           )}
-          {items.map((item, idx) => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => { recordUsage(item.id); item.action() }}
-              onMouseEnter={() => setSelectedIndex(idx)}
-              className={cn(
-                'flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left transition-colors',
-                idx === selectedIndex ? 'bg-accent text-foreground' : 'text-foreground/80 hover:bg-accent/50',
-              )}
-            >
-              <span className="shrink-0 text-muted-foreground">{item.icon}</span>
-              <span className="min-w-0 flex-1 truncate text-[13px]">{item.label}</span>
-              {item.description && (
-                <span className="shrink-0 max-w-[140px] truncate text-[11px] text-muted-foreground/50">{item.description}</span>
-              )}
-              {item.shortcut && (
-                <kbd className="ml-1 shrink-0 rounded border border-border/40 bg-muted/20 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground/60">
-                  {item.shortcut}
-                </kbd>
-              )}
-            </button>
-          ))}
+          {items.map((item, idx) => {
+            const prevSection = idx === 0 ? null : sectionLabelFor(items[idx - 1].category)
+            const thisSection = sectionLabelFor(item.category)
+            const showHeader = thisSection !== null && thisSection !== prevSection
+            const isSelected = idx === selectedIndex
+            return (
+              <div key={item.id}>
+                {showHeader && (
+                  <div className="px-3 pb-1 pt-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/50">
+                    {sectionTitle[thisSection]}
+                  </div>
+                )}
+                <button
+                  data-cmd-item
+                  type="button"
+                  onClick={() => { recordUsage(item.id); item.action() }}
+                  onMouseEnter={() => setSelectedIndex(idx)}
+                  className={cn(
+                    'flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left outline-none transition-colors',
+                    'focus-visible:ring-2 focus-visible:ring-ring/60',
+                    isSelected
+                      ? 'bg-foreground text-background ring-2 ring-ring/60'
+                      : 'text-foreground/80 hover:bg-accent/50',
+                  )}
+                >
+                  <span className={cn('shrink-0', isSelected ? 'text-background/80' : 'text-muted-foreground')}>
+                    {item.icon}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-[13px]">{item.label}</span>
+                  {item.description && (
+                    <span className={cn('shrink-0 max-w-[140px] truncate text-[11px]', isSelected ? 'text-background/60' : 'text-muted-foreground/50')}>
+                      {item.description}
+                    </span>
+                  )}
+                  {item.shortcut && (
+                    <kbd className={cn(
+                      'ml-1 shrink-0 rounded border px-1.5 py-0.5 font-mono text-[10px]',
+                      isSelected
+                        ? 'border-background/30 bg-background/15 text-background/80'
+                        : 'border-border/40 bg-muted/20 text-muted-foreground/60',
+                    )}>
+                      {item.shortcut}
+                    </kbd>
+                  )}
+                </button>
+              </div>
+            )
+          })}
         </div>
 
-        {/* Footer hint */}
-        <div className="border-t border-border/40 px-4 py-2 text-[11px] text-muted-foreground/40">
-          <span>↑↓ navigate</span>
-          <span className="mx-2">·</span>
-          <span>↵ select</span>
-          <span className="mx-2">·</span>
-          <span>esc close</span>
+        {/* Footer hint — always visible. Right-flush kbd caps. */}
+        <div className="flex items-center justify-end gap-2 border-t border-border/40 px-4 py-2 text-[12px] text-muted-foreground/60">
+          <kbd className="rounded border border-border/40 bg-muted/20 px-1.5 py-0.5 font-mono text-[10px]">↑↓</kbd>
+          <span>navigate</span>
+          <span className="opacity-50">·</span>
+          <kbd className="rounded border border-border/40 bg-muted/20 px-1.5 py-0.5 font-mono text-[10px]">↵</kbd>
+          <span>select</span>
+          <span className="opacity-50">·</span>
+          <kbd className="rounded border border-border/40 bg-muted/20 px-1.5 py-0.5 font-mono text-[10px]">esc</kbd>
+          <span>close</span>
+          <span className="opacity-50">·</span>
+          <span className="tabular-nums">
+            {items.length} {items.length === 1 ? 'result' : 'results'}
+          </span>
         </div>
       </div>
     </>

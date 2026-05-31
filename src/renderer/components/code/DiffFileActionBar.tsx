@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from 'react'
-import { IconChevronDown, IconChevronRight, IconPlus, IconCheck, IconArrowBackUp, IconExternalLink } from '@tabler/icons-react'
+import { IconChevronDown, IconChevronRight, IconPlus, IconCheck, IconArrowBackUp, IconExternalLink, IconSquare, IconSquareCheck } from '@tabler/icons-react'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
 interface DiffFileActionBarProps {
@@ -7,7 +7,9 @@ interface DiffFileActionBarProps {
   additions: number
   deletions: number
   collapsed: boolean
+  viewed: boolean
   onToggleCollapse: () => void
+  onToggleViewed: () => void
   onStage: () => Promise<void> | void
   onRevert: () => void
   onOpenInEditor: () => void
@@ -17,8 +19,8 @@ interface DiffFileActionBarProps {
 }
 
 export const DiffFileActionBar = ({
-  name, additions, deletions, collapsed,
-  onToggleCollapse, onStage, onRevert, onOpenInEditor,
+  name, additions, deletions, collapsed, viewed,
+  onToggleCollapse, onToggleViewed, onStage, onRevert, onOpenInEditor,
   revertPending, onConfirmRevert, onCancelRevert,
 }: DiffFileActionBarProps) => {
   const shortName = name.split('/').pop() ?? name
@@ -44,6 +46,19 @@ export const DiffFileActionBar = ({
         {additions > 0 && <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">+{additions}</span>}
         {deletions > 0 && <span className="text-[10px] font-semibold text-red-600 dark:text-red-400">-{deletions}</span>}
         <div className="ml-1 flex items-center gap-0.5">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button type="button" onClick={onToggleViewed} aria-pressed={viewed}
+                className={viewed
+                  ? 'flex size-5 items-center justify-center rounded text-emerald-500 transition-colors hover:bg-emerald-500/10 focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none'
+                  : 'flex size-5 items-center justify-center rounded text-muted-foreground/70 transition-colors hover:bg-accent hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none'
+                }>
+                <span className="sr-only">Mark viewed</span>
+                {viewed ? <IconSquareCheck className="size-3" /> : <IconSquare className="size-3" />}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="top">{viewed ? 'Viewed (click to unmark)' : 'Mark viewed'}</TooltipContent>
+          </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
               <button type="button" onClick={onRevert} aria-label="Revert changes"

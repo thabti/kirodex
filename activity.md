@@ -1,3 +1,37 @@
+## 2026-05-31 18:14 GST (Dubai)
+
+### Theme: Adjust dark mode border and sidebar colors
+
+Reduced `--border` from 6% white to 3% for subtler panel separation. Reverted `--sidebar` from `#0A0A0A` to `#111111` (just above near-black).
+
+**Modified:** `src/tailwind.css`
+
+---
+
+## 2026-05-31 13:30 GST (Dubai)
+
+### Chat: Per-turn polish + per-turn Rollback chip (G7)
+
+R12 — hover-reveal buttons (UserMessageRow, AssistantTextRow, ToolCallEntry, MessageItem user copy, ChatMarkdown code copy, MessageList scroll-to-bottom) now sit at `opacity-50` idle and get `focus-visible:ring-1 ring-ring/60 rounded-md` so keyboard tabbers see them. R21 — PermissionBanner buttons sized to `px-3 py-2 min-h-[28px]` with a focus-visible ring. R15 — added an `wrapWithInlineTokens` renderer in `ChatMarkdown` that detects file paths (by extension allowlist) and a small set of branch-prefix names in plain prose leaves and renders them as inline pill buttons; clicking a file token opens it in the preferred editor; branches render as styled non-interactive tokens. Inline `<code>` is unaffected. R5 — new `TurnChip` rendered above each completed assistant turn boundary in `AssistantTextRow` shows `●  model · duration · Rollback to here`. Rollback uses a click-to-confirm flow, truncates `task.messages` via the new `rollbackToMessage` store action, drops streaming state, and if the thread has a worktree, looks up a matching checkpoint and calls `ipc.checkpointRevert` for file revert; otherwise messages-only. Tooltip swaps copy based on file-revert availability. Timeline rows now carry `messageIndex` + `isTurnBoundary` so the chip targets the right turn. Vite build passes.
+
+**Modified:** src/renderer/components/chat/UserMessageRow.tsx, src/renderer/components/chat/AssistantTextRow.tsx, src/renderer/components/chat/ToolCallEntry.tsx, src/renderer/components/chat/MessageItem.tsx, src/renderer/components/chat/MessageList.tsx, src/renderer/components/chat/ChatMarkdown.tsx, src/renderer/components/chat/PermissionBanner.tsx, src/renderer/lib/timeline.ts, src/renderer/stores/taskStore.ts, src/renderer/stores/task-store-types.ts, activity.md
+
+## 2026-05-31 13:00 GST (Dubai)
+
+### DiffViewer: Agent summary right-rail (G6/R18)
+
+Added an optional 280px right-rail "Agent summary" panel to `DiffViewer` that renders the most recent assistant message for the active task via `ChatMarkdown`, with a muted "No agent summary yet." fallback. Panel defaults COLLAPSED (preserves existing layout), exposes a sticky header with chevron toggle + refresh-to-top button, and is toggled from a new `DiffToolbar` button using `IconLayoutSidebarRightExpand`/`Collapse`. Vite build passes.
+
+**Modified:** src/renderer/components/code/DiffSummaryPanel.tsx (new), src/renderer/components/code/DiffViewer.tsx, src/renderer/components/code/DiffToolbar.tsx, activity.md
+
+## 2026-05-31 12:00 GST (Dubai)
+
+### UI: Dense Linear/Raycast pass — borders, status, diff nav
+
+Audited UI against Linear/Raycast references via Mobbin and shipped the functional subset: bumped dark `--border` from 2% → 6% white-alpha so panel hairlines are visible; aligned `--sidebar` (`#272627` → `#0A0A0A`) with the near-black background; replaced ThreadItem's pulsing-dot status with shape-variants (spinning ring / half / ring / X) in a fixed `size-3` icon column so rows no longer jitter; added a horizontal +/- proportion bar to each row in `DiffFileSidebar`; defaulted the diff file sidebar to expanded; and wired keyboard nav into `DiffViewer` (`j/k` file, `a` all, `s` stage, `r` revert, `o` editor, `[` sidebar) with a hint strip footer. Skipped per request: word-cycle removal, gradient ring flatten, user-message restyle, numeric thread IDs. Vite build passes; Vitest blocked by sandbox OOM (unrelated to changes).
+
+**Modified:** src/tailwind.css, src/renderer/components/sidebar/ThreadItem.tsx, src/renderer/components/code/DiffFileSidebar.tsx, src/renderer/components/code/DiffViewer.tsx, activity.md
+
 ## 2026-05-26 16:56 GST (Dubai)
 
 ### Goal: Fully delete all goal-related code

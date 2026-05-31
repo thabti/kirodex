@@ -119,6 +119,16 @@ export interface TaskStore {
   /** Per-project thread ordering (workspace → ordered thread IDs) */
   threadOrders: Record<string, string[]>
   setSelectedTask: (id: string | null) => void
+  /** Browser-style thread navigation history (stack of thread IDs) */
+  navHistory: string[]
+  /** Current index into navHistory; -1 when empty */
+  navIndex: number
+  /** Internal flag: when true, setSelectedTask skips history push (used by navBack/Forward) */
+  _navInternal: boolean
+  /** Walk back through history to a still-existing thread; no-op if none */
+  navBack: () => void
+  /** Walk forward through history to a still-existing thread; no-op if none */
+  navForward: () => void
   setView: (view: 'chat' | 'dashboard' | 'analytics') => void
   setNewProjectOpen: (open: boolean) => void
   setSettingsOpen: (open: boolean, section?: string | null) => void
@@ -216,4 +226,11 @@ export interface TaskStore {
   closeSplit: () => void
   /** Save scroll position for a thread (in-memory only) */
   saveScrollPosition: (taskId: string, scrollTop: number) => void
+  /**
+   * Truncate messages back to the assistant turn at `messageIndex`
+   * (keeping the assistant message itself) and clear streaming state.
+   * If the task has a worktree+checkpoint mechanism wired, the caller can
+   * additionally invoke `ipc.checkpointRevert` to roll the files back.
+   */
+  rollbackToMessage: (taskId: string, messageIndex: number) => void
 }

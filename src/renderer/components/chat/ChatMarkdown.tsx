@@ -30,6 +30,8 @@ import { useMessageListTaskId } from './MessageList'
 import { QuestionCards } from './QuestionCards'
 import { FileTypeIcon } from '@/components/file-tree/FileTypeIcon'
 import { useFilePreviewStore } from '@/stores/filePreviewStore'
+import { ipc } from '@/lib/ipc'
+import { getPreferredEditor } from '@/components/OpenInEditorGroup'
 
 interface ChatMarkdownProps {
   text: string
@@ -108,19 +110,125 @@ function estimateHighlightedSize(html: string, code: string): number {
   return Math.max(html.length * 2, code.length * 3)
 }
 
+// ─── Inline token detection ──────────────────────────────────────────────────
+//
+// Recognize file paths and branch-like names in plain-text leaves of the
+// assistant's prose, and render them as inline pill-buttons that open the
+// file in the user's preferred editor on click. Skipped inside <code>/<pre>
+// (those branches never call into `wrapWithInlineTokens` — they pass through
+// the `code` / `pre` component map without the wrap).
+//
+// File paths: extensions like .tsx/.ts/.rs/.md and friends, with optional
+// leading `./` `../` `/`. Allows segments with dashes, dots, @, and word chars.
+// Branch names: `feat/foo`, `fix/bar-123`, `release/v1.2`, `kirodex/g7`.
+// To avoid catching arbitrary prose like `src/foo` that isn't really a branch,
+// we require a known branch-prefix (feat, fix, chore, etc.) as the first
+// segment. Branches render as styled non-interactive tokens.
+
+const FILE_PATH_TOKEN_RE = /(?:\.{0,2}\/)?(?:[\w.@-]+\/)*[\w.@-]+\.(?:tsx?|jsx?|mjs|cjs|css|scss|html|json|ya?ml|toml|md|mdx|rs|go|py|rb|java|kt|swift|c|cc|cpp|h|hpp|sh|bash|zsh|fish|sql|xml|svg|png|jpg|jpeg|gif|webp|env|lock|gitignore|gitkeep|dockerfile|makefile|cargo|conf|ini|prisma|graphql|astro|vue|svelte)\b/g
+const BRANCH_TOKEN_RE = /\b(?:feat|fix|chore|refactor|docs|test|perf|build|ci|style|revert|release|hotfix|kirodex)\/[\w./-]{1,80}\b/g
+
+interface InlineToken {
+  start: number
+  end: number
+  kind: 'file' | 'branch'
+  text: string
+}
+
+/** Find all non-overlapping file + branch tokens in a string, sorted by offset. */
+function findInlineTokens(text: string): InlineToken[] {
+  const tokens: InlineToken[] = []
+  for (const m of text.matchAll(FILE_PATH_TOKEN_RE)) {
+    if (m.index === undefined) continue
+    tokens.push({ start: m.index, end: m.index + m[0].length, kind: 'file', text: m[0] })
+  }
+  for (const m of text.matchAll(BRANCH_TOKEN_RE)) {
+    if (m.index === undefined) continue
+    // Skip if this branch token would overlap a file token (the file regex
+    // can sometimes win, e.g. `feat/foo.ts`). Files take precedence.
+    const start = m.index
+    const end = start + m[0].length
+    const overlaps = tokens.some((t) => t.kind === 'file' && start < t.end && end > t.start)
+    if (overlaps) continue
+    tokens.push({ start, end, kind: 'branch', text: m[0] })
+  }
+  return tokens.sort((a, b) => a.start - b.start)
+}
+
+const FileTokenButton = memo(function FileTokenButton({ path }: { path: string }) {
+  const fileName = path.split('/').pop() ?? path
+  const handleClick = useCallback(() => {
+    void ipc.openInEditor(path, getPreferredEditor()).catch(() => {})
+  }, [path])
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      className="inline-flex items-center gap-1 rounded bg-muted/60 px-1 py-0.5 font-mono text-[0.9em] align-baseline hover:bg-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring transition-colors"
+      title={`Open ${path}`}
+    >
+      <FileTypeIcon name={fileName} isDir={false} className="size-3 shrink-0" />
+      {path}
+    </button>
+  )
+})
+
+const BranchToken = memo(function BranchToken({ name }: { name: string }) {
+  return (
+    <span
+      className="inline-flex items-center gap-1 rounded bg-muted/60 px-1 py-0.5 font-mono text-[0.9em] align-baseline text-foreground/80"
+      title={`Branch ${name}`}
+    >
+      {name}
+    </span>
+  )
+})
+
 /**
- * Recursively walk children and wrap every string leaf with HighlightText so
- * the chat search bar can highlight matches inside `<strong>`, `<em>`, `<a>`
- * and other inline tags.
+ * Tokenize a plain string into a mix of HighlightText spans (for non-token
+ * runs) and pill components for matches. Strings without any token match
+ * fall through to plain HighlightText, which is the common case.
  */
-function wrapChildrenWithHighlight(children: ReactNode): ReactNode {
+function tokenizeProseString(text: string): ReactNode {
+  const tokens = findInlineTokens(text)
+  if (tokens.length === 0) return <HighlightText text={text} />
+  const out: ReactNode[] = []
+  let cursor = 0
+  let key = 0
+  for (const tok of tokens) {
+    if (tok.start < cursor) continue // overlap guard
+    if (tok.start > cursor) {
+      out.push(<HighlightText key={`t-${key++}`} text={text.slice(cursor, tok.start)} />)
+    }
+    if (tok.kind === 'file') {
+      out.push(<FileTokenButton key={`f-${key++}`} path={tok.text} />)
+    } else {
+      out.push(<BranchToken key={`b-${key++}`} name={tok.text} />)
+    }
+    cursor = tok.end
+  }
+  if (cursor < text.length) {
+    out.push(<HighlightText key={`t-${key++}`} text={text.slice(cursor)} />)
+  }
+  return <>{out}</>
+}
+
+/**
+ * Walk children, wrap every string leaf with HighlightText so the chat search
+ * bar can highlight matches inside inline tags AND promote file paths / branch
+ * names found in plain-text leaves into inline pill tokens. Used on
+ * prose-level elements (paragraphs, list items, headings). Inline `<code>`
+ * is rendered by a dedicated component map entry and never reaches this
+ * function, so we don't double-tokenize code spans.
+ */
+function wrapWithInlineTokens(children: ReactNode): ReactNode {
   return Children.map(children, (child) => {
-    if (typeof child === 'string') return <HighlightText text={child} />
+    if (typeof child === 'string') return tokenizeProseString(child)
     if (isValidElement<{ children?: ReactNode }>(child) && child.props.children != null) {
       const { children: _nested, ...rest } = child.props
       return {
         ...child,
-        props: { ...rest, children: wrapChildrenWithHighlight(child.props.children) },
+        props: { ...rest, children: wrapWithInlineTokens(child.props.children) },
       }
     }
     return child
@@ -309,7 +417,7 @@ const CopyButton = memo(function CopyButton({ text }: { text: string }) {
     <button
       type="button"
       onClick={handleCopy}
-      className="rounded p-1 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+      className="rounded-md p-1 text-muted-foreground opacity-50 transition-all hover:bg-secondary hover:text-foreground hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring/60"
       aria-label={copied ? 'Copied' : 'Copy code'}
       title={copied ? 'Copied' : 'Copy code'}
     >
@@ -397,22 +505,25 @@ const InlineCode: Components['code'] = ({ className, children, ...props }) => {
 }
 
 const STATIC_COMPONENTS: Components = {
-  // Wrap text leaves so the chat-search highlight reaches inside inline tags.
-  p: ({ children, ...props }) => <p {...props}>{wrapChildrenWithHighlight(children)}</p>,
-  li: ({ children, ...props }) => <li {...props}>{wrapChildrenWithHighlight(children)}</li>,
-  td: ({ children, ...props }) => <td {...props}>{wrapChildrenWithHighlight(children)}</td>,
-  th: ({ children, ...props }) => <th {...props}>{wrapChildrenWithHighlight(children)}</th>,
-  h1: ({ children, ...props }) => <h1 {...props}>{wrapChildrenWithHighlight(children)}</h1>,
-  h2: ({ children, ...props }) => <h2 {...props}>{wrapChildrenWithHighlight(children)}</h2>,
-  h3: ({ children, ...props }) => <h3 {...props}>{wrapChildrenWithHighlight(children)}</h3>,
-  h4: ({ children, ...props }) => <h4 {...props}>{wrapChildrenWithHighlight(children)}</h4>,
-  h5: ({ children, ...props }) => <h5 {...props}>{wrapChildrenWithHighlight(children)}</h5>,
-  h6: ({ children, ...props }) => <h6 {...props}>{wrapChildrenWithHighlight(children)}</h6>,
+  // Wrap text leaves so the chat-search highlight reaches inside inline tags
+  // AND promote bare file paths / branch names into inline pill tokens.
+  // Inline `<code>` is handled by the `code` entry below — it never receives
+  // tokenization, so backticked snippets keep their original look.
+  p: ({ children, ...props }) => <p {...props}>{wrapWithInlineTokens(children)}</p>,
+  li: ({ children, ...props }) => <li {...props}>{wrapWithInlineTokens(children)}</li>,
+  td: ({ children, ...props }) => <td {...props}>{wrapWithInlineTokens(children)}</td>,
+  th: ({ children, ...props }) => <th {...props}>{wrapWithInlineTokens(children)}</th>,
+  h1: ({ children, ...props }) => <h1 {...props}>{wrapWithInlineTokens(children)}</h1>,
+  h2: ({ children, ...props }) => <h2 {...props}>{wrapWithInlineTokens(children)}</h2>,
+  h3: ({ children, ...props }) => <h3 {...props}>{wrapWithInlineTokens(children)}</h3>,
+  h4: ({ children, ...props }) => <h4 {...props}>{wrapWithInlineTokens(children)}</h4>,
+  h5: ({ children, ...props }) => <h5 {...props}>{wrapWithInlineTokens(children)}</h5>,
+  h6: ({ children, ...props }) => <h6 {...props}>{wrapWithInlineTokens(children)}</h6>,
   blockquote: ({ children, ...props }) => (
-    <blockquote {...props}>{wrapChildrenWithHighlight(children)}</blockquote>
+    <blockquote {...props}>{wrapWithInlineTokens(children)}</blockquote>
   ),
-  strong: ({ children, ...props }) => <strong {...props}>{wrapChildrenWithHighlight(children)}</strong>,
-  em: ({ children, ...props }) => <em {...props}>{wrapChildrenWithHighlight(children)}</em>,
+  strong: ({ children, ...props }) => <strong {...props}>{wrapWithInlineTokens(children)}</strong>,
+  em: ({ children, ...props }) => <em {...props}>{wrapWithInlineTokens(children)}</em>,
   pre: PreFence,
   code: InlineCode,
   a: ({ href, ...props }) => (

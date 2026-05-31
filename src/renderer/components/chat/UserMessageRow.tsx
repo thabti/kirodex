@@ -217,7 +217,7 @@ export const UserMessageRow = memo(function UserMessageRow({ row }: { row: UserM
                   <button
                     type="button"
                     onClick={handleFork}
-                    className="rounded-md p-0.5 text-muted-foreground/0 transition-all group-hover:text-muted-foreground/70 hover:!text-foreground"
+                    className="rounded-md p-0.5 text-muted-foreground/70 opacity-50 transition-all group-hover:opacity-100 hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring/60"
                   >
                     <IconGitFork className="size-3" aria-hidden />
                   </button>
@@ -232,7 +232,7 @@ export const UserMessageRow = memo(function UserMessageRow({ row }: { row: UserM
                 <button
                   type="button"
                   onClick={handleCopy}
-                  className="rounded-md p-0.5 text-muted-foreground/0 transition-all group-hover:text-muted-foreground/70 hover:!text-foreground"
+                  className="rounded-md p-0.5 text-muted-foreground/70 opacity-50 transition-all group-hover:opacity-100 hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring/60"
                 >
                   {copied ? (
                     <IconCheck className="size-3" aria-hidden />

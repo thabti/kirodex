@@ -15,6 +15,7 @@ import type { SidebarTask } from '@/hooks/useSidebarTasks'
 interface ProjectItemProps {
   name: string
   cwd: string
+  pinnedTasks: readonly SidebarTask[]
   tasks: readonly SidebarTask[]
   selectedTaskId: string | null
   isActiveProject: boolean
@@ -36,7 +37,7 @@ interface ProjectItemProps {
 }
 
 export const ProjectItem = memo(function ProjectItem({
-  name, cwd, tasks, selectedTaskId, isActiveProject, canMoveUp, canMoveDown, autoFocus, jumpLabel, isMetaHeld, isCustomSort,
+  name, cwd, pinnedTasks, tasks, selectedTaskId, isActiveProject, canMoveUp, canMoveDown, autoFocus, jumpLabel, isMetaHeld, isCustomSort,
   onSelectTask, onNewThread, onDeleteTask, onRenameTask,
   onRemoveProject, onArchiveThreads,
   onMoveUp, onMoveDown, onMoveThread,
@@ -95,9 +96,9 @@ export const ProjectItem = memo(function ProjectItem({
           )}
         </button>
 
-        {/* Action buttons visible on hover */}
+        {/* Action buttons — always visible at low opacity, full on hover/focus */}
         <div
-          className="absolute inset-y-0 right-0 z-10 hidden w-16 items-center justify-end gap-0.5 pr-1 group-hover/menu-item:flex"
+          className="absolute inset-y-0 right-0 z-10 flex w-16 items-center justify-end gap-0.5 pr-1 opacity-50 transition-opacity group-hover/menu-item:opacity-100 focus-within:opacity-100"
           style={{ background: 'linear-gradient(to right, transparent 0%, var(--sidebar) 35%)' }}
         >
           <Tooltip>
@@ -106,7 +107,7 @@ export const ProjectItem = memo(function ProjectItem({
                 type="button"
                 aria-label={`New thread in ${name}`}
                 onClick={onNewThread}
-                className="flex size-5 cursor-pointer items-center justify-center rounded-md text-muted-foreground hover:bg-secondary hover:text-foreground outline-none"
+                className="flex size-5 cursor-pointer items-center justify-center rounded-md text-muted-foreground hover:bg-secondary hover:text-foreground outline-none focus-visible:opacity-100"
               >
                 <IconEdit className="size-3.5" />
               </button>
@@ -120,7 +121,7 @@ export const ProjectItem = memo(function ProjectItem({
                 type="button"
                 aria-label={`Remove ${name}`}
                 onClick={onRemoveProject}
-                className="flex size-5 cursor-pointer items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/15 hover:text-destructive outline-none"
+                className="flex size-5 cursor-pointer items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/15 hover:text-destructive outline-none focus-visible:opacity-100"
               >
                 <IconTrash className="size-3" />
               </button>
@@ -193,30 +194,51 @@ export const ProjectItem = memo(function ProjectItem({
         onReset={() => { setProjectIconOverride(cwd, null); setIconPickerOpen(false) }}
       />
 
-      {expanded && tasks.length > 0 && (
-        <ul className="flex min-w-0 flex-col overflow-hidden border-l mx-1 my-0 gap-0 px-1.5 py-0" style={{ borderColor: 'var(--border)' }}>
-          {tasks.map((task, i) => {
-            const threadJumpLabel = isMetaHeld && i < 9 ? `${i + 1}` : null
-            return (
-              <ThreadItem
-                key={task.id}
-                task={task}
-                isActive={selectedTaskId === task.id}
-                jumpLabel={threadJumpLabel}
-                canMoveUp={isCustomSort && i > 0 && !task.isDraft}
-                canMoveDown={isCustomSort && i < tasks.length - 1 && !task.isDraft}
-                onSelect={() => onSelectTask(task.id)}
-                onDelete={() => onDeleteTask(task.id)}
-                onRename={(n) => onRenameTask(task.id, n)}
-                onMoveUp={() => onMoveThread(i, i - 1)}
-                onMoveDown={() => onMoveThread(i, i + 1)}
-              />
-            )
-          })}
-        </ul>
+      {expanded && (pinnedTasks.length > 0 || tasks.length > 0) && (
+        <div className="flex min-w-0 flex-col overflow-hidden border-l mx-1 my-0 gap-0 px-1.5 py-0" style={{ borderColor: 'var(--border)' }}>
+          {pinnedTasks.length > 0 && (
+            <ul className="flex min-w-0 flex-col gap-0">
+              {pinnedTasks.map((task) => (
+                <ThreadItem
+                  key={task.id}
+                  task={task}
+                  isActive={selectedTaskId === task.id}
+                  jumpLabel={null}
+                  canMoveUp={false}
+                  canMoveDown={false}
+                  onSelect={() => onSelectTask(task.id)}
+                  onDelete={() => onDeleteTask(task.id)}
+                  onRename={(n) => onRenameTask(task.id, n)}
+                />
+              ))}
+            </ul>
+          )}
+          {tasks.length > 0 && (
+            <ul className="flex min-w-0 flex-col gap-0">
+              {tasks.map((task, i) => {
+                const threadJumpLabel = isMetaHeld && i < 9 ? `${i + 1}` : null
+                return (
+                  <ThreadItem
+                    key={task.id}
+                    task={task}
+                    isActive={selectedTaskId === task.id}
+                    jumpLabel={threadJumpLabel}
+                    canMoveUp={isCustomSort && i > 0 && !task.isDraft}
+                    canMoveDown={isCustomSort && i < tasks.length - 1 && !task.isDraft}
+                    onSelect={() => onSelectTask(task.id)}
+                    onDelete={() => onDeleteTask(task.id)}
+                    onRename={(n) => onRenameTask(task.id, n)}
+                    onMoveUp={() => onMoveThread(i, i - 1)}
+                    onMoveDown={() => onMoveThread(i, i + 1)}
+                  />
+                )
+              })}
+            </ul>
+          )}
+        </div>
       )}
 
-      {expanded && tasks.length === 0 && (
+      {expanded && pinnedTasks.length === 0 && tasks.length === 0 && (
         <div className="flex items-center gap-2 px-4 py-2 mx-1 border-l" style={{ borderColor: 'var(--border)' }}>
           <IconMessage className="size-3.5 text-muted-foreground/50" aria-hidden />
           <span className="text-[12px] text-muted-foreground/60">No threads yet</span>

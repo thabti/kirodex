@@ -94,6 +94,37 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   focusedPanel: 'left' as const,
   scrollPositions: {},
   threadOrders: {},
+  navHistory: [],
+  navIndex: -1,
+  _navInternal: false,
+
+  navBack: () => {
+    const { navHistory, navIndex, tasks, archivedMeta } = get()
+    if (navIndex <= 0) return
+    for (let i = navIndex - 1; i >= 0; i--) {
+      const candidate = navHistory[i]
+      if (candidate && (tasks[candidate] || archivedMeta[candidate])) {
+        set({ _navInternal: true, navIndex: i })
+        get().setSelectedTask(candidate)
+        set({ _navInternal: false })
+        return
+      }
+    }
+  },
+
+  navForward: () => {
+    const { navHistory, navIndex, tasks, archivedMeta } = get()
+    if (navIndex < 0 || navIndex >= navHistory.length - 1) return
+    for (let i = navIndex + 1; i < navHistory.length; i++) {
+      const candidate = navHistory[i]
+      if (candidate && (tasks[candidate] || archivedMeta[candidate])) {
+        set({ _navInternal: true, navIndex: i })
+        get().setSelectedTask(candidate)
+        set({ _navInternal: false })
+        return
+      }
+    }
+  },
 
   setSelectedTask: (id) => {
     // Handle pending split replacement
@@ -105,6 +136,18 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     }
     const { selectedTaskId: currentId, activeSplitId, splitViews, focusedPanel, notifiedTaskIds, archivedMeta, tasks: currentTasks } = get()
     if (currentId === id && !activeSplitId) return
+    // Push to nav history unless this call originated from navBack/navForward
+    if (id && !get()._navInternal) {
+      const { navHistory, navIndex } = get()
+      // Don't push duplicate consecutive entries
+      if (navHistory[navIndex] !== id) {
+        const truncated = navHistory.slice(0, navIndex + 1)
+        truncated.push(id)
+        // Cap history length to prevent unbounded growth
+        const capped = truncated.length > 100 ? truncated.slice(truncated.length - 100) : truncated
+        set({ navHistory: capped, navIndex: capped.length - 1 })
+      }
+    }
     // Clear the notification badge when the user navigates to this thread
     if (id && notifiedTaskIds.includes(id)) {
       set({ notifiedTaskIds: notifiedTaskIds.filter((nid) => nid !== id) })
@@ -1621,6 +1664,29 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   saveScrollPosition: (taskId, scrollTop) => {
     if (get().scrollPositions[taskId] === scrollTop) return
     set((s) => ({ scrollPositions: { ...s.scrollPositions, [taskId]: scrollTop } }))
+  },
+
+  rollbackToMessage: (taskId, messageIndex) => {
+    const task = get().tasks[taskId]
+    if (!task) return
+    if (messageIndex < 0 || messageIndex >= task.messages.length) return
+    // Keep messages up to and including the target assistant message —
+    // rolling back "to here" means this turn is preserved and everything
+    // after it is dropped.
+    const truncated = task.messages.slice(0, messageIndex + 1)
+    set((s) => ({
+      tasks: {
+        ...s.tasks,
+        [taskId]: { ...task, messages: truncated },
+      },
+      // Drop any in-flight streaming state for this task — the truncate
+      // invalidates whatever the agent was emitting.
+      streamingChunks: { ...s.streamingChunks, [taskId]: '' },
+      thinkingChunks: { ...s.thinkingChunks, [taskId]: '' },
+      liveToolCalls: { ...s.liveToolCalls, [taskId]: [] },
+      liveToolSplits: { ...s.liveToolSplits, [taskId]: [] },
+    }))
+    get().persistHistory()
   },
 }))
 

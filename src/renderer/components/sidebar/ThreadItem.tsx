@@ -1,5 +1,5 @@
 import { memo, useState, useRef, useEffect, useCallback } from 'react'
-import { IconPencil, IconTrash, IconHistory, IconGitBranch, IconLayoutColumns, IconArrowsSplit, IconPin, IconPinnedOff, IconArrowUp, IconArrowDown, IconCopy, IconGitFork } from '@tabler/icons-react'
+import { IconPencil, IconTrash, IconHistory, IconGitBranch, IconLayoutColumns, IconArrowsSplit, IconPin, IconPinnedOff, IconArrowUp, IconArrowDown, IconCopy, IconGitFork, IconX } from '@tabler/icons-react'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useTaskStore } from '@/stores/taskStore'
 import { SplitThreadPicker } from '@/components/chat/SplitThreadPicker'
@@ -7,12 +7,52 @@ import { useMenuPosition } from '@/hooks/useMenuPosition'
 import { cn } from '@/lib/utils'
 import type { SidebarTask } from '@/hooks/useSidebarTasks'
 
-const STATUS_DOT: Record<string, { color: string; pulse?: boolean; label: string }> = {
-  running: { color: 'bg-emerald-400', pulse: true, label: 'Agent is working' },
-  pending_permission: { color: 'bg-amber-400', label: 'Waiting for permission' },
-  pending_question: { color: 'bg-blue-400', label: 'Question needs your answer' },
-  error: { color: 'bg-red-400', label: 'Error occurred' },
-  cancelled: { color: 'bg-red-400/50', label: 'Cancelled' },
+type StatusShape = 'spin' | 'solid' | 'half' | 'ring' | 'x'
+
+const STATUS_DOT: Record<string, { color: string; shape: StatusShape; label: string }> = {
+  running: { color: '#34d399', shape: 'spin', label: 'Agent is working' },
+  pending_permission: { color: '#fbbf24', shape: 'half', label: 'Waiting for permission' },
+  pending_question: { color: '#60a5fa', shape: 'half', label: 'Question needs your answer' },
+  error: { color: '#f87171', shape: 'x', label: 'Error occurred' },
+  cancelled: { color: '#9a9a9a', shape: 'ring', label: 'Cancelled' },
+}
+
+function StatusIndicator({ shape, color }: { shape: StatusShape; color: string }) {
+  if (shape === 'spin') {
+    return (
+      <span
+        className="size-2.5 animate-spin rounded-full border-[1.5px]"
+        style={{ borderColor: `${color}33`, borderTopColor: color }}
+      />
+    )
+  }
+  if (shape === 'solid') {
+    return <span className="size-2 rounded-full" style={{ background: color }} />
+  }
+  if (shape === 'half') {
+    return (
+      <span className="relative size-2.5 rounded-full border-[1.5px]" style={{ borderColor: color }}>
+        <span
+          className="absolute inset-0 rounded-full"
+          style={{ background: color, clipPath: 'inset(0 0 50% 0)' }}
+        />
+      </span>
+    )
+  }
+  if (shape === 'ring') {
+    return <span className="size-2.5 rounded-full border-[1.5px]" style={{ borderColor: color }} />
+  }
+  if (shape === 'x') {
+    return (
+      <span
+        className="inline-flex size-2.5 items-center justify-center rounded-full"
+        style={{ background: `${color}33` }}
+      >
+        <IconX className="size-2" strokeWidth={3} style={{ color }} />
+      </span>
+    )
+  }
+  return null
 }
 
 function relativeTime(iso: string): string {
@@ -160,23 +200,18 @@ export const ThreadItem = memo(function ThreadItem({ task, isActive, jumpLabel, 
           isActive && 'bg-accent text-foreground',
         )}
       >
-        {task.isDraft ? (
-          <span className="size-1.5 shrink-0" />
-        ) : dot?.pulse ? (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className="size-3 shrink-0 animate-spin rounded-full border-[1.5px] border-emerald-400/30 border-t-emerald-400" />
-            </TooltipTrigger>
-            <TooltipContent side="right">{dot.label}</TooltipContent>
-          </Tooltip>
-        ) : dot ? (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className={cn('size-1.5 shrink-0 rounded-full', dot.color)} />
-            </TooltipTrigger>
-            <TooltipContent side="right">{dot.label}</TooltipContent>
-          </Tooltip>
-        ) : null}
+        <span className="flex size-3 shrink-0 items-center justify-center" aria-hidden={!dot && !task.isDraft}>
+          {!task.isDraft && dot && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="flex size-3 items-center justify-center">
+                  <StatusIndicator shape={dot.shape} color={dot.color} />
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="right">{dot.label}</TooltipContent>
+            </Tooltip>
+          )}
+        </span>
         {task.isArchived && (
           <Tooltip>
             <TooltipTrigger asChild>
@@ -190,16 +225,16 @@ export const ThreadItem = memo(function ThreadItem({ task, isActive, jumpLabel, 
         {task.worktreePath && !task.isArchived && (
           <Tooltip>
             <TooltipTrigger asChild>
-              <IconGitBranch className="size-3 shrink-0 text-violet-500 dark:text-violet-400" aria-label="Worktree thread" />
+              <IconGitBranch className="size-3 shrink-0 text-muted-foreground/70" aria-label="Worktree thread" />
             </TooltipTrigger>
             <TooltipContent side="top">Worktree</TooltipContent>
           </Tooltip>
         )}
         {isInSplit && (
-          <IconLayoutColumns className="size-3 shrink-0 text-primary/60" aria-label="In side-by-side" />
+          <IconLayoutColumns className="size-3 shrink-0 text-muted-foreground/70" aria-label="In side-by-side" />
         )}
         {isPinned && !isInSplit && (
-          <IconPin className="size-3 shrink-0 text-amber-500/70" aria-label="Pinned" />
+          <IconPin className="size-3 shrink-0 text-muted-foreground/60" aria-label="Pinned" />
         )}
         {editing ? (
           <input
@@ -247,7 +282,7 @@ export const ThreadItem = memo(function ThreadItem({ task, isActive, jumpLabel, 
                 type="button"
                 aria-label="Delete thread"
                 onClick={(e) => { e.stopPropagation(); onDelete() }}
-                className="hidden size-5 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors group-hover/thread:flex hover:bg-destructive/15 hover:text-destructive"
+                className="flex size-5 shrink-0 items-center justify-center rounded-md text-muted-foreground opacity-50 transition-opacity group-hover/thread:opacity-100 focus-visible:opacity-100 hover:bg-destructive/15 hover:text-destructive"
               >
                 <IconTrash className="size-3" />
               </button>

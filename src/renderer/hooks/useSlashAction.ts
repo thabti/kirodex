@@ -75,11 +75,12 @@ export const useSlashAction = (): SlashActionResult => {
         return true
       }
       case 'model':
-        setPanel((p) => (p === 'model' ? null : 'model'))
-        return true
       case 'agent':
-        setPanel((p) => (p === 'agent' ? null : 'agent'))
-        return true
+        // Fall through to pass-through so the slash command picker inserts
+        // "/model " or "/agent " into the input. The inline quick-swap picker
+        // (see InlineCommandPicker) then renders for fuzzy filtering.
+        setPanel(null)
+        return false
       case 'settings':
         useTaskStore.getState().setSettingsOpen(true)
         setPanel(null)

@@ -156,6 +156,20 @@ export function useKeyboardShortcuts() {
         return
       }
 
+      // ── Cmd+[ → Nav back (history) ────────────────────────
+      if (!e.shiftKey && (key === '[' || e.code === 'BracketLeft')) {
+        e.preventDefault()
+        useTaskStore.getState().navBack()
+        return
+      }
+
+      // ── Cmd+] → Nav forward (history) ─────────────────────
+      if (!e.shiftKey && (key === ']' || e.code === 'BracketRight')) {
+        e.preventDefault()
+        useTaskStore.getState().navForward()
+        return
+      }
+
       // ── Cmd+Shift+[ → Previous thread ──────────────────────
       if (e.shiftKey && (key === '[' || e.code === 'BracketLeft')) {
         e.preventDefault()

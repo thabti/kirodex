@@ -247,13 +247,13 @@ export const ToolCallEntry = memo(function ToolCallEntry({ toolCall }: { toolCal
           </span>
         )}
 
-        {/* Action buttons (visible on hover) */}
+        {/* Action buttons (visible on hover or focus) */}
         {isEditOp && isCompleted && firstPath && (
-          <span className="hidden shrink-0 items-center gap-0.5 group-hover/entry:flex">
+          <span className="shrink-0 inline-flex items-center gap-0.5 opacity-50 transition-opacity group-hover/entry:opacity-100 focus-within:opacity-100">
             <button
               type="button"
               onClick={handleOpenDiff}
-              className="rounded p-0.5 text-muted-foreground/50 transition-colors hover:bg-accent hover:text-foreground"
+              className="rounded-md p-0.5 text-muted-foreground/70 transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring/60"
               aria-label="View diff"
             >
               <IconGitCompare className="size-3" />

@@ -1,5 +1,5 @@
-import { memo, useCallback, useEffect, useRef, useState } from 'react'
-import { IconPlus, IconArrowsUpDown, IconCheck, IconLayoutSidebarLeftCollapse, IconLayoutSidebarRightCollapse, IconFolderOpen, IconLayoutColumns, IconX, IconPin, IconPinnedOff, IconReplace, IconArrowsExchange, IconGitBranch } from '@tabler/icons-react'
+import { memo, useCallback, useRef, useState } from 'react'
+import { IconPlus, IconArrowsUpDown, IconCheck, IconLayoutSidebarLeftCollapse, IconLayoutSidebarRightCollapse, IconFolderOpen, IconLayoutColumns, IconX, IconReplace, IconArrowsExchange, IconGitBranch, IconChevronLeft, IconChevronRight } from '@tabler/icons-react'
 import { useTaskStore } from '@/stores/taskStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useShallow } from 'zustand/react/shallow'
@@ -14,6 +14,59 @@ import { useMenuPosition } from '@/hooks/useMenuPosition'
 import { ProjectItem } from './ProjectItem'
 import { SplitThreadPicker } from '@/components/chat/SplitThreadPicker'
 import { SidebarFooter } from './SidebarFooter'
+
+const IS_MAC = typeof navigator !== 'undefined' && navigator.userAgent.toLowerCase().includes('mac')
+
+const NavHistoryButtons = memo(function NavHistoryButtons({ isRight }: { isRight: boolean }) {
+  const navIndex = useTaskStore((s) => s.navIndex)
+  const navHistoryLen = useTaskStore((s) => s.navHistory.length)
+  const navBack = useTaskStore((s) => s.navBack)
+  const navForward = useTaskStore((s) => s.navForward)
+  const canBack = navIndex > 0
+  const canForward = navIndex >= 0 && navIndex < navHistoryLen - 1
+  const modKey = IS_MAC ? '⌘' : 'Ctrl+'
+  // Mac left-sidebar: traffic lights occupy ~70px on left, nav sits right after them.
+  // Mac right-sidebar / non-Mac: just hug the leading edge.
+  const positionClass = IS_MAC && !isRight ? 'left-[78px] top-2' : 'left-2 top-2'
+  return (
+    <div className={cn('absolute z-20 flex items-center gap-0.5', positionClass)} data-no-drag>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            data-testid="nav-back-button"
+            aria-label="Back"
+            disabled={!canBack}
+            onClick={navBack}
+            className="inline-flex size-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-muted-foreground"
+          >
+            <IconChevronLeft className="size-4" aria-hidden />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">
+          Back <kbd className="ml-1 rounded-sm bg-background/15 px-1 text-[10px]">{modKey}[</kbd>
+        </TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            data-testid="nav-forward-button"
+            aria-label="Forward"
+            disabled={!canForward}
+            onClick={navForward}
+            className="inline-flex size-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-muted-foreground"
+          >
+            <IconChevronRight className="size-4" aria-hidden />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">
+          Forward <kbd className="ml-1 rounded-sm bg-background/15 px-1 text-[10px]">{modKey}]</kbd>
+        </TooltipContent>
+      </Tooltip>
+    </div>
+  )
+})
 
 const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: 'custom', label: 'Custom' },
@@ -297,111 +350,10 @@ const PendingReplaceHint = memo(function PendingReplaceHint() {
   )
 })
 
-/** Sidebar section showing pinned threads */
-const PinnedThreadsList = memo(function PinnedThreadsList({ selectedTaskId, onSelect }: { selectedTaskId: string | null; onSelect: (id: string) => void }) {
-  const pinnedThreadIds = useTaskStore((s) => s.pinnedThreadIds)
-  const tasks = useTaskStore((s) => s.tasks)
-  const unpinThread = useTaskStore((s) => s.unpinThread)
-  const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; taskId: string } | null>(null)
-  const [splitPicker, setSplitPicker] = useState<{ x: number; y: number; taskId: string } | null>(null)
-  const ctxRef = useRef<HTMLDivElement>(null)
-  useMenuPosition(ctxRef, ctxMenu)
-
-  useEffect(() => {
-    if (!ctxMenu) return
-    const handler = (e: MouseEvent) => {
-      if (ctxRef.current && !ctxRef.current.contains(e.target as Node)) setCtxMenu(null)
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [ctxMenu])
-
-  const pinnedTasks = pinnedThreadIds.map((id) => tasks[id]).filter(Boolean)
-  if (pinnedTasks.length === 0) return null
-
-  const handleContextMenu = (e: React.MouseEvent, taskId: string) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setCtxMenu({ x: e.clientX, y: e.clientY, taskId })
-  }
-
-  const handleUnpin = () => {
-    if (ctxMenu) unpinThread(ctxMenu.taskId)
-    setCtxMenu(null)
-  }
-
-  return (
-    <div className="px-2 pb-1">
-      <ul className="flex flex-col gap-0.5">
-        {pinnedTasks.map((task) => {
-          const isActive = task.id === selectedTaskId
-          return (
-            <li key={task.id} className="group/pin relative">
-              <button
-                type="button"
-                onClick={() => onSelect(task.id)}
-                onContextMenu={(e) => handleContextMenu(e, task.id)}
-                className={cn(
-                  'flex min-w-0 h-7 w-full items-center gap-1.5 rounded-lg px-2 text-[12px] select-none transition-colors',
-                  isActive
-                    ? 'bg-accent/85 dark:bg-accent/55 text-foreground font-medium'
-                    : 'text-muted-foreground hover:bg-accent hover:text-foreground',
-                )}
-              >
-                <IconPin className="size-3 shrink-0 text-amber-500/60" />
-                <span className="min-w-0 truncate">{task.name}</span>
-              </button>
-              <button
-                type="button"
-                aria-label="Unpin thread"
-                onClick={(e) => { e.stopPropagation(); unpinThread(task.id) }}
-                className="absolute right-1 top-1/2 -translate-y-1/2 z-10 hidden size-4 items-center justify-center rounded bg-sidebar text-muted-foreground/50 hover:bg-accent hover:text-foreground group-hover/pin:flex"
-              >
-                <IconX className="size-2.5" />
-              </button>
-            </li>
-          )
-        })}
-      </ul>
-      {ctxMenu && (
-        <div
-          ref={ctxRef}
-          className="fixed z-[300] min-w-[140px] rounded-lg border border-border bg-popover py-1 shadow-lg"
-          style={{ left: ctxMenu.x, top: ctxMenu.y }}
-          onMouseDown={(e) => e.stopPropagation()}
-        >
-          <button
-            type="button"
-            className="flex w-full items-center gap-2 px-3 py-1.5 text-[13px] text-foreground transition-colors hover:bg-accent"
-            onClick={handleUnpin}
-          >
-            <IconPinnedOff className="size-3.5" /> Unpin
-          </button>
-          <button
-            type="button"
-            className="flex w-full items-center gap-2 px-3 py-1.5 text-[13px] text-foreground transition-colors hover:bg-accent"
-            onClick={() => { setCtxMenu(null); setSplitPicker({ x: ctxMenu.x, y: ctxMenu.y, taskId: ctxMenu.taskId }) }}
-          >
-            <IconLayoutColumns className="size-3.5" /> Open side-by-side
-          </button>
-        </div>
-      )}
-      {splitPicker && (
-        <SplitThreadPicker
-          anchorTaskId={splitPicker.taskId}
-          position={{ x: splitPicker.x, y: splitPicker.y }}
-          onClose={() => setSplitPicker(null)}
-        />
-      )}
-    </div>
-  )
-})
-
-/** Thin separator shown when split views or pinned threads exist above the project list */
+/** Thin separator shown when split views exist above the project list */
 const SidebarDivider = memo(function SidebarDivider() {
   const hasSplits = useTaskStore((s) => s.splitViews.length > 0)
-  const hasPins = useTaskStore((s) => s.pinnedThreadIds.length > 0)
-  if (!hasSplits && !hasPins) return null
+  if (!hasSplits) return null
   return (
     <div className="flex justify-center py-1">
       <div className="h-px w-8 bg-border/40" />
@@ -537,6 +489,7 @@ export const TaskSidebar = memo(function TaskSidebar({ width, onResize, position
 
   return (
     <div data-testid="task-sidebar" onContextMenu={handleContextMenu} className={cn('relative flex h-full min-h-0 shrink-0 flex-col overflow-hidden bg-sidebar pt-9 text-foreground', isRight ? 'border-l pr-1 order-last' : 'border-r pl-1')} style={{ width }}>
+      <NavHistoryButtons isRight={isRight} />
       {/* Collapse button in traffic lights zone */}
       {onCollapse && (
         <button
@@ -576,7 +529,6 @@ export const TaskSidebar = memo(function TaskSidebar({ width, onResize, position
       </div>
       <SplitViewsList />
       <PendingReplaceHint />
-      <PinnedThreadsList selectedTaskId={selectedTaskId ?? (pendingWorkspace ? `draft:${pendingWorkspace}` : null)} onSelect={handleSelectTask} />
       <SidebarDivider />
       <ScrollArea className="min-h-0 flex-1 overflow-hidden px-2">
         <div className="min-w-0 pb-2">
@@ -607,6 +559,7 @@ export const TaskSidebar = memo(function TaskSidebar({ width, onResize, position
                   key={project.cwd}
                   name={project.name}
                   cwd={project.cwd}
+                  pinnedTasks={project.pinnedTasks}
                   tasks={project.tasks}
                   selectedTaskId={selectedTaskId ?? (pendingWorkspace ? `draft:${pendingWorkspace}` : null)}
                   isActiveProject={project.cwd === activeProjectCwd}

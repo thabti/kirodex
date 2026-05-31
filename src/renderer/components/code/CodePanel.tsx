@@ -159,7 +159,7 @@ export function CodePanel({ onClose, workspace: workspaceProp }: CodePanelProps)
                     onClick={() => void handleGenerate()}
                     disabled={!hasChanges || !effectiveWorkspace || isGenerating || isCommitting}
                     aria-label="Generate commit message with AI"
-                    className="shrink-0 flex items-center justify-center rounded border border-input bg-background px-1.5 py-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="shrink-0 flex h-6 w-6 items-center justify-center rounded-md border border-input bg-background text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     {isGenerating
                       ? <IconLoader2 className="size-3.5 animate-spin" />
@@ -174,11 +174,12 @@ export function CodePanel({ onClose, workspace: workspaceProp }: CodePanelProps)
               onClick={() => void handleCommit()}
               disabled={isCommitDisabled || !commitMsg.trim()}
               aria-label="Commit"
-              className="shrink-0 flex items-center justify-center rounded bg-primary px-1.5 py-1 text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="shrink-0 inline-flex h-8 items-center justify-center gap-1.5 rounded-md bg-primary px-3 text-[12px] font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {isCommitting
                 ? <IconLoader2 className="size-3.5 animate-spin" />
                 : <IconGitCommit className="size-3.5" />}
+              <span>Commit</span>
             </button>
           </div>
         </div>

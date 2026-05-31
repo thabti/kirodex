@@ -55,6 +55,12 @@ export interface AssistantTextRow {
   showCompletionDivider?: boolean
   /** Turn duration in milliseconds (from first token to turn_end) */
   durationMs?: number
+  /** Index of the source TaskMessage in `task.messages`. Absent on live/streaming rows. */
+  messageIndex?: number
+  /** True when this row represents the final completed assistant turn boundary
+   *  (last segment of the message + no more user messages after it). Used by
+   *  the per-turn chip / Rollback affordance. */
+  isTurnBoundary?: boolean
 }
 
 export interface WorkRow {
@@ -388,6 +394,8 @@ export function deriveTimeline(
           hasChangedFiles: hasFileChanges,
           questionsAnswered,
           showCompletionDivider: showDivider,
+          messageIndex: i,
+          isTurnBoundary: true,
         })
         dividerShown = true
       }
@@ -408,6 +416,8 @@ export function deriveTimeline(
             questionsAnswered: isLastText ? questionsAnswered : false,
             isInlineSegment: !isLastText,
             showCompletionDivider: !dividerShown && showDivider,
+            messageIndex: i,
+            isTurnBoundary: isLastText,
           })
           dividerShown = true
         } else {
@@ -457,6 +467,8 @@ export function deriveTimeline(
         questionsAnswered,
         durationMs,
         showCompletionDivider: showDivider,
+        messageIndex: i,
+        isTurnBoundary: true,
       })
       lastUserTimestamp = null
     }

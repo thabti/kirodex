@@ -54,8 +54,19 @@ export const ChatToolbar = memo(function ChatToolbar({
 
   return (
     <div className="relative z-10 flex min-w-0 items-center justify-between gap-2 overflow-visible px-3 pb-3 sm:px-4 @container/toolbar">
-      {/* Left: attach + AI controls (mode + model) */}
+      {/* Left: AI controls (mode + model) */}
       <div className="flex min-w-0 flex-1 items-center gap-1.5">
+        <ToolbarGroup className="min-w-0">
+          <PlanToggle />
+          <Dot />
+          <ModelPicker />
+          <Dot />
+          <AutoApproveToggle />
+        </ToolbarGroup>
+      </div>
+
+      {/* Right: attach + git + send/pause */}
+      <div className="flex shrink-0 items-center gap-1.5">
         <Tooltip>
           <TooltipTrigger asChild>
             <button
@@ -70,17 +81,6 @@ export const ChatToolbar = memo(function ChatToolbar({
           </TooltipTrigger>
           <TooltipContent side="top" className="text-[11px]">Attach files or images</TooltipContent>
         </Tooltip>
-        <ToolbarGroup className="min-w-0">
-          <PlanToggle />
-          <Dot />
-          <ModelPicker />
-          <Dot />
-          <AutoApproveToggle />
-        </ToolbarGroup>
-      </div>
-
-      {/* Right: git + context + send/pause */}
-      <div className="flex shrink-0 items-center gap-1.5">
         <BranchSelector workspace={workspace ?? null} isWorktree={isWorktree} />
         <input
           ref={fileInputRef}

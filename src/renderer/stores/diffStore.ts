@@ -14,6 +14,7 @@ interface DiffStore {
   loading: boolean
   selectedFiles: Set<string>
   focusFile: string | null
+  viewedByTask: Record<string, Set<string>>
   toggleOpen: () => void
   setOpen: (open: boolean) => void
   fetchDiff: (taskId: string) => Promise<void>
@@ -23,9 +24,13 @@ interface DiffStore {
   stageSelected: (taskId: string) => Promise<void>
   revertSelected: (taskId: string) => Promise<void>
   openToFile: (filePath: string) => void
+  toggleViewed: (taskId: string, path: string) => void
+  getViewedSet: (taskId: string) => Set<string>
 }
 
 const EMPTY_STATS: DiffStats = { additions: 0, deletions: 0, fileCount: 0 }
+
+const EMPTY_VIEWED: Set<string> = new Set()
 
 export const useDiffStore = create<DiffStore>((set, get) => ({
   isOpen: false,
@@ -34,6 +39,7 @@ export const useDiffStore = create<DiffStore>((set, get) => ({
   loading: false,
   selectedFiles: new Set<string>(),
   focusFile: null,
+  viewedByTask: {},
 
   toggleOpen: () => set((s) => ({ isOpen: !s.isOpen })),
   setOpen: (open) => set({ isOpen: open }),
@@ -80,4 +86,13 @@ export const useDiffStore = create<DiffStore>((set, get) => ({
   },
 
   openToFile: (filePath: string) => set({ isOpen: true, focusFile: filePath }),
+
+  toggleViewed: (taskId: string, path: string) => set((s) => {
+    const prev = s.viewedByTask[taskId] ?? new Set<string>()
+    const next = new Set(prev)
+    if (next.has(path)) next.delete(path); else next.add(path)
+    return { viewedByTask: { ...s.viewedByTask, [taskId]: next } }
+  }),
+
+  getViewedSet: (taskId: string) => get().viewedByTask[taskId] ?? EMPTY_VIEWED,
 }))

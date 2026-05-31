@@ -49,6 +49,8 @@ export const ChatInput = memo(function ChatInput({ disabled, disabledReason, con
     value, setValue, textareaRef, containerRef, canSend,
     slashIndex, slashQuery, commands, filteredCmds, showPicker,
     panel, dismissPanel, handleSelectCommand,
+    inlineCommand, inlineIndex, showInlinePicker,
+    handleInlineItemsChange, commitInlineCommand, dismissInlineCommand,
     showFilePicker, mentionTrigger, mentionIndex, mentionedFiles,
     handleSelectFile, handleRemoveMention, detectMentionTrigger, dismissMention,
     attachments, isDragOver, fileInputRef,
@@ -222,6 +224,12 @@ export const ChatInput = memo(function ChatInput({ disabled, disabledReason, con
             slashIndex={slashIndex}
             onSelectCommand={handleSelectCommand}
             onDismissSlash={() => setValue('')}
+            showInlinePicker={showInlinePicker}
+            inlineCommand={inlineCommand}
+            inlineIndex={inlineIndex}
+            onInlineItemsChange={handleInlineItemsChange}
+            onInlineCommit={commitInlineCommand}
+            onInlineDismiss={dismissInlineCommand}
             showFilePicker={showFilePicker}
             mentionTrigger={mentionTrigger}
             mentionIndex={mentionIndex}

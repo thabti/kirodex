@@ -7,7 +7,9 @@ import { useAttachments } from '@/hooks/useAttachments'
 import { useFileMention } from '@/hooks/useFileMention'
 import { buildMessageWithInlineImages, extractIpcAttachments } from '@/components/chat/attachment-utils'
 import { resolveMentions, buildFolderTree } from '@/lib/resolve-mentions'
+import { ipc } from '@/lib/ipc'
 import type { Attachment, IpcAttachment, ProjectFile } from '@/types'
+import type { InlineCommandKind } from '@/components/chat/InlineCommandPicker'
 
 export interface PastedChunk {
   id: number
@@ -242,7 +244,34 @@ export function useChatInput({ disabled, isRunning, isActive, taskId: taskIdProp
   // ── Cursor-based slash trigger (mirrors mention detection) ───
   const [slashTrigger, setSlashTrigger] = useState<{ start: number; query: string } | null>(null)
 
+  // ── Inline quick-swap trigger for `/model <q>` / `/agent <q>` ──
+  // Activates once the user has typed `/model ` or `/agent ` (trailing space)
+  // at the start of the input. The remaining characters become a fuzzy query.
+  const [inlineCommand, setInlineCommand] = useState<{ kind: InlineCommandKind; query: string } | null>(null)
+  const [inlineIndex, setInlineIndex] = useState(0)
+  const inlineItemCountRef = useRef(0)
+
+  const handleInlineItemsChange = useCallback((count: number) => {
+    inlineItemCountRef.current = count
+    setInlineIndex((i) => (count === 0 ? 0 : Math.min(i, count - 1)))
+  }, [])
+
   const detectSlashTrigger = useCallback((text: string, cursorPos: number) => {
+    // Inline quick-swap detection — only when the whole input starts with /model or /agent + space
+    const inlineMatch = text.match(/^\/(model|agent)(?:\s+(.*))?$/i)
+    if (inlineMatch && text.slice(0, cursorPos).match(/^\/(model|agent)\s/i)) {
+      const kind = inlineMatch[1].toLowerCase() as InlineCommandKind
+      const query = (inlineMatch[2] ?? '').trimStart()
+      setInlineCommand((prev) => {
+        if (prev && prev.kind === kind && prev.query === query) return prev
+        return { kind, query }
+      })
+      setInlineIndex(0)
+      setSlashTrigger(null)
+      return
+    }
+    setInlineCommand(null)
+
     let i = cursorPos - 1
     while (i >= 0 && text[i] !== '/' && text[i] !== '\n' && text[i] !== ' ') i--
     if (i >= 0 && text[i] === '/' && (i === 0 || /\s/.test(text[i - 1]))) {
@@ -261,7 +290,8 @@ export function useChatInput({ disabled, isRunning, isActive, taskId: taskIdProp
     ? (slashQuery ? commands.filter((c) => c.name.replace(/^\/+/, '').toLowerCase().startsWith(slashQuery.toLowerCase())) : commands)
     : []
   const showPicker = slashTrigger !== null && filteredCmds.length > 0 && !panel
-  const showFilePicker = mentionBag.mentionTrigger !== null && !showPicker && !panel
+  const showInlinePicker = inlineCommand !== null && !panel && !showPicker
+  const showFilePicker = mentionBag.mentionTrigger !== null && !showPicker && !showInlinePicker && !panel
 
   const resize = useCallback(() => {
     const el = textareaRef.current
@@ -390,23 +420,105 @@ export function useChatInput({ disabled, isRunning, isActive, taskId: taskIdProp
       return
     }
     // Pass-through command: replace the /trigger with /command + space
+    let nextValue: string
+    let cursorPos: number
     if (slashTrigger) {
       const before = value.slice(0, slashTrigger.start)
       const after = value.slice(slashTrigger.start + 1 + slashTrigger.query.length)
-      const newValue = `${before}/${name} ${after}`
-      setValue(newValue)
-      const cursorPos = before.length + name.length + 2
-      requestAnimationFrame(() => textareaRef.current?.setSelectionRange(cursorPos, cursorPos))
+      nextValue = `${before}/${name} ${after}`
+      cursorPos = before.length + name.length + 2
     } else {
-      setValue(`/${name} `)
+      nextValue = `/${name} `
+      cursorPos = nextValue.length
     }
+    setValue(nextValue)
     setSlashTrigger(null)
     setSlashIndex(0)
+    requestAnimationFrame(() => textareaRef.current?.setSelectionRange(cursorPos, cursorPos))
+    // Run slash-trigger detection so inline pickers (/model, /agent) appear immediately
+    detectSlashTrigger(nextValue, cursorPos)
     textareaRef.current?.focus()
-  }, [execute, slashTrigger, value])
+  }, [execute, slashTrigger, value, detectSlashTrigger])
+
+  const dismissInlineCommand = useCallback(() => {
+    setInlineCommand(null)
+    setInlineIndex(0)
+    setValue('')
+    requestAnimationFrame(() => {
+      const el = textareaRef.current
+      if (el) { el.style.height = 'auto'; el.focus() }
+    })
+  }, [])
+
+  const commitInlineCommand = useCallback((id: string) => {
+    const kind = inlineCommand?.kind
+    if (!kind) return
+    const taskId = taskIdProp ?? useTaskStore.getState().selectedTaskId
+    if (kind === 'model') {
+      const { activeWorkspace, setProjectPref, settings, saveSettings } = useSettingsStore.getState()
+      if (activeWorkspace) {
+        setProjectPref(activeWorkspace, { modelId: id })
+      } else {
+        useSettingsStore.setState({ currentModelId: id })
+        if (settings.defaultModel !== id) {
+          saveSettings({ ...settings, defaultModel: id }).catch(() => {})
+        }
+      }
+      if (taskId) {
+        useTaskStore.getState().setTaskModel(taskId, id)
+        ipc.setModel(taskId, id).catch(() => {})
+      }
+    } else {
+      // agent
+      const currentMode = useTaskStore.getState().taskModes[taskId ?? ''] ?? useSettingsStore.getState().currentModeId
+      if (id !== currentMode) {
+        useSettingsStore.setState({ currentModeId: id })
+        if (taskId) {
+          useTaskStore.getState().setTaskMode(taskId, id)
+          ipc.setMode(taskId, id).catch(() => {})
+          ipc.sendMessage(taskId, `/agent ${id}`).catch(() => {})
+
+          // Show welcomeMessage for .kiro custom agents
+          const kiroAgent = useKiroStore.getState().config.agents.find((a) => a.name === id)
+          if (kiroAgent?.welcomeMessage) {
+            const { tasks, upsertTask } = useTaskStore.getState()
+            const task = tasks[taskId]
+            if (task) {
+              upsertTask({
+                ...task,
+                messages: [
+                  ...task.messages,
+                  {
+                    role: 'system',
+                    content: `🤖 **${kiroAgent.name}**: ${kiroAgent.welcomeMessage}`,
+                    timestamp: new Date().toISOString(),
+                  },
+                ],
+              })
+            }
+          }
+        }
+      }
+    }
+    dismissInlineCommand()
+  }, [inlineCommand, taskIdProp, dismissInlineCommand])
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (panel && e.key === 'Escape') { e.preventDefault(); dismissPanel(); return }
+    if (showInlinePicker) {
+      const count = inlineItemCountRef.current
+      if (e.key === 'ArrowDown') { e.preventDefault(); if (count > 0) setInlineIndex((i) => (i + 1) % count); return }
+      if (e.key === 'ArrowUp') { e.preventDefault(); if (count > 0) setInlineIndex((i) => (i - 1 + count) % count); return }
+      if (e.key === 'Escape') { e.preventDefault(); dismissInlineCommand(); return }
+      if ((e.key === 'Enter' && !e.shiftKey) || e.key === 'Tab') {
+        e.preventDefault()
+        if (count > 0) {
+          document.dispatchEvent(new CustomEvent('inline-command-commit', { detail: { index: inlineIndex } }))
+        }
+        return
+      }
+      // Let normal typing flow through to the textarea so the query updates
+    }
     if (showFilePicker) {
       if (e.key === 'ArrowDown') { e.preventDefault(); mentionBag.incrementMentionIndex(); return }
       if (e.key === 'ArrowUp') { e.preventDefault(); mentionBag.decrementMentionIndex(); return }
@@ -482,7 +594,7 @@ export function useChatInput({ disabled, isRunning, isActive, taskId: taskIdProp
       e.preventDefault()
       handleSend()
     }
-  }, [panel, dismissPanel, showFilePicker, mentionBag, showPicker, filteredCmds, slashIndex, handleSend, handleSelectCommand, isRunning, onPause, value, resize])
+  }, [panel, dismissPanel, showFilePicker, mentionBag, showPicker, filteredCmds, slashIndex, handleSend, handleSelectCommand, isRunning, onPause, value, resize, showInlinePicker, inlineIndex, dismissInlineCommand, taskIdProp])
 
   const handleSelect = useCallback(() => {
     if (showPicker || showFilePicker) return
@@ -535,6 +647,13 @@ export function useChatInput({ disabled, isRunning, isActive, taskId: taskIdProp
     panel,
     dismissPanel,
     handleSelectCommand,
+    // Inline /model and /agent quick-swap picker
+    inlineCommand,
+    inlineIndex,
+    showInlinePicker,
+    handleInlineItemsChange,
+    commitInlineCommand,
+    dismissInlineCommand,
     // File mentions
     showFilePicker,
     ...mentionBag,

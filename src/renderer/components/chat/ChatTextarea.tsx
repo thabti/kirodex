@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils'
 import { SlashCommandPicker } from './SlashCommandPicker'
 import { SlashActionPanel } from './SlashPanels'
 import { FileMentionPicker } from './FileMentionPicker'
+import { InlineCommandPicker, type InlineCommandKind } from './InlineCommandPicker'
 import { PillsRow } from './PillsRow'
 import type { PastedChunk } from '@/hooks/useChatInput'
 import type { Attachment, ProjectFile } from '@/types'
@@ -23,6 +24,13 @@ interface ChatTextareaProps {
   slashIndex: number
   onSelectCommand: (cmd: SlashCommand) => void
   onDismissSlash: () => void
+  // Inline /model and /agent quick-swap picker
+  showInlinePicker: boolean
+  inlineCommand: { kind: InlineCommandKind; query: string } | null
+  inlineIndex: number
+  onInlineItemsChange: (count: number) => void
+  onInlineCommit: (id: string) => void
+  onInlineDismiss: () => void
   // File mention picker
   showFilePicker: boolean
   mentionTrigger: { query: string } | null
@@ -57,6 +65,7 @@ export const ChatTextarea = memo(function ChatTextarea({
   textareaRef,
   hasContextRing,
   showPicker, slashQuery, commands, slashIndex, onSelectCommand, onDismissSlash,
+  showInlinePicker, inlineCommand, inlineIndex, onInlineItemsChange, onInlineCommit, onInlineDismiss,
   showFilePicker, mentionTrigger, mentionIndex, mentionedFiles, workspace, onSelectFile, onDismissMention,
   panel, onDismissPanel,
   imageAttachments, nonImageAttachments, pastedChunks,
@@ -98,6 +107,16 @@ export const ChatTextarea = memo(function ChatTextarea({
           onSelect={onSelectFile}
           onDismiss={onDismissMention}
           activeIndex={mentionIndex}
+        />
+      )}
+      {showInlinePicker && inlineCommand && (
+        <InlineCommandPicker
+          kind={inlineCommand.kind}
+          query={inlineCommand.query}
+          activeIndex={inlineIndex}
+          onItemsChange={onInlineItemsChange}
+          onCommit={onInlineCommit}
+          onDismiss={onInlineDismiss}
         />
       )}
       {panel && <SlashActionPanel panel={panel} onDismiss={onDismissPanel} />}

@@ -52,6 +52,7 @@ const noop = () => {}
 const defaultProps = {
   name: 'my-project',
   cwd: '/home/user/my-project',
+  pinnedTasks: [] as never[],
   tasks: [] as never[],
   selectedTaskId: null,
   isActiveProject: false,

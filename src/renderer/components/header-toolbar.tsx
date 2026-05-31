@@ -5,6 +5,7 @@ import {
   IconGitBranch,
   IconLayoutColumns,
   IconFolderOpen,
+  IconAlertTriangle,
 } from "@tabler/icons-react"
 import { useTaskStore } from "@/stores/taskStore"
 import {
@@ -18,6 +19,7 @@ import { GitActionsGroup } from "@/components/GitActionsGroup"
 import { SplitThreadPicker } from "@/components/chat/SplitThreadPicker"
 import { ipc } from "@/lib/ipc"
 import { cn } from "@/lib/utils"
+import { withGitToast } from "@/lib/git-toast"
 import { useFileTreeStore } from "@/stores/fileTreeStore"
 import type { TaskStatus } from "@/types"
 
@@ -179,6 +181,23 @@ export const HeaderToolbar = memo(function HeaderToolbar({
 
   const canPause = taskStatus === "running"
   const hasStats = diffStats.additions > 0 || diffStats.deletions > 0
+  const [stashing, setStashing] = useState(false)
+
+  const handleCommit = useCallback(() => {
+    if (!sidePanelOpen) onToggleSidePanel()
+  }, [sidePanelOpen, onToggleSidePanel])
+
+  const handleStash = useCallback(async () => {
+    if (stashing) return
+    setStashing(true)
+    try {
+      await withGitToast('Stash', () => ipc.gitStashSave(workspace))
+      // Refresh diff stats
+      const s = await ipc.gitDiffStats(workspace).catch(() => null)
+      if (s) setDiffStats(s)
+    } catch { /* toast handled */ }
+    finally { setStashing(false) }
+  }, [stashing, workspace])
 
   return (
     <div className="flex shrink-0 items-center gap-2">
@@ -189,7 +208,7 @@ export const HeaderToolbar = memo(function HeaderToolbar({
 
         {selectedTaskId && (
           <>
-            <div className="h-4 w-px bg-white/[0.06]" />
+            <div className="h-5 w-px self-center bg-border" />
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
@@ -213,10 +232,10 @@ export const HeaderToolbar = memo(function HeaderToolbar({
           </>
         )}
 
-        <div className="h-4 w-px bg-white/[0.06]" />
+        <div className="h-5 w-px self-center bg-border" />
         <FileTreeToggleButton />
 
-        <div className="h-4 w-px bg-white/[0.06]" />
+        <div className="h-5 w-px self-center bg-border" />
         <SplitToggleButton />
       </div>
 
@@ -246,6 +265,46 @@ export const HeaderToolbar = memo(function HeaderToolbar({
 
       {isGitRepo && (
         <div className="flex items-center rounded-lg bg-emerald-500/[0.06]">
+          {hasStats && (
+            <div className="group/dirty flex items-center">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    data-testid="worktree-dirty-indicator"
+                    aria-label={`${diffStats.fileCount} uncommitted change${diffStats.fileCount === 1 ? '' : 's'}`}
+                    onClick={() => { if (!sidePanelOpen) onToggleSidePanel() }}
+                    className="inline-flex h-7 w-6 items-center justify-center rounded-l-lg text-amber-600 transition-colors hover:bg-amber-500/15 dark:text-amber-400"
+                  >
+                    <IconAlertTriangle className="size-3" aria-hidden />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  {diffStats.fileCount} uncommitted change{diffStats.fileCount === 1 ? '' : 's'}
+                </TooltipContent>
+              </Tooltip>
+              <div className="flex max-w-0 items-center overflow-hidden transition-[max-width] duration-150 ease-out group-hover/dirty:max-w-[180px] focus-within:max-w-[180px]">
+                <button
+                  type="button"
+                  data-testid="worktree-dirty-commit"
+                  onClick={handleCommit}
+                  className="h-7 px-2 text-[11px] font-medium text-amber-700 transition-colors hover:bg-amber-500/15 focus-visible:bg-amber-500/15 dark:text-amber-300"
+                >
+                  Commit
+                </button>
+                <button
+                  type="button"
+                  data-testid="worktree-dirty-stash"
+                  onClick={handleStash}
+                  disabled={stashing}
+                  className="h-7 px-2 text-[11px] font-medium text-amber-700 transition-colors hover:bg-amber-500/15 focus-visible:bg-amber-500/15 disabled:opacity-50 dark:text-amber-300"
+                >
+                  {stashing ? 'Stashing…' : 'Stash'}
+                </button>
+                <div className="mr-1 h-4 w-px bg-amber-500/30" />
+              </div>
+            </div>
+          )}
           <Tooltip>
             <TooltipTrigger asChild>
               <button
@@ -255,7 +314,8 @@ export const HeaderToolbar = memo(function HeaderToolbar({
                 aria-pressed={sidePanelOpen}
                 onClick={onToggleSidePanel}
                 className={cn(
-                  "inline-flex h-7 items-center gap-1.5 rounded-l-lg px-2 text-xs transition-colors",
+                  "inline-flex h-7 items-center gap-1.5 px-2 text-xs transition-colors",
+                  hasStats ? "rounded-none" : "rounded-l-lg",
                   sidePanelOpen
                     ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
                     : "text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/10",
