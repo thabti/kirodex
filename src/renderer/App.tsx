@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { applyTheme, listenSystemTheme, persistTheme } from "@/lib/theme";
 import { preloadHighlighterIdle } from "@/lib/chatHighlighter";
+import { warmTerminalRuntime } from "@/components/chat/TerminalDrawer";
 import { startConnectionHealthMonitor } from "@/lib/connection-health";
 import { getReceiptBus } from "@/lib/typed-receipts";
 import { AppHeader } from "@/components/AppHeader";
@@ -312,6 +313,10 @@ export function App() {
   // returned cleanup cancels the idle callback if App unmounts before it
   // runs (effectively never, but kept for correctness).
   useEffect(() => preloadHighlighterIdle(), []);
+
+  // Pre-warm the terminal WASM runtime (ghostty-web + WebAssembly.compile)
+  // during idle time so the first "Open in Terminal" doesn't pay the cold-start.
+  useEffect(() => { warmTerminalRuntime() }, []);
 
   // Sync active workspace → apply per-project model/autoApprove prefs
   useEffect(() => {

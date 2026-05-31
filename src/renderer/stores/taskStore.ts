@@ -74,6 +74,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   dispatchSnapshots: {},
   terminalOpenTasks: new Set<string>(),
   isWorkspaceTerminalOpen: false,
+  pendingTerminalRequests: {},
   drafts: {},
   draftAttachments: {},
   draftPastedChunks: {},
@@ -961,6 +962,35 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
 
   toggleWorkspaceTerminal: () => set((s) => ({ isWorkspaceTerminalOpen: !s.isWorkspaceTerminalOpen })),
 
+  requestOpenTerminalAt: (taskId, cwd) => set((s) => {
+    const prev = s.pendingTerminalRequests[taskId]
+    const requestId = (prev?.requestId ?? 0) + 1
+    const patch: Partial<TaskStore> = {
+      pendingTerminalRequests: {
+        ...s.pendingTerminalRequests,
+        [taskId]: { taskId, cwd, requestId },
+      },
+    }
+    // Auto-open the drawer if it's closed so the user sees the new tab.
+    if (taskId === '__workspace__') {
+      if (!s.isWorkspaceTerminalOpen) patch.isWorkspaceTerminalOpen = true
+    } else if (!s.terminalOpenTasks.has(taskId)) {
+      const next = new Set(s.terminalOpenTasks)
+      next.add(taskId)
+      patch.terminalOpenTasks = next
+    }
+    return patch
+  }),
+
+  consumeTerminalRequest: (taskId, requestId) => set((s) => {
+    const cur = s.pendingTerminalRequests[taskId]
+    // Only clear if the consumed request is still the latest — avoids
+    // dropping a newer request that landed between dispatch and consume.
+    if (!cur || cur.requestId !== requestId) return s
+    const { [taskId]: _drop, ...rest } = s.pendingTerminalRequests
+    return { pendingTerminalRequests: rest }
+  }),
+
   setTaskMode: (taskId, modeId) => {
     if (get().taskModes[taskId] === modeId) return
     set((s) => ({ taskModes: { ...s.taskModes, [taskId]: modeId } }))
@@ -1411,6 +1441,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
       queuedMessages: {},
       terminalOpenTasks: new Set<string>(),
       isWorkspaceTerminalOpen: false,
+      pendingTerminalRequests: {},
       drafts: {},
       draftAttachments: {},
       draftPastedChunks: {},

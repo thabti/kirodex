@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef, useCallback, useState } from 'react'
+import { memo, useEffect, useLayoutEffect, useRef, useCallback, useState } from 'react'
 import {
   IconLayoutColumns,
   IconPlus,
@@ -12,6 +12,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { ipc } from '@/lib/ipc'
 import { useResizeHandle } from '@/hooks/useResizeHandle'
 import { useSettingsStore } from '@/stores/settingsStore'
+import { useTaskStore } from '@/stores/taskStore'
 
 /* ------------------------------------------------------------------ */
 /*  Constants                                                          */
@@ -40,6 +41,13 @@ const clampScrollback = (raw: number | undefined): number => {
 
 interface TerminalDrawerProps {
   readonly cwd: string
+  /**
+   * Identifier used to look up `pendingTerminalRequests` in the task store.
+   * Pass the task id for task panels, or `'__workspace__'` for the
+   * pending-chat workspace drawer. Optional for callers that don't need
+   * "Open in Terminal" integration.
+   */
+  readonly slotId?: string
   readonly onClose?: () => void
 }
 
@@ -155,12 +163,35 @@ const getGhostty = (): NonNullable<typeof ghosttyPromise> => {
   return ghosttyPromise
 }
 
+/**
+ * Pre-warm the ghostty-web JS chunk + WASM compilation during idle time.
+ * Call this once after the app's main UI has mounted (e.g. in App.tsx via
+ * `requestIdleCallback`). Subsequent calls are no-ops since `getGhostty()`
+ * caches the promise at module scope.
+ *
+ * This removes ~100-200ms from the first terminal open because the WASM
+ * fetch + compile has already completed by the time the user clicks.
+ */
+export function warmTerminalRuntime(): void {
+  const schedule = typeof requestIdleCallback === 'function'
+    ? requestIdleCallback
+    : (cb: () => void) => setTimeout(cb, 200)
+
+  schedule(() => {
+    // Kick off the lazy load + compile. We intentionally swallow errors here
+    // because the real error handling happens in `spawnTerminal` when the
+    // user actually opens the drawer.
+    getGhostty().catch(() => {})
+  })
+}
+
 /* ------------------------------------------------------------------ */
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
 
 export const TerminalDrawer = memo(function TerminalDrawer({
   cwd,
+  slotId,
   onClose,
 }: TerminalDrawerProps) {
   const [instances, setInstances] = useState<TermInstance[]>([])
@@ -169,6 +200,8 @@ export const TerminalDrawer = memo(function TerminalDrawer({
   const readyPtys = useRef<Set<string>>(new Set())
   const instancesRef = useRef<TermInstance[]>([])
   const instanceMap = useRef<Map<string, TermInstance>>(new Map())
+  /** Highest pending-terminal request id this drawer has handled. */
+  const lastHandledRequestId = useRef<number>(0)
   instancesRef.current = instances
 
   const scrollbackLines = useSettingsStore((s) => clampScrollback(s.settings.terminalScrollback))
@@ -177,9 +210,14 @@ export const TerminalDrawer = memo(function TerminalDrawer({
     return typeof v === 'number' && v > 0 ? Math.floor(v) : null
   })
 
+  /** Pending "Open in Terminal" request for this drawer's slot, if any. */
+  const pendingRequest = useTaskStore((s) =>
+    slotId ? s.pendingTerminalRequests[slotId] ?? null : null,
+  )
+
   /* ---- Spawn a new terminal ---- */
   const spawnTerminal = useCallback(
-    async (groupId: string): Promise<TermInstance> => {
+    async (groupId: string, overrideCwd?: string): Promise<TermInstance> => {
       const [ghostty, { Terminal, FitAddon }] = await Promise.all([
         getGhostty(),
         loadGhostty(),
@@ -215,7 +253,7 @@ export const TerminalDrawer = memo(function TerminalDrawer({
       term.onData((data) => {
         void ipc.ptyWrite(id, data)
       })
-      await ipc.ptyCreate(id, cwd)
+      await ipc.ptyCreate(id, overrideCwd ?? cwd)
       readyPtys.current.add(id)
       if (containerRef.current && term.element) {
         fit.fit()
@@ -227,10 +265,24 @@ export const TerminalDrawer = memo(function TerminalDrawer({
   )
 
   /* ---- Initial terminal ---- */
+  // We honor any pending "Open in Terminal" request that was sitting in the
+  // store at mount time so the drawer opens directly at the requested folder
+  // (instead of opening at the workspace and then bouncing to the new tab).
+  // Read once via getState() to avoid re-running on subsequent requests.
   useEffect(() => {
     let cancelled = false
     const init = async () => {
-      const inst = await spawnTerminal('g1')
+      const initial = slotId
+        ? useTaskStore.getState().pendingTerminalRequests[slotId] ?? null
+        : null
+      const initialCwd = initial?.cwd ?? cwd
+      // Mark as handled before awaiting so the request-watcher effect (which
+      // sees the same pending request via subscription) doesn't double-spawn.
+      if (initial) lastHandledRequestId.current = initial.requestId
+      const inst = await spawnTerminal('g1', initialCwd)
+      if (initial && slotId) {
+        useTaskStore.getState().consumeTerminalRequest(slotId, initial.requestId)
+      }
       if (cancelled) {
         // StrictMode remount: clean up the terminal we just created
         if (inst.rafId !== null) cancelAnimationFrame(inst.rafId)
@@ -255,6 +307,22 @@ export const TerminalDrawer = memo(function TerminalDrawer({
       setActiveId(null)
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* ---- "Open in Terminal" requests after mount ---- */
+  // Once the drawer is up, every new request from the file tree spawns a
+  // new tab at the requested folder. The initial-mount effect handles the
+  // very first request (so we don't end up with a stale workspace tab plus
+  // the requested folder tab).
+  useEffect(() => {
+    if (!slotId || !pendingRequest) return
+    if (pendingRequest.requestId <= lastHandledRequestId.current) return
+    lastHandledRequestId.current = pendingRequest.requestId
+    void spawnTerminal(`g${nextId()}`, pendingRequest.cwd)
+      .catch((err) => console.error('[TerminalDrawer] spawn failed:', err))
+      .finally(() => {
+        useTaskStore.getState().consumeTerminalRequest(slotId, pendingRequest.requestId)
+      })
+  }, [slotId, pendingRequest, spawnTerminal])
 
   /* ---- PTY data — batched via rAF ---- */
   useEffect(() => {
@@ -301,16 +369,19 @@ export const TerminalDrawer = memo(function TerminalDrawer({
   }, [activeId])
 
   /* ---- Mount terminals into DOM ---- */
-  useEffect(() => {
+  // useLayoutEffect ensures the terminal canvas is attached to the DOM
+  // *before* the browser paints, eliminating the one-frame empty-drawer flash.
+  useLayoutEffect(() => {
     instances.forEach((inst) => {
       if (inst.containerRef.current && !inst.term.element) {
         inst.term.open(inst.containerRef.current)
-        requestAnimationFrame(() => {
-          inst.fit.fit()
-          if (readyPtys.current.has(inst.id)) {
-            void ipc.ptyResize(inst.id, inst.term.cols, inst.term.rows)
-          }
-        })
+        // fit() needs the element to have layout dimensions, which are
+        // available synchronously in useLayoutEffect since the DOM is
+        // committed. We still defer resize IPC to avoid blocking paint.
+        inst.fit.fit()
+        if (readyPtys.current.has(inst.id)) {
+          void ipc.ptyResize(inst.id, inst.term.cols, inst.term.rows)
+        }
       }
     })
   }, [instances])
