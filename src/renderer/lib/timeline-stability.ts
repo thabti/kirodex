@@ -56,7 +56,8 @@ function isRowUnchanged(prev: TimelineRow, next: TimelineRow): boolean {
         prev.questionsAnswered === b.questionsAnswered &&
         prev.isInlineSegment === b.isInlineSegment &&
         prev.durationMs === b.durationMs &&
-        prev.showCompletionDivider === b.showCompletionDivider
+        prev.showCompletionDivider === b.showCompletionDivider &&
+        prev.showModelLabel === b.showModelLabel
       )
     }
     case 'work': {

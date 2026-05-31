@@ -49,9 +49,9 @@ describe('useSidebarTasks projectId grouping', () => {
       projects: ['/project'],
     })
     const { result } = renderHook(() => useSidebarTasks('recent'))
-    expect(result.current).toHaveLength(1)
-    expect(result.current[0].cwd).toBe('/project')
-    expect(result.current[0].tasks).toHaveLength(2)
+    expect(result.current.projects).toHaveLength(1)
+    expect(result.current.projects[0].cwd).toBe('/project')
+    expect(result.current.projects[0].tasks).toHaveLength(2)
   })
 
   it('groups worktree threads under parent projectId', () => {
@@ -69,9 +69,9 @@ describe('useSidebarTasks projectId grouping', () => {
       projects: ['/project'],
     })
     const { result } = renderHook(() => useSidebarTasks('recent'))
-    expect(result.current).toHaveLength(1)
-    expect(result.current[0].cwd).toBe('/project')
-    expect(result.current[0].tasks).toHaveLength(2)
+    expect(result.current.projects).toHaveLength(1)
+    expect(result.current.projects[0].cwd).toBe('/project')
+    expect(result.current.projects[0].tasks).toHaveLength(2)
   })
 
   it('does not create separate project for worktree workspace path', () => {
@@ -88,8 +88,8 @@ describe('useSidebarTasks projectId grouping', () => {
       projects: ['/project'],
     })
     const { result } = renderHook(() => useSidebarTasks('recent'))
-    expect(result.current).toHaveLength(1)
-    expect(result.current[0].cwd).toBe('/project')
+    expect(result.current.projects).toHaveLength(1)
+    expect(result.current.projects[0].cwd).toBe('/project')
   })
 
   it('falls back to originalWorkspace when projectId is missing', () => {
@@ -105,8 +105,8 @@ describe('useSidebarTasks projectId grouping', () => {
       projects: ['/project'],
     })
     const { result } = renderHook(() => useSidebarTasks('recent'))
-    expect(result.current).toHaveLength(1)
-    expect(result.current[0].cwd).toBe('/project')
+    expect(result.current.projects).toHaveLength(1)
+    expect(result.current.projects[0].cwd).toBe('/project')
   })
 
   it('falls back to workspace when both projectId and originalWorkspace are missing', () => {
@@ -117,8 +117,8 @@ describe('useSidebarTasks projectId grouping', () => {
       projects: ['/project'],
     })
     const { result } = renderHook(() => useSidebarTasks('recent'))
-    expect(result.current).toHaveLength(1)
-    expect(result.current[0].cwd).toBe('/project')
+    expect(result.current.projects).toHaveLength(1)
+    expect(result.current.projects[0].cwd).toBe('/project')
   })
 
   it('multiple worktree threads nest under same parent', () => {
@@ -141,8 +141,8 @@ describe('useSidebarTasks projectId grouping', () => {
       projects: ['/project'],
     })
     const { result } = renderHook(() => useSidebarTasks('recent'))
-    expect(result.current).toHaveLength(1)
-    expect(result.current[0].tasks).toHaveLength(3)
+    expect(result.current.projects).toHaveLength(1)
+    expect(result.current.projects[0].tasks).toHaveLength(3)
   })
 
   it('threads from different projects stay separate', () => {
@@ -154,7 +154,7 @@ describe('useSidebarTasks projectId grouping', () => {
       projects: ['/project-a', '/project-b'],
     })
     const { result } = renderHook(() => useSidebarTasks('recent'))
-    expect(result.current).toHaveLength(2)
+    expect(result.current.projects).toHaveLength(2)
   })
 
   it('uses projectNames for display name', () => {
@@ -166,7 +166,7 @@ describe('useSidebarTasks projectId grouping', () => {
       projectNames: { '/project': 'My App' },
     })
     const { result } = renderHook(() => useSidebarTasks('recent'))
-    expect(result.current[0].name).toBe('My App')
+    expect(result.current.projects[0].name).toBe('My App')
   })
 
   it('SidebarTask carries projectId field', () => {
@@ -177,7 +177,7 @@ describe('useSidebarTasks projectId grouping', () => {
       projects: ['/project'],
     })
     const { result } = renderHook(() => useSidebarTasks('recent'))
-    expect(result.current[0].tasks[0].projectId).toBe('/project')
+    expect(result.current.projects[0].tasks[0].projectId).toBe('/project')
   })
 
   it('groups by UUID projectId and resolves workspace for display', () => {
@@ -196,9 +196,9 @@ describe('useSidebarTasks projectId grouping', () => {
       projectIds: { '/project': uuid },
     })
     const { result } = renderHook(() => useSidebarTasks('recent'))
-    expect(result.current).toHaveLength(1)
-    expect(result.current[0].cwd).toBe('/project')
-    expect(result.current[0].tasks).toHaveLength(2)
+    expect(result.current.projects).toHaveLength(1)
+    expect(result.current.projects[0].cwd).toBe('/project')
+    expect(result.current.projects[0].tasks).toHaveLength(2)
   })
 
   it('filters worktreePath from appearing as top-level project even if in projects array', () => {
@@ -217,8 +217,8 @@ describe('useSidebarTasks projectId grouping', () => {
       projectIds: { '/project': uuid },
     })
     const { result } = renderHook(() => useSidebarTasks('recent'))
-    expect(result.current).toHaveLength(1)
-    expect(result.current[0].cwd).toBe('/project')
+    expect(result.current.projects).toHaveLength(1)
+    expect(result.current.projects[0].cwd).toBe('/project')
   })
 
   it('does not create sidebar entry for orphaned UUID projectId with no workspace mapping', () => {
@@ -232,7 +232,7 @@ describe('useSidebarTasks projectId grouping', () => {
     })
     const { result } = renderHook(() => useSidebarTasks('recent'))
     // Should not create an entry with the UUID as the project name
-    const uuidEntry = result.current.find((p) => p.cwd === orphanUuid)
+    const uuidEntry = result.current.projects.find((p) => p.cwd === orphanUuid)
     expect(uuidEntry).toBeUndefined()
   })
 })
@@ -248,7 +248,7 @@ describe('useSidebarTasks custom sort', () => {
       projects: ['/gamma', '/alpha', '/beta'],
     })
     const { result } = renderHook(() => useSidebarTasks('custom'))
-    expect(result.current.map((p) => p.cwd)).toEqual(['/gamma', '/alpha', '/beta'])
+    expect(result.current.projects.map((p) => p.cwd)).toEqual(['/gamma', '/alpha', '/beta'])
   })
 
   it('recent sort reorders projects by activity', () => {
@@ -261,7 +261,7 @@ describe('useSidebarTasks custom sort', () => {
     })
     const { result } = renderHook(() => useSidebarTasks('recent'))
     // beta has more recent activity, should come first
-    expect(result.current[0].cwd).toBe('/beta')
+    expect(result.current.projects[0].cwd).toBe('/beta')
   })
 
   it('custom sort does not reorder projects by activity', () => {
@@ -274,7 +274,7 @@ describe('useSidebarTasks custom sort', () => {
     })
     const { result } = renderHook(() => useSidebarTasks('custom'))
     // Store order preserved regardless of activity
-    expect(result.current.map((p) => p.cwd)).toEqual(['/alpha', '/beta'])
+    expect(result.current.projects.map((p) => p.cwd)).toEqual(['/alpha', '/beta'])
   })
 
   it('custom sort preserves task order within a project', () => {
@@ -287,6 +287,6 @@ describe('useSidebarTasks custom sort', () => {
     })
     const { result } = renderHook(() => useSidebarTasks('custom'))
     // Tasks should be in store insertion order (not sorted by name or date)
-    expect(result.current[0].tasks.map((t) => t.name)).toEqual(['Zebra', 'Apple'])
+    expect(result.current.projects[0].tasks.map((t) => t.name)).toEqual(['Zebra', 'Apple'])
   })
 })

@@ -1,3 +1,23 @@
+## 2026-05-31 18:36 GST (Dubai)
+
+### Sidebar: Merge footer row into KIRO header
+
+Merged the `...` menu button, user avatar, connection dot, memory spike indicator, and update badge into the KiroConfigPanel header row. Eliminated the separate footer div from SidebarFooter, saving vertical space. Updated tests to match the new structure (7/7 pass).
+
+**Modified:** `src/renderer/components/sidebar/KiroConfigPanel.tsx`, `src/renderer/components/sidebar/SidebarFooter.tsx`, `src/renderer/components/sidebar/SidebarFooter.test.tsx`
+
+---
+
+## 2026-05-31 18:25 GST (Dubai)
+
+### ChatToolbar: Move attach button to right side
+
+Moved the paperclip attach button from the left section (after the toolbar group) to the right section (before BranchSelector and Send), grouping actions together.
+
+**Modified:** `src/renderer/components/chat/ChatToolbar.tsx`
+
+---
+
 ## 2026-05-31 18:14 GST (Dubai)
 
 ### Theme: Adjust dark mode border and sidebar colors

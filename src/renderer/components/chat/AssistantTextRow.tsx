@@ -43,10 +43,18 @@ const TurnChip = memo(function TurnChip({
   taskId,
   messageIndex,
   durationMs,
+  showModel,
 }: {
   taskId: string | null
   messageIndex: number
   durationMs?: number
+  /**
+   * When true, render the model label (green dot + model name). When false,
+   * the chip shows only duration + Rollback. Follows the Slack date-divider
+   * pattern: only the first assistant turn or a turn whose model changed
+   * from the previous one shows the label.
+   */
+  showModel: boolean
 }) {
   const [confirm, setConfirm] = useState(false)
   const confirmTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -60,11 +68,15 @@ const TurnChip = memo(function TurnChip({
   const worktreePath = useTaskStore((s) => taskId ? s.tasks[taskId]?.worktreePath ?? null : null)
 
   const modelId = taskModelId ?? globalModelId
-  const modelLabel = useMemo(() => {
+  const resolvedModelLabel = useMemo(() => {
     if (!modelId) return null
     const found = availableModels.find((m) => m.modelId === modelId)
     return found?.name ?? modelId
   }, [modelId, availableModels])
+  // Slack divider semantics: only render the label when the timeline asked
+  // for it AND we actually have a resolved label to show. When suppressed,
+  // the chip still renders duration + Rollback to keep the affordance.
+  const modelLabel = showModel ? resolvedModelLabel : null
 
   useEffect(() => {
     return () => {
@@ -112,8 +124,12 @@ const TurnChip = memo(function TurnChip({
   return (
     <div className="mb-2 flex w-full items-center justify-between gap-2 rounded-md border border-border bg-card/60 px-2 py-0.5 text-[11px] text-muted-foreground">
       <div className="flex min-w-0 items-center gap-2 truncate">
-        <span aria-hidden className="inline-block size-1.5 shrink-0 rounded-full bg-emerald-500/70" />
-        {modelLabel && <span className="truncate">{modelLabel}</span>}
+        {modelLabel && (
+          <>
+            <span aria-hidden className="inline-block size-1.5 shrink-0 rounded-full bg-emerald-500/70" />
+            <span className="truncate">{modelLabel}</span>
+          </>
+        )}
         {durationMs != null && durationMs > 0 && (
           <>
             {modelLabel && <span className="text-muted-foreground/40">·</span>}
@@ -212,6 +228,7 @@ export const AssistantTextRow = memo(function AssistantTextRow({ row }: { row: A
           taskId={ctxTaskId}
           messageIndex={row.messageIndex!}
           durationMs={row.durationMs}
+          showModel={row.showModelLabel === true}
         />
       )}
       {row.thinking && (

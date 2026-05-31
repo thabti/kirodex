@@ -61,6 +61,17 @@ export interface AssistantTextRow {
    *  (last segment of the message + no more user messages after it). Used by
    *  the per-turn chip / Rollback affordance. */
   isTurnBoundary?: boolean
+  /**
+   * When true, the per-turn chip should render the model label (green dot +
+   * model name). When false, the chip hides the model label and shows only
+   * duration + Rollback. Follows the Slack date-divider pattern: true for the
+   * first assistant turn in the thread and for any turn whose resolved model
+   * differs from the previous assistant turn's model. Today, all turns in a
+   * given thread resolve to the same model (taskModels[taskId] / global), so
+   * in practice this is only true on the first assistant turn — but the
+   * derivation is forward-compatible with per-message model attribution.
+   */
+  showModelLabel?: boolean
 }
 
 export interface WorkRow {
@@ -313,6 +324,16 @@ export function deriveTimeline(
   // ── Persisted messages ──────────────────────────────────────
   let inTangent = false
   let lastUserTimestamp: string | null = null
+  // Slack date-divider pattern for the per-turn chip's model label: show it
+  // only on the first assistant turn and on any turn whose model differs
+  // from the previous assistant turn's. `prevAssistantModel` holds the
+  // previous turn's resolved model id, or `undefined` if there hasn't been
+  // an assistant turn yet. We use a sentinel string for "no model attributed"
+  // so two consecutive turns without attribution still compare as equal and
+  // suppress the duplicate label.
+  const NO_MODEL = '__no_model__'
+  let prevAssistantModel: string | undefined = undefined
+  let hasSeenAssistantTurn = false
   for (let i = 0; i < messages.length; i++) {
     const msg = messages[i]
 
@@ -366,6 +387,14 @@ export function deriveTimeline(
     const questionsAnswered = !!(msg.content && hasInteractiveQuestionBlocks(msg.content) &&
       hasQuestionAnswerAfter[i])
 
+    // Resolve this turn's model attribution. TaskMessage currently has no
+    // per-message `model` field, so this is always undefined today — both
+    // turns compare as equal (`NO_MODEL` sentinel) and only the first turn
+    // shows the model label. Wired this way so per-message attribution can
+    // later flip the label back on automatically.
+    const turnModel: string = (msg as unknown as { model?: string | null }).model ?? NO_MODEL
+    const showModelLabel = !hasSeenAssistantTurn || turnModel !== prevAssistantModel
+
     // Inline rendering only kicks in when we have splits to interleave by;
     // without splits we'd produce identical output to the grouped layout.
     const canInline = inlineMode && hasToolCalls && (msg.toolCallSplits?.length ?? 0) > 0
@@ -396,6 +425,7 @@ export function deriveTimeline(
           showCompletionDivider: showDivider,
           messageIndex: i,
           isTurnBoundary: true,
+          showModelLabel,
         })
         dividerShown = true
       }
@@ -418,6 +448,7 @@ export function deriveTimeline(
             showCompletionDivider: !dividerShown && showDivider,
             messageIndex: i,
             isTurnBoundary: isLastText,
+            showModelLabel: isLastText ? showModelLabel : false,
           })
           dividerShown = true
         } else {
@@ -443,6 +474,8 @@ export function deriveTimeline(
         })
       }
       lastUserTimestamp = null
+      prevAssistantModel = turnModel
+      hasSeenAssistantTurn = true
       continue
     }
 
@@ -469,8 +502,11 @@ export function deriveTimeline(
         showCompletionDivider: showDivider,
         messageIndex: i,
         isTurnBoundary: true,
+        showModelLabel,
       })
       lastUserTimestamp = null
+      prevAssistantModel = turnModel
+      hasSeenAssistantTurn = true
     }
 
     if (hasToolCalls) {

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, type KeyboardEvent } from 'react'
 import { IconLoader2, IconPlug, IconWorld } from '@tabler/icons-react'
 import {
   Dialog,
@@ -124,9 +124,21 @@ export function AddMcpServerDialog({ open, onOpenChange, workspace }: Props) {
     }
   }, [canSubmit, scope, agentName, name, transport, command, parsedArgs, url, parsedEnv, workspace, kiroBin, onOpenChange])
 
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent<HTMLDivElement>) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+        if (canSubmit) {
+          e.preventDefault()
+          void submit()
+        }
+      }
+    },
+    [canSubmit, submit],
+  )
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md" onKeyDown={handleKeyDown}>
         <DialogHeader>
           <DialogTitle>Add MCP server</DialogTitle>
           <DialogDescription>
@@ -137,15 +149,15 @@ export function AddMcpServerDialog({ open, onOpenChange, workspace }: Props) {
 
         <div className="flex flex-col gap-4 px-6 py-3">
           {/* Transport */}
-          <div className="grid grid-cols-2 gap-2">
+          <div className="flex items-center rounded-md border border-border overflow-hidden">
             <button
               type="button"
               onClick={() => setTransport('stdio')}
               className={cn(
-                'flex items-center justify-center gap-1.5 rounded-md border px-3 py-2 text-[12px] font-medium transition-colors',
+                'flex flex-1 items-center justify-center gap-1.5 px-3 py-1.5 text-[12px] font-medium transition-colors',
                 transport === 'stdio'
-                  ? 'border-primary/60 bg-primary/10 text-foreground'
-                  : 'border-border text-muted-foreground hover:bg-accent/50',
+                  ? 'bg-accent text-foreground'
+                  : 'text-muted-foreground hover:bg-accent/50',
               )}
             >
               <IconPlug className="size-3.5" /> Local (stdio)
@@ -154,10 +166,10 @@ export function AddMcpServerDialog({ open, onOpenChange, workspace }: Props) {
               type="button"
               onClick={() => setTransport('http')}
               className={cn(
-                'flex items-center justify-center gap-1.5 rounded-md border px-3 py-2 text-[12px] font-medium transition-colors',
+                'flex flex-1 items-center justify-center gap-1.5 px-3 py-1.5 text-[12px] font-medium transition-colors border-l border-border',
                 transport === 'http'
-                  ? 'border-primary/60 bg-primary/10 text-foreground'
-                  : 'border-border text-muted-foreground hover:bg-accent/50',
+                  ? 'bg-accent text-foreground'
+                  : 'text-muted-foreground hover:bg-accent/50',
               )}
             >
               <IconWorld className="size-3.5" /> Remote (HTTP)
@@ -270,6 +282,9 @@ export function AddMcpServerDialog({ open, onOpenChange, workspace }: Props) {
         </div>
 
         <DialogFooter>
+          <span className="text-[10px] text-muted-foreground/70 sm:mr-auto sm:self-center">
+            ESC to cancel · ⌘↵ to add
+          </span>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
             Cancel
           </Button>
@@ -298,15 +313,15 @@ function ScopeButton({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        'flex flex-col items-start gap-0.5 rounded-md border px-2 py-1.5 text-left transition-colors',
+        'flex flex-col items-start gap-0.5 rounded-md border border-border px-2 py-1.5 text-left transition-colors',
         active
-          ? 'border-primary/60 bg-primary/10 text-foreground'
-          : 'border-border text-muted-foreground hover:bg-accent/50',
+          ? 'bg-accent text-foreground'
+          : 'text-muted-foreground hover:bg-accent/50',
         disabled && 'cursor-not-allowed opacity-40',
       )}
     >
       <span className="text-[12px] font-medium">{label}</span>
-      <span className="truncate text-[9px] font-mono text-muted-foreground/80">{hint}</span>
+      <span className="truncate text-[10px] font-mono text-muted-foreground/80">{hint}</span>
     </button>
   )
 }

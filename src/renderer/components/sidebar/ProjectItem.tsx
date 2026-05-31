@@ -15,7 +15,6 @@ import type { SidebarTask } from '@/hooks/useSidebarTasks'
 interface ProjectItemProps {
   name: string
   cwd: string
-  pinnedTasks: readonly SidebarTask[]
   tasks: readonly SidebarTask[]
   selectedTaskId: string | null
   isActiveProject: boolean
@@ -36,15 +35,21 @@ interface ProjectItemProps {
   onMoveThread: (from: number, to: number) => void
 }
 
+const DEFAULT_VISIBLE_THREADS = 3
+
 export const ProjectItem = memo(function ProjectItem({
-  name, cwd, pinnedTasks, tasks, selectedTaskId, isActiveProject, canMoveUp, canMoveDown, autoFocus, jumpLabel, isMetaHeld, isCustomSort,
+  name, cwd, tasks, selectedTaskId, isActiveProject, canMoveUp, canMoveDown, autoFocus, jumpLabel, isMetaHeld, isCustomSort,
   onSelectTask, onNewThread, onDeleteTask, onRenameTask,
   onRemoveProject, onArchiveThreads,
   onMoveUp, onMoveDown, onMoveThread,
 }: ProjectItemProps) {
   const [expanded, setExpanded] = useState(true)
+  const [showAllThreads, setShowAllThreads] = useState(false)
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null)
   const [iconPickerOpen, setIconPickerOpen] = useState(false)
+  const hasMoreThreads = tasks.length > DEFAULT_VISIBLE_THREADS
+  const visibleTasks = showAllThreads || !hasMoreThreads ? tasks : tasks.slice(0, DEFAULT_VISIBLE_THREADS)
+  const handleToggleShowAll = () => setShowAllThreads((v) => !v)
   const ctxRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
   const projectIcon = useProjectIcon(cwd)
@@ -194,51 +199,41 @@ export const ProjectItem = memo(function ProjectItem({
         onReset={() => { setProjectIconOverride(cwd, null); setIconPickerOpen(false) }}
       />
 
-      {expanded && (pinnedTasks.length > 0 || tasks.length > 0) && (
+      {expanded && tasks.length > 0 && (
         <div className="flex min-w-0 flex-col overflow-hidden border-l mx-1 my-0 gap-0 px-1.5 py-0" style={{ borderColor: 'var(--border)' }}>
-          {pinnedTasks.length > 0 && (
-            <ul className="flex min-w-0 flex-col gap-0">
-              {pinnedTasks.map((task) => (
+          <ul className="flex min-w-0 flex-col gap-0">
+            {visibleTasks.map((task, i) => {
+              const threadJumpLabel = isMetaHeld && i < 9 ? `${i + 1}` : null
+              return (
                 <ThreadItem
                   key={task.id}
                   task={task}
                   isActive={selectedTaskId === task.id}
-                  jumpLabel={null}
-                  canMoveUp={false}
-                  canMoveDown={false}
+                  jumpLabel={threadJumpLabel}
+                  canMoveUp={isCustomSort && i > 0 && !task.isDraft}
+                  canMoveDown={isCustomSort && i < visibleTasks.length - 1 && !task.isDraft}
                   onSelect={() => onSelectTask(task.id)}
                   onDelete={() => onDeleteTask(task.id)}
                   onRename={(n) => onRenameTask(task.id, n)}
+                  onMoveUp={() => onMoveThread(i, i - 1)}
+                  onMoveDown={() => onMoveThread(i, i + 1)}
                 />
-              ))}
-            </ul>
-          )}
-          {tasks.length > 0 && (
-            <ul className="flex min-w-0 flex-col gap-0">
-              {tasks.map((task, i) => {
-                const threadJumpLabel = isMetaHeld && i < 9 ? `${i + 1}` : null
-                return (
-                  <ThreadItem
-                    key={task.id}
-                    task={task}
-                    isActive={selectedTaskId === task.id}
-                    jumpLabel={threadJumpLabel}
-                    canMoveUp={isCustomSort && i > 0 && !task.isDraft}
-                    canMoveDown={isCustomSort && i < tasks.length - 1 && !task.isDraft}
-                    onSelect={() => onSelectTask(task.id)}
-                    onDelete={() => onDeleteTask(task.id)}
-                    onRename={(n) => onRenameTask(task.id, n)}
-                    onMoveUp={() => onMoveThread(i, i - 1)}
-                    onMoveDown={() => onMoveThread(i, i + 1)}
-                  />
-                )
-              })}
-            </ul>
+              )
+            })}
+          </ul>
+          {hasMoreThreads && (
+            <button
+              type="button"
+              onClick={handleToggleShowAll}
+              className="flex h-7 w-full items-center rounded-md px-2 text-left text-[12px] text-muted-foreground/70 transition-colors hover:bg-accent hover:text-foreground"
+            >
+              {showAllThreads ? 'Show less' : `Show ${tasks.length - DEFAULT_VISIBLE_THREADS} more`}
+            </button>
           )}
         </div>
       )}
 
-      {expanded && pinnedTasks.length === 0 && tasks.length === 0 && (
+      {expanded && tasks.length === 0 && (
         <div className="flex items-center gap-2 px-4 py-2 mx-1 border-l" style={{ borderColor: 'var(--border)' }}>
           <IconMessage className="size-3.5 text-muted-foreground/50" aria-hidden />
           <span className="text-[12px] text-muted-foreground/60">No threads yet</span>

@@ -7,8 +7,16 @@ import type { UpdateStatus } from '@/stores/updateStore'
 vi.mock('@/stores/taskStore', () => ({
   useTaskStore: Object.assign(
     (selector: (s: Record<string, unknown>) => unknown) =>
-      selector({ setSettingsOpen: vi.fn() }),
-    { getState: () => ({ setSettingsOpen: vi.fn() }), setState: vi.fn() },
+      selector({ setSettingsOpen: vi.fn(), connectionStatus: { state: 'connected' }, selectedTaskId: null, pendingWorkspace: null }),
+    { getState: () => ({ setSettingsOpen: vi.fn(), connectionStatus: { state: 'connected' } }), setState: vi.fn() },
+  ),
+}))
+
+vi.mock('@/stores/kiroStore', () => ({
+  useKiroStore: Object.assign(
+    (selector: (s: Record<string, unknown>) => unknown) =>
+      selector({ config: { agents: [], skills: [], steeringRules: [], mcpServers: [], prompts: [] }, loaded: true, loadConfig: vi.fn() }),
+    { getState: () => ({ config: { agents: [], skills: [], steeringRules: [], mcpServers: [], prompts: [] }, loaded: true }) },
   ),
 }))
 
@@ -28,8 +36,12 @@ vi.mock('@/stores/jsDebugStore', () => ({
   ),
 }))
 
-vi.mock('@/hooks/useModifierKeys', () => ({
-  useModifierKeys: () => false,
+vi.mock('@/lib/ipc', () => ({
+  ipc: { watchKiroPath: vi.fn().mockResolvedValue(undefined), unwatchKiroPath: vi.fn().mockResolvedValue(undefined) },
+}))
+
+vi.mock('@tauri-apps/api/app', () => ({
+  getVersion: vi.fn().mockResolvedValue('0.1.0'),
 }))
 
 vi.mock('@/lib/thread-memory', () => ({
@@ -37,15 +49,19 @@ vi.mock('@/lib/thread-memory', () => ({
   formatBytes: (n: number) => `${n} B`,
 }))
 
-vi.mock('@/hooks/useResizeHandle', () => ({
-  useResizeHandle: () => vi.fn(),
+vi.mock('@/hooks/useMenuPosition', () => ({
+  useMenuPosition: vi.fn(),
 }))
 
-vi.mock('./KiroConfigPanel', () => ({
-  KiroConfigPanel: () => <div data-testid="kiro-config-panel" />,
+vi.mock('@/lib/connection-state', () => ({
+  deriveConnectionUiState: () => 'connected',
 }))
 
-import { SidebarFooter } from './SidebarFooter'
+vi.mock('@/components/header-user-menu', () => ({
+  HeaderUserMenu: () => <div data-testid="header-user-menu" />,
+}))
+
+import { KiroConfigPanel } from './KiroConfigPanel'
 
 const wrap = (ui: React.ReactNode) => <TooltipProvider>{ui}</TooltipProvider>
 
@@ -66,62 +82,46 @@ beforeEach(() => {
   resetUpdateStore()
 })
 
-describe('SidebarFooter update indicator', () => {
+describe('KiroConfigPanel update indicator', () => {
   it('does not show indicator dot when status is idle', () => {
     resetUpdateStore({ status: 'idle' })
-    render(wrap(<SidebarFooter />))
+    render(wrap(<KiroConfigPanel />))
     expect(screen.queryByTestId('update-indicator-dot')).not.toBeInTheDocument()
   })
 
   it('does not show indicator dot when status is checking', () => {
     resetUpdateStore({ status: 'checking' })
-    render(wrap(<SidebarFooter />))
+    render(wrap(<KiroConfigPanel />))
     expect(screen.queryByTestId('update-indicator-dot')).not.toBeInTheDocument()
-  })
-
-  it('shows indicator dot when status is available', () => {
-    resetUpdateStore({ status: 'available' })
-    render(wrap(<SidebarFooter />))
-    expect(screen.getByTestId('update-indicator-dot')).toBeInTheDocument()
   })
 
   it('shows indicator dot when status is downloading', () => {
     resetUpdateStore({ status: 'downloading' })
-    render(wrap(<SidebarFooter />))
+    render(wrap(<KiroConfigPanel />))
     expect(screen.getByTestId('update-indicator-dot')).toBeInTheDocument()
   })
 
   it('shows indicator dot when status is ready', () => {
     resetUpdateStore({ status: 'ready' })
-    render(wrap(<SidebarFooter />))
+    render(wrap(<KiroConfigPanel />))
     expect(screen.getByTestId('update-indicator-dot')).toBeInTheDocument()
   })
 
   it('does not show indicator dot when status is error', () => {
     resetUpdateStore({ status: 'error' })
-    render(wrap(<SidebarFooter />))
+    render(wrap(<KiroConfigPanel />))
     expect(screen.queryByTestId('update-indicator-dot')).not.toBeInTheDocument()
   })
 
   it('shows "Update" badge only when status is available', () => {
     resetUpdateStore({ status: 'available', triggerDownload: vi.fn() })
-    render(wrap(<SidebarFooter />))
+    render(wrap(<KiroConfigPanel />))
     expect(screen.getByText('Update')).toBeInTheDocument()
   })
 
   it('does not show "Update" badge when status is downloading', () => {
     resetUpdateStore({ status: 'downloading' })
-    render(wrap(<SidebarFooter />))
+    render(wrap(<KiroConfigPanel />))
     expect(screen.queryByText('Update')).not.toBeInTheDocument()
-  })
-
-  it('renders Settings button text', () => {
-    render(wrap(<SidebarFooter />))
-    expect(screen.getByText('Settings')).toBeInTheDocument()
-  })
-
-  it('renders Debug button', () => {
-    render(wrap(<SidebarFooter />))
-    expect(screen.getByLabelText('Toggle debug panel')).toBeInTheDocument()
   })
 })

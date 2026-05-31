@@ -8,6 +8,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { cn } from '@/lib/utils'
 import { ipc } from '@/lib/ipc'
 import { useSidebarTasks, type SortKey, type SidebarTask } from '@/hooks/useSidebarTasks'
+import { ThreadItem } from './ThreadItem'
 import { useResizeHandle } from '@/hooks/useResizeHandle'
 import { useModifierKeys } from '@/hooks/useModifierKeys'
 import { useMenuPosition } from '@/hooks/useMenuPosition'
@@ -350,6 +351,41 @@ const PendingReplaceHint = memo(function PendingReplaceHint() {
   )
 })
 
+/** Global pinned threads list shown at the top of the sidebar, above the Projects section */
+interface PinnedThreadsListProps {
+  readonly tasks: readonly SidebarTask[]
+  readonly selectedTaskId: string | null
+  readonly onSelectTask: (id: string) => void
+  readonly onDeleteTask: (id: string) => void
+  readonly onRenameTask: (id: string, name: string) => void
+}
+
+const PinnedThreadsList = memo(function PinnedThreadsList({ tasks, selectedTaskId, onSelectTask, onDeleteTask, onRenameTask }: PinnedThreadsListProps) {
+  if (tasks.length === 0) return null
+  return (
+    <div className="flex flex-col">
+      <div className="px-4 py-2">
+        <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Pinned</span>
+      </div>
+      <ul className="flex min-w-0 flex-col gap-0 px-2 pb-1">
+        {tasks.map((task) => (
+          <ThreadItem
+            key={task.id}
+            task={task}
+            isActive={selectedTaskId === task.id}
+            jumpLabel={null}
+            canMoveUp={false}
+            canMoveDown={false}
+            onSelect={() => onSelectTask(task.id)}
+            onDelete={() => onDeleteTask(task.id)}
+            onRename={(n) => onRenameTask(task.id, n)}
+          />
+        ))}
+      </ul>
+    </div>
+  )
+})
+
 /** Thin separator shown when split views exist above the project list */
 const SidebarDivider = memo(function SidebarDivider() {
   const hasSplits = useTaskStore((s) => s.splitViews.length > 0)
@@ -382,7 +418,7 @@ export const TaskSidebar = memo(function TaskSidebar({ width, onResize, position
     setSort(s)
     saveSortPreference(s)
   }, [])
-  const projectList = useSidebarTasks(sort)
+  const { projects: projectList, globalPinned } = useSidebarTasks(sort)
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number } | null>(null)
   const sidebarCtxRef = useRef<HTMLDivElement>(null)
   useMenuPosition(sidebarCtxRef, ctxMenu)
@@ -520,6 +556,15 @@ export const TaskSidebar = memo(function TaskSidebar({ width, onResize, position
         onMouseDown={handleResizeStart}
         className={cn('absolute top-0 z-10 h-full w-1 cursor-col-resize hover:bg-primary/20 active:bg-primary/30 transition-colors', isRight ? 'left-0' : 'right-0')}
       />
+      <SplitViewsList />
+      <PendingReplaceHint />
+      <PinnedThreadsList
+        tasks={globalPinned}
+        selectedTaskId={selectedTaskId ?? (pendingWorkspace ? `draft:${pendingWorkspace}` : null)}
+        onSelectTask={handleSelectTask}
+        onDeleteTask={handleDeleteTask}
+        onRenameTask={renameTask}
+      />
       <div className="flex items-center justify-between px-4 py-2 pr-3">
         <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Projects</span>
         <div className="flex shrink-0 items-center gap-1">
@@ -527,8 +572,6 @@ export const TaskSidebar = memo(function TaskSidebar({ width, onResize, position
           <AddProjectDropdown onCloneFromGitHub={onCloneFromGitHub} />
         </div>
       </div>
-      <SplitViewsList />
-      <PendingReplaceHint />
       <SidebarDivider />
       <ScrollArea className="min-h-0 flex-1 overflow-hidden px-2">
         <div className="min-w-0 pb-2">
@@ -559,7 +602,6 @@ export const TaskSidebar = memo(function TaskSidebar({ width, onResize, position
                   key={project.cwd}
                   name={project.name}
                   cwd={project.cwd}
-                  pinnedTasks={project.pinnedTasks}
                   tasks={project.tasks}
                   selectedTaskId={selectedTaskId ?? (pendingWorkspace ? `draft:${pendingWorkspace}` : null)}
                   isActiveProject={project.cwd === activeProjectCwd}

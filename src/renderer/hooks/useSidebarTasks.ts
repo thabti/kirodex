@@ -34,10 +34,15 @@ export type SortKey = 'created' | 'recent' | 'oldest' | 'name-asc' | 'name-desc'
 export interface SidebarProject {
   readonly name: string
   readonly cwd: string
-  /** Pinned threads, rendered above regular tasks in a flat section */
-  readonly pinnedTasks: readonly SidebarTask[]
-  /** Non-pinned threads (regular "Recents" section) */
+  /** All non-archived threads for this project (pinned + unpinned, flat list) */
   readonly tasks: readonly SidebarTask[]
+}
+
+/** Top-level result of useSidebarTasks — projects list and global pinned threads */
+export interface SidebarData {
+  readonly projects: readonly SidebarProject[]
+  /** Pinned threads across all projects, ordered by pinnedThreadIds */
+  readonly globalPinned: readonly SidebarTask[]
 }
 
 function sortTasks(tasks: readonly SidebarTask[], sort: SortKey): SidebarTask[] {
@@ -73,7 +78,7 @@ function computeHasPendingQuestion(messages: readonly { role: string; content: s
  * Only re-renders when id, name, workspace, createdAt, or status change.
  * Streaming chunks, tool calls, messages, and thinking are ignored.
  */
-export function useSidebarTasks(sort: SortKey): readonly SidebarProject[] {
+export function useSidebarTasks(sort: SortKey): SidebarData {
   const tasks = useTaskStore((s) => s.tasks)
   const archivedMeta = useTaskStore((s) => s.archivedMeta)
   const projects = useTaskStore((s) => s.projects)
@@ -211,23 +216,6 @@ export function useSidebarTasks(sort: SortKey): readonly SidebarProject[] {
     const seenPid = new Set<string>()
     const seenCwd = new Set<string>()
 
-    /** Split a sorted task list into pinned (preserving pin order) and the rest. */
-    const splitPinned = (all: readonly SidebarTask[]): { pinnedTasks: SidebarTask[]; tasks: SidebarTask[] } => {
-      if (pinnedSet.size === 0) return { pinnedTasks: [], tasks: [...all] }
-      const byId = new Map<string, SidebarTask>()
-      const tasks: SidebarTask[] = []
-      for (const t of all) {
-        if (pinnedSet.has(t.id)) byId.set(t.id, t)
-        else tasks.push(t)
-      }
-      const pinnedTasks: SidebarTask[] = []
-      for (const id of pinnedThreadIds) {
-        const t = byId.get(id)
-        if (t) pinnedTasks.push(t)
-      }
-      return { pinnedTasks, tasks }
-    }
-
     for (const ws of projects) {
       if (worktreeWorkspaces.has(ws)) continue
       if (seenCwd.has(ws)) continue
@@ -236,12 +224,10 @@ export function useSidebarTasks(sort: SortKey): readonly SidebarProject[] {
       seenPid.add(pid)
       seenCwd.add(ws)
       const all = grouped.get(pid) ?? []
-      const { pinnedTasks, tasks } = splitPinned(all)
       result.push({
         name: getDisplayName(ws, projectNames),
         cwd: ws,
-        pinnedTasks,
-        tasks,
+        tasks: [...all],
       })
     }
 
@@ -255,12 +241,10 @@ export function useSidebarTasks(sort: SortKey): readonly SidebarProject[] {
       if (worktreeWorkspaces.has(ws)) continue
       if (seenCwd.has(ws)) continue
       seenCwd.add(ws)
-      const split = splitPinned(tasks)
       result.push({
         name: getDisplayName(ws, projectNames),
         cwd: ws,
-        pinnedTasks: split.pinnedTasks,
-        tasks: split.tasks,
+        tasks: [...tasks],
       })
     }
 
@@ -269,8 +253,8 @@ export function useSidebarTasks(sort: SortKey): readonly SidebarProject[] {
     if (sort === 'recent' || sort === 'oldest' || sort === 'interaction') {
       result.sort((a, b) => {
         const timeField = sort === 'interaction' ? 'lastUserMessageAt' : 'lastActivityAt'
-        const aFirst = a.pinnedTasks[0] ?? a.tasks[0]
-        const bFirst = b.pinnedTasks[0] ?? b.tasks[0]
+        const aFirst = a.tasks[0]
+        const bFirst = b.tasks[0]
         const aTime = aFirst ? new Date(aFirst[timeField]).getTime() : 0
         const bTime = bFirst ? new Date(bFirst[timeField]).getTime() : 0
         return sort === 'oldest' ? aTime - bTime : bTime - aTime
@@ -281,6 +265,25 @@ export function useSidebarTasks(sort: SortKey): readonly SidebarProject[] {
       result.sort((a, b) => b.name.localeCompare(a.name))
     }
 
-    return result as readonly SidebarProject[]
+    // Compute globalPinned across all known tasks, preserving pinnedThreadIds order.
+    // Skip archived and draft tasks.
+    const globalPinned: SidebarTask[] = []
+    if (pinnedSet.size > 0) {
+      const byId = new Map<string, SidebarTask>()
+      for (const t of sidebarTasks.values()) {
+        if (!pinnedSet.has(t.id)) continue
+        if (t.isArchived) continue
+        byId.set(t.id, t)
+      }
+      for (const id of pinnedThreadIds) {
+        const t = byId.get(id)
+        if (t) globalPinned.push(t)
+      }
+    }
+
+    return {
+      projects: result as readonly SidebarProject[],
+      globalPinned: globalPinned as readonly SidebarTask[],
+    }
   }, [sidebarTasks, sort, projects, projectIds, projectNames, drafts, threadOrders, pinnedThreadIds])
 }
