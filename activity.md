@@ -1,3 +1,11 @@
+## 2026-06-01 01:35 GST (Dubai)
+
+### ChatInput: Align bottom with sidebar footer
+
+Reduced ChatInput bottom padding (`pb-4 sm:pb-5` → `pb-1 sm:pb-1.5`, collapsed variant `pb-3` → `pb-1 sm:pb-1.5`) so the message box bottom edge aligns with the sidebar's KIRODEX footer bar instead of floating ~20px above it.
+
+**Modified:** src/renderer/components/chat/ChatInput.tsx
+
 ## 2026-05-31 18:50 GST (Dubai)
 
 ### Chat: Simplify TurnChip to minimal rollback affordance

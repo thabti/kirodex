@@ -380,14 +380,14 @@ export const FileTreePanel = memo(function FileTreePanel({ onClose, workspace: w
 
   return (
     <>
-      <div className="relative flex h-full shrink-0 flex-col border-l border-border bg-background" style={{ width }}>
+      <div className="relative ml-3 flex h-full shrink-0 flex-col border-l border-border bg-background" style={{ width }}>
         {/* Resize handle */}
         <div
           className="absolute left-0 top-0 z-10 h-full w-1 cursor-col-resize hover:bg-primary/20 active:bg-primary/30"
           onMouseDown={handleResizeStart}
         />
         {/* Header */}
-        <div className="flex shrink-0 items-center justify-between border-b border-border px-3 py-2">
+        <div className="flex shrink-0 items-center justify-between border-b border-border pl-3 pr-0 py-2">
           <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Files</span>
           <div className="flex items-center gap-1">
             <Tooltip>

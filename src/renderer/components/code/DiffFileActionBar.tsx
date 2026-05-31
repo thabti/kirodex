@@ -37,7 +37,7 @@ export const DiffFileActionBar = ({
 
   return (
     <div className="border-b border-border bg-muted/50">
-      <div className="flex items-center gap-1 px-2 py-1">
+      <div className="flex items-center gap-1 pl-2 pr-0 py-1">
         <button type="button" onClick={onToggleCollapse}
           className="flex size-4 items-center justify-center rounded text-muted-foreground hover:text-foreground transition-colors">
           {collapsed ? <IconChevronRight className="size-3" /> : <IconChevronDown className="size-3" />}
@@ -46,19 +46,6 @@ export const DiffFileActionBar = ({
         {additions > 0 && <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">+{additions}</span>}
         {deletions > 0 && <span className="text-[10px] font-semibold text-red-600 dark:text-red-400">-{deletions}</span>}
         <div className="ml-1 flex items-center gap-0.5">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button type="button" onClick={onToggleViewed} aria-pressed={viewed}
-                className={viewed
-                  ? 'flex size-5 items-center justify-center rounded text-emerald-500 transition-colors hover:bg-emerald-500/10 focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none'
-                  : 'flex size-5 items-center justify-center rounded text-muted-foreground/70 transition-colors hover:bg-accent hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none'
-                }>
-                <span className="sr-only">Mark viewed</span>
-                {viewed ? <IconSquareCheck className="size-3" /> : <IconSquare className="size-3" />}
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="top">{viewed ? 'Viewed (click to unmark)' : 'Mark viewed'}</TooltipContent>
-          </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
               <button type="button" onClick={onRevert} aria-label="Revert changes"
@@ -88,6 +75,19 @@ export const DiffFileActionBar = ({
               </button>
             </TooltipTrigger>
             <TooltipContent side="top">Open in editor</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button type="button" onClick={onToggleViewed} aria-pressed={viewed}
+                className={viewed
+                  ? 'flex size-5 items-center justify-center rounded text-emerald-500 transition-colors hover:bg-emerald-500/10 focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none'
+                  : 'flex size-5 items-center justify-center rounded text-muted-foreground/70 transition-colors hover:bg-accent hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none'
+                }>
+                <span className="sr-only">Mark viewed</span>
+                {viewed ? <IconSquareCheck className="size-3" /> : <IconSquare className="size-3" />}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="top">{viewed ? 'Viewed (click to unmark)' : 'Mark viewed'}</TooltipContent>
           </Tooltip>
         </div>
       </div>

@@ -9,7 +9,7 @@ import { buildUnsafeCSS, getFileStats } from './diff-viewer-utils'
 import { DiffToolbar } from './DiffToolbar'
 import { DiffFileActionBar } from './DiffFileActionBar'
 import { DiffFileSidebar } from './DiffFileSidebar'
-import { DiffSummaryPanel } from './DiffSummaryPanel'
+// import { DiffSummaryPanel } from './DiffSummaryPanel'
 
 interface DiffViewerProps {
   diff: string
@@ -59,16 +59,10 @@ export function DiffViewer({ diff, taskId, workspace, onRefreshDiff }: DiffViewe
     [fileStats, viewedSet],
   )
 
-  const handleToggleViewedByIdx = useCallback((idx: number, path: string) => {
+  const handleToggleViewedByIdx = useCallback((_idx: number, path: string) => {
     if (!taskId) return
-    const wasViewed = viewedSet.has(path)
     toggleViewed(taskId, path)
-    setCollapsedFiles((prev) => {
-      const next = new Set(prev)
-      if (!wasViewed) next.add(idx); else next.delete(idx)
-      return next
-    })
-  }, [taskId, toggleViewed, viewedSet])
+  }, [taskId, toggleViewed])
 
   const focusFile = useDiffStore((s) => s.focusFile)
   useEffect(() => {
@@ -229,11 +223,11 @@ export function DiffViewer({ diff, taskId, workspace, onRefreshDiff }: DiffViewe
             })}
           </Virtualizer>
         </div>
-        <DiffSummaryPanel
+        {/* <DiffSummaryPanel
           taskId={taskId}
           collapsed={isSummaryCollapsed}
           onToggle={() => setIsSummaryCollapsed((v) => !v)}
-        />
+        /> */}
       </div>
     </div>
   )

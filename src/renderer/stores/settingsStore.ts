@@ -58,7 +58,7 @@ interface SettingsStore {
 const defaultSettings: AppSettings = {
   kiroBin: 'kiro-cli',
   agentProfiles: [],
-  fontSize: 14,
+  fontSize: 19,
   chatFontSize: 15,
   sidebarPosition: 'left',
   analyticsEnabled: true,

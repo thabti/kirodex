@@ -76,8 +76,8 @@ const AppHeaderInner = memo(function AppHeaderInner({
       data-tauri-drag-region
       onMouseDown={handleHeaderMouseDown}
       className={cn(
-        "flex h-[38px] shrink-0 items-center gap-3 border-b border-border/40 bg-background p-0 pt-1 select-none [-webkit-user-select:none]",
-        IS_MAC ? (isFullscreen ? "pl-2 pr-2" : isSidebarCollapsed ? "pl-[74px] pr-2" : "pl-2 pr-2") : "pl-2 pr-[138px]",
+        "flex h-[32px] shrink-0 items-center gap-3 border-b border-border/40 bg-background p-0 select-none [-webkit-user-select:none]",
+        IS_MAC ? (isFullscreen ? "pl-2 pr-0" : isSidebarCollapsed ? "pl-[74px] pr-0" : "pl-2 pr-0") : "pl-2 pr-[138px]",
       )}
     >
       {/* Breadcrumb left */}
@@ -112,7 +112,7 @@ const HeaderFallback = () => (
   <header
     data-tauri-drag-region
     className={cn(
-      "drag-region flex h-[38px] shrink-0 items-center gap-3 border-b border-border bg-card p-0 pt-1",
+      "drag-region flex h-[32px] shrink-0 items-center gap-3 border-b border-border bg-card p-0",
       IS_MAC ? "ml-[74px]" : "ml-2 mr-[138px]",
     )}
   />
