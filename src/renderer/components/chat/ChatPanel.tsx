@@ -16,7 +16,6 @@ import { SearchQueryContext } from './HighlightText'
 import { BtwOverlay } from './BtwOverlay'
 import { PanelProvider } from './PanelContext'
 import { StickyTaskList } from './StickyTaskList'
-import { GoalCard } from './GoalCard'
 
 import { useMessageSearch } from '@/hooks/useMessageSearch'
 import { ipc } from '@/lib/ipc'
@@ -362,7 +361,6 @@ export const ChatPanel = memo(function ChatPanel({ taskId: taskIdProp }: ChatPan
         )}
 
         <SearchQueryContext.Provider value={searchQuery}>
-          {resolvedTaskId && <GoalCard taskId={resolvedTaskId} />}
           <StreamingMessageList
             taskId={resolvedTaskId}
             isRunning={isRunning && !isBtwMode}

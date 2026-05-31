@@ -5,6 +5,7 @@ import { useTaskStore } from '@/stores/taskStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { resolveModelId } from '@/lib/resolve-model'
 import { slugify, isValidWorktreeSlug } from '@/lib/utils'
+import { stripImageDataForTitleGen } from '@/lib/message-utils'
 import type { Attachment, IpcAttachment, ProjectFile } from '@/types'
 import type { PastedChunk } from '@/hooks/useChatInput'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -87,7 +88,7 @@ export function PendingChat({ workspace }: PendingChatProps) {
     removeDraftAttachments(workspace)
     removeDraftPastedChunks(workspace)
     removeDraftMentionedFiles(workspace)
-    const cleanMsg = msg.replace(/<\/?kirodex_tangent>/g, '').trim()
+    const cleanMsg = stripImageDataForTitleGen(msg.replace(/<\/?kirodex_tangent>/g, '').trim())
     const name = cleanMsg.length > 60 ? cleanMsg.slice(0, 57) + '\u2026' : cleanMsg
     const { settings: currentSettings, activeWorkspace, currentModeId, currentModelId } = useSettingsStore.getState()
     const prefs = activeWorkspace ? currentSettings.projectPrefs?.[activeWorkspace] : undefined
