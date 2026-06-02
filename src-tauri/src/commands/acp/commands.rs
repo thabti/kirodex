@@ -368,6 +368,9 @@ pub fn task_cancel(
         use tauri::Emitter;
         let _ = app.emit("task_update", task.clone());
     }
+    // Purge from in-memory map — the frontend owns thread persistence via
+    // its own store. Keeping cancelled tasks here leaks memory indefinitely.
+    tasks.remove(&task_id);
     Ok(())
 }
 
