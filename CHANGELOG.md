@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.65.1] - 2026-06-02
+
+### Bug fixes
+
+- cap unbounded state growth causing macOS unresponsiveness ([`ab288a7`](https://github.com/thabti/kirodex/commit/ab288a73270247568074ed980ccd2fefc8052c0c))
+
 ## [v0.65.0] - 2026-06-01
 
 ### Features
