@@ -146,6 +146,9 @@ export function initTaskListeners(): () => void {
   // Per-task timestamp of the last observed activity (chunk / tool / plan)
   const lastActivityMs: Record<string, number> = {}
 
+  // Track refusal retries per task — allows one automatic retry before giving up
+  const refusalRetried: Record<string, boolean> = {}
+
   const touchActivity = (taskId: string) => {
     lastActivityMs[taskId] = Date.now()
   }
@@ -190,6 +193,13 @@ export function initTaskListeners(): () => void {
           timestamp: new Date().toISOString(),
         })
       }
+    }
+    // Prune orphaned records for tasks that no longer exist in state
+    for (const id of Object.keys(lastActivityMs)) {
+      if (!state.tasks[id]) delete lastActivityMs[id]
+    }
+    for (const id of Object.keys(refusalRetried)) {
+      if (!state.tasks[id]) delete refusalRetried[id]
     }
   }, 10_000) // check every 10 s
 
@@ -321,9 +331,6 @@ export function initTaskListeners(): () => void {
       value2: size,
     })
   })
-
-  // Track refusal retries per task — allows one automatic retry before giving up
-  const refusalRetried: Record<string, boolean> = {}
 
   // Guard against duplicate title generation requests for the same task
   const titleGenerationInFlight = new Set<string>()

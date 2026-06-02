@@ -461,9 +461,14 @@ export function App() {
         if (tid) navigateToNotifiedTask(tid);
       }).catch(() => {});
     }).catch(() => {});
-    // No-op on window focus — notifiedTaskIds persist until the user
-    // navigates to the thread (via sidebar click or native notification).
-    const handleWindowFocus = () => {};
+    // Clear notification badges when the user returns to the app — if they
+    // can see the window, they don't need attention indicators anymore.
+    const handleWindowFocus = () => {
+      const { notifiedTaskIds } = useTaskStore.getState()
+      if (notifiedTaskIds.length > 0) {
+        useTaskStore.setState({ notifiedTaskIds: [] })
+      }
+    };
     window.addEventListener("focus", handleWindowFocus);
     const cleanupTask = initTaskListeners();
     const cleanupKiro = initKiroListeners();

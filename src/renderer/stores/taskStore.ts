@@ -45,6 +45,29 @@ const projectMeta = (t: SavedThreadLike): ArchivedThreadMeta => {
   }
 }
 
+/** Cap a Set to MAX entries by evicting oldest (first-inserted) entries. */
+const MAX_DELETED_IDS = 500
+const capDeletedIds = (ids: Set<string>): Set<string> => {
+  if (ids.size <= MAX_DELETED_IDS) return ids
+  const arr = [...ids]
+  return new Set(arr.slice(arr.length - MAX_DELETED_IDS))
+}
+
+/** Cap softDeleted to this many entries to prevent full-task-object accumulation. */
+const MAX_SOFT_DELETED = 50
+const capSoftDeleted = (sd: Record<string, SoftDeletedThread>): Record<string, SoftDeletedThread> => {
+  const keys = Object.keys(sd)
+  if (keys.length <= MAX_SOFT_DELETED) return sd
+  // Sort by deletedAt ascending, keep the newest MAX_SOFT_DELETED
+  const sorted = keys.sort((a, b) =>
+    new Date(sd[a].deletedAt).getTime() - new Date(sd[b].deletedAt).getTime(),
+  )
+  const keep = sorted.slice(sorted.length - MAX_SOFT_DELETED)
+  const result: Record<string, SoftDeletedThread> = {}
+  for (const k of keep) result[k] = sd[k]
+  return result
+}
+
 export type { TaskStore, BtwCheckpoint } from './task-store-types'
 export { initTaskListeners, applyTurnEnd } from './task-store-listeners'
 
@@ -258,9 +281,9 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
         projects: s.projects.filter((p) => p !== workspace),
         projectIds,
         tasks,
-        softDeleted,
+        softDeleted: capSoftDeleted(softDeleted),
         selectedTaskId,
-        deletedTaskIds,
+        deletedTaskIds: capDeletedIds(deletedTaskIds),
         drafts,
         taskModes,
         taskModels,
@@ -292,9 +315,9 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
       taskIds.forEach((id) => deletedTaskIds.add(id))
       return {
         tasks,
-        softDeleted,
+        softDeleted: capSoftDeleted(softDeleted),
         selectedTaskId,
-        deletedTaskIds,
+        deletedTaskIds: capDeletedIds(deletedTaskIds),
         view: selectedTaskId === null && s.view === 'chat' ? 'dashboard' : s.view,
       }
     })
@@ -457,10 +480,10 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
       const { [id]: _ds, ...remainingSnapshots } = state.dispatchSnapshots
       const deletedTaskIds = new Set(state.deletedTaskIds)
       deletedTaskIds.add(id)
-      const softDeleted = {
+      const softDeleted = capSoftDeleted({
         ...state.softDeleted,
         [id]: { task: { ...removed, isArchived: true, status: 'completed' as const }, deletedAt: new Date().toISOString() },
-      }
+      })
       return {
         tasks: rest,
         streamingChunks: chunks,
@@ -470,7 +493,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
         taskModes: modes,
         taskModels: models,
         dispatchSnapshots: remainingSnapshots,
-        deletedTaskIds,
+        deletedTaskIds: capDeletedIds(deletedTaskIds),
         softDeleted,
         selectedTaskId: state.selectedTaskId === id ? null : state.selectedTaskId,
         splitViews: state.splitViews.filter((sv) => sv.left !== id && sv.right !== id),
@@ -508,7 +531,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
       const { [id]: _, ...remaining } = state.softDeleted
       const deletedTaskIds = new Set(state.deletedTaskIds)
       deletedTaskIds.add(id)
-      return { softDeleted: remaining, deletedTaskIds }
+      return { softDeleted: remaining, deletedTaskIds: capDeletedIds(deletedTaskIds) }
     })
     get().persistHistory()
   },
@@ -528,7 +551,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
         delete next[id]
         deletedTaskIds.add(id)
       }
-      return { softDeleted: next, deletedTaskIds }
+      return { softDeleted: next, deletedTaskIds: capDeletedIds(deletedTaskIds) }
     })
     get().persistHistory()
   },
@@ -1182,7 +1205,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
         for (const sp of savedProjects) {
           if (sp.threadOrder?.length) threadOrders[sp.workspace] = sp.threadOrder
         }
-        set({ tasks, archivedMeta, projects, projectIds, projectNames, softDeleted, deletedTaskIds, threadOrders, connected: true })
+        set({ tasks, archivedMeta, projects, projectIds, projectNames, softDeleted, deletedTaskIds: capDeletedIds(deletedTaskIds), threadOrders, connected: true })
         // One-time migration: sync JSON history threads into SQLite (background, best-effort).
         // This ensures all historical threads are available via the SQLite store going forward.
         threadDb.migrateFromJsonHistory(historyStore.loadThreads).then((result) => {
