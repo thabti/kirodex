@@ -1,15 +1,58 @@
 {
-  "updated_at": "2026-06-02T08:05:46Z",
+  "updated_at": "2026-06-03T08:14:31Z",
   "releases": [
+    {
+      "tag": "v0.65.1",
+      "published": "2026-06-02T13:31:51Z",
+      "total": 14,
+      "update_checks": 59,
+      "assets": [
+        {
+          "name": "Kirodex_0.65.1_aarch64.dmg",
+          "downloads": 8,
+          "platform": "macos"
+        },
+        {
+          "name": "Kirodex_0.65.1_amd64.AppImage",
+          "downloads": 0,
+          "platform": "linux"
+        },
+        {
+          "name": "Kirodex_0.65.1_amd64.AppImage.tar.gz",
+          "downloads": 0,
+          "platform": "linux"
+        },
+        {
+          "name": "Kirodex_0.65.1_amd64.deb",
+          "downloads": 0,
+          "platform": "linux"
+        },
+        {
+          "name": "Kirodex_0.65.1_x64-setup.exe",
+          "downloads": 3,
+          "platform": "windows"
+        },
+        {
+          "name": "Kirodex_0.65.1_x64-setup.nsis.zip",
+          "downloads": 0,
+          "platform": "windows"
+        },
+        {
+          "name": "Kirodex_aarch64.app.tar.gz",
+          "downloads": 3,
+          "platform": "macos"
+        }
+      ]
+    },
     {
       "tag": "v0.65.0",
       "published": "2026-05-31T21:57:56Z",
-      "total": 17,
-      "update_checks": 142,
+      "total": 20,
+      "update_checks": 181,
       "assets": [
         {
           "name": "Kirodex_0.65.0_aarch64.dmg",
-          "downloads": 6,
+          "downloads": 7,
           "platform": "macos"
         },
         {
@@ -29,7 +72,7 @@
         },
         {
           "name": "Kirodex_0.65.0_x64-setup.exe",
-          "downloads": 6,
+          "downloads": 7,
           "platform": "windows"
         },
         {
@@ -39,7 +82,7 @@
         },
         {
           "name": "Kirodex_aarch64.app.tar.gz",
-          "downloads": 5,
+          "downloads": 6,
           "platform": "macos"
         }
       ]
@@ -3474,10 +3517,10 @@
     }
   ],
   "totals": {
-    "all": 1078,
-    "update_checks": 7443,
-    "macos": 597,
-    "windows": 281,
+    "all": 1095,
+    "update_checks": 7541,
+    "macos": 610,
+    "windows": 285,
     "linux": 200
   },
   "homebrew_tap": null
