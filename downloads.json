@@ -1,20 +1,20 @@
 {
-  "updated_at": "2026-06-05T07:53:02Z",
+  "updated_at": "2026-06-06T07:29:58Z",
   "releases": [
     {
       "tag": "v0.65.1",
       "published": "2026-06-02T13:31:51Z",
-      "total": 27,
-      "update_checks": 279,
+      "total": 31,
+      "update_checks": 351,
       "assets": [
         {
           "name": "Kirodex_0.65.1_aarch64.dmg",
-          "downloads": 15,
+          "downloads": 16,
           "platform": "macos"
         },
         {
           "name": "Kirodex_0.65.1_amd64.AppImage",
-          "downloads": 0,
+          "downloads": 1,
           "platform": "linux"
         },
         {
@@ -29,7 +29,7 @@
         },
         {
           "name": "Kirodex_0.65.1_x64-setup.exe",
-          "downloads": 7,
+          "downloads": 8,
           "platform": "windows"
         },
         {
@@ -39,7 +39,7 @@
         },
         {
           "name": "Kirodex_aarch64.app.tar.gz",
-          "downloads": 4,
+          "downloads": 5,
           "platform": "macos"
         }
       ]
@@ -209,7 +209,7 @@
     {
       "tag": "v0.61.1",
       "published": "2026-05-31T21:05:01Z",
-      "total": 2,
+      "total": 3,
       "update_checks": 0,
       "assets": [
         {
@@ -229,7 +229,7 @@
         },
         {
           "name": "Kirodex_0.61.1_amd64.deb",
-          "downloads": 0,
+          "downloads": 1,
           "platform": "linux"
         },
         {
@@ -338,7 +338,7 @@
     {
       "tag": "v0.58.0",
       "published": "2026-05-31T15:06:48Z",
-      "total": 1,
+      "total": 2,
       "update_checks": 1,
       "assets": [
         {
@@ -358,7 +358,7 @@
         },
         {
           "name": "Kirodex_0.58.0_amd64.deb",
-          "downloads": 0,
+          "downloads": 1,
           "platform": "linux"
         },
         {
@@ -3517,11 +3517,11 @@
     }
   ],
   "totals": {
-    "all": 1108,
-    "update_checks": 7761,
-    "macos": 618,
-    "windows": 289,
-    "linux": 201
+    "all": 1114,
+    "update_checks": 7833,
+    "macos": 620,
+    "windows": 290,
+    "linux": 204
   },
   "homebrew_tap": null
 }
