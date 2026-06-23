@@ -1,11 +1,11 @@
 {
-  "updated_at": "2026-06-22T08:32:40Z",
+  "updated_at": "2026-06-23T07:43:59Z",
   "releases": [
     {
       "tag": "v0.65.1",
       "published": "2026-06-02T13:31:51Z",
       "total": 94,
-      "update_checks": 1603,
+      "update_checks": 1634,
       "assets": [
         {
           "name": "Kirodex_0.65.1_aarch64.dmg",
@@ -3518,7 +3518,7 @@
   ],
   "totals": {
     "all": 1204,
-    "update_checks": 9085,
+    "update_checks": 9116,
     "macos": 645,
     "windows": 332,
     "linux": 227
