@@ -1,20 +1,20 @@
 {
-  "updated_at": "2026-06-24T07:42:56Z",
+  "updated_at": "2026-06-25T07:43:14Z",
   "releases": [
     {
       "tag": "v0.65.1",
       "published": "2026-06-02T13:31:51Z",
-      "total": 95,
-      "update_checks": 1662,
+      "total": 100,
+      "update_checks": 1724,
       "assets": [
         {
           "name": "Kirodex_0.65.1_aarch64.dmg",
-          "downloads": 28,
+          "downloads": 30,
           "platform": "macos"
         },
         {
           "name": "Kirodex_0.65.1_amd64.AppImage",
-          "downloads": 7,
+          "downloads": 8,
           "platform": "linux"
         },
         {
@@ -29,7 +29,7 @@
         },
         {
           "name": "Kirodex_0.65.1_x64-setup.exe",
-          "downloads": 42,
+          "downloads": 44,
           "platform": "windows"
         },
         {
@@ -3517,11 +3517,11 @@
     }
   ],
   "totals": {
-    "all": 1205,
-    "update_checks": 9144,
-    "macos": 645,
-    "windows": 332,
-    "linux": 228
+    "all": 1210,
+    "update_checks": 9206,
+    "macos": 647,
+    "windows": 334,
+    "linux": 229
   },
   "homebrew_tap": null
 }
