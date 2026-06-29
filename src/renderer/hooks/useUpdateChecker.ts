@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react'
 import { useUpdateStore } from '@/stores/updateStore'
 import { track } from '@/lib/analytics'
-import { getVersion } from '@tauri-apps/api/app'
+import { getRuntimeVersion, isTauriRuntime } from '@/lib/web-rpc'
 
 import type { Update } from '@tauri-apps/plugin-updater'
 
@@ -13,6 +13,11 @@ export const useUpdateChecker = () => {
   const pendingUpdateRef = useRef<Update | null>(null)
 
   const checkForUpdate = useCallback(async () => {
+    if (!isTauriRuntime()) {
+      useUpdateStore.getState().setStatus('idle')
+      return
+    }
+
     const { status } = useUpdateStore.getState()
     if (status === 'downloading' || status === 'ready') return
 
@@ -37,7 +42,7 @@ export const useUpdateChecker = () => {
       })
       useUpdateStore.getState().setStatus('available')
       track('update_check', { result: 'available', latest_version: update.version })
-      const currentVersion = await getVersion().catch(() => null)
+      const currentVersion = await getRuntimeVersion().catch(() => null)
       track('update_available', { latest_version: update.version, current_version: currentVersion })
     } catch (err) {
       console.warn('[updater] check failed:', err)
@@ -50,11 +55,12 @@ export const useUpdateChecker = () => {
 
   const downloadAndInstall = useCallback(async () => {
     if (!pendingUpdateRef.current) return
+    if (!isTauriRuntime()) return
 
     useUpdateStore.getState().setStatus('downloading')
     useUpdateStore.getState().setProgress({ downloaded: 0, total: null })
     const toVersion = pendingUpdateRef.current.version
-    const fromVersion = await getVersion().catch(() => null)
+    const fromVersion = await getRuntimeVersion().catch(() => null)
 
     try {
       let totalBytes: number | null = null
@@ -90,6 +96,7 @@ export const useUpdateChecker = () => {
 
   const restart = useCallback(async () => {
     try {
+      if (!isTauriRuntime()) return
       const toVersion = pendingUpdateRef.current?.version ?? null
       track('update_restart_clicked', { to_version: toVersion })
       const { prepareForRelaunch } = await import('@/lib/relaunch')

@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useRef } from 'react'
-import { invoke } from '@tauri-apps/api/core'
+import { ipc } from '@/lib/ipc'
 import { useFileTreeStore, type TreeEntry } from '@/stores/fileTreeStore'
 import { useTaskStore } from '@/stores/taskStore'
 import type { ProjectFile } from '@/types'
@@ -92,7 +92,7 @@ export const TreeContextMenu = memo(function TreeContextMenu({
 
   const handleReveal = useCallback(() => {
     if (!entry) return
-    invoke('reveal_in_finder', { workspace, relPath: entry.path }).catch(console.error)
+    ipc.revealInFinder(workspace, entry.path).catch(console.error)
     onClose()
   }, [entry, workspace, onClose])
 
@@ -153,7 +153,7 @@ export const TreeContextMenu = memo(function TreeContextMenu({
 
   const handleAddToGitignore = useCallback(() => {
     if (!entry) return
-    invoke('add_to_gitignore', { workspace, relPath: entry.path }).catch(console.error)
+    ipc.addToGitignore(workspace, entry.path).catch(console.error)
     onClose()
   }, [entry, workspace, onClose])
 
@@ -185,8 +185,8 @@ export const TreeContextMenu = memo(function TreeContextMenu({
     if (entry.isDir) {
       items.push({ label: 'Find in Folder...', icon: <IconSearch className="size-3.5" />, shortcut: '⌥⌘⇧F', action: () => {
         const absPath = `${workspace}/${entry.path}`
-        invoke('open_finder_search', { path: absPath }).catch(() => {
-          invoke('reveal_in_finder', { workspace, relPath: entry.path }).catch(console.error)
+        ipc.openFinderSearch(absPath).catch(() => {
+          ipc.revealInFinder(workspace, entry.path).catch(console.error)
         })
         onClose()
       }, separator: true })

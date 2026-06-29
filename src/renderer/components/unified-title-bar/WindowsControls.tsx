@@ -1,11 +1,18 @@
-import { getCurrentWindow } from '@tauri-apps/api/window'
+import { isTauriRuntime } from '@/lib/web-rpc'
+
+const withWindow = (fn: (win: ReturnType<typeof import('@tauri-apps/api/window')['getCurrentWindow']>) => void): void => {
+  if (!isTauriRuntime()) return
+  import('@tauri-apps/api/window').then(({ getCurrentWindow }) => {
+    fn(getCurrentWindow())
+  }).catch(() => {})
+}
 
 export const WindowsControls = () => {
   return (
     <div className="flex items-center" data-no-drag>
       <button
         type="button"
-        onClick={() => void getCurrentWindow().minimize()}
+        onClick={() => withWindow((win) => { void win.minimize() })}
         className="flex h-[38px] w-[46px] items-center justify-center transition-colors hover:bg-black/10 dark:hover:bg-white/10"
         aria-label="Minimize"
       >
@@ -13,7 +20,7 @@ export const WindowsControls = () => {
       </button>
       <button
         type="button"
-        onClick={() => void getCurrentWindow().isMaximized().then(m => m ? getCurrentWindow().unmaximize() : getCurrentWindow().maximize())}
+        onClick={() => withWindow((win) => { void win.isMaximized().then(m => m ? win.unmaximize() : win.maximize()) })}
         className="flex h-[38px] w-[46px] items-center justify-center transition-colors hover:bg-black/10 dark:hover:bg-white/10"
         aria-label="Maximize"
       >
@@ -21,7 +28,7 @@ export const WindowsControls = () => {
       </button>
       <button
         type="button"
-        onClick={() => void getCurrentWindow().close()}
+        onClick={() => withWindow((win) => { void win.close() })}
         className="group flex h-[38px] w-[46px] items-center justify-center transition-colors hover:bg-red-500 hover:text-white"
         aria-label="Close"
       >

@@ -14,7 +14,7 @@
  */
 
 import type { PostHog } from 'posthog-js'
-import { getVersion } from '@tauri-apps/api/app'
+import { getRuntimeVersion } from '@/lib/web-rpc'
 
 const POSTHOG_KEY = import.meta.env.VITE_POSTHOG_API_KEY as string | undefined
 const POSTHOG_HOST = (import.meta.env.VITE_POSTHOG_HOST as string | undefined) ?? 'https://us.i.posthog.com'
@@ -101,7 +101,7 @@ export const initAnalytics = async (
   }
   if (ready) return true
 
-  const appVersion = await safe(() => getVersion()) ?? 'unknown'
+  const appVersion = await safe(() => getRuntimeVersion()) ?? 'unknown'
   superProps = {
     app_version: appVersion,
     platform: detectPlatform(),
