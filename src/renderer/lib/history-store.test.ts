@@ -20,6 +20,10 @@ import { loadThreads, loadProjects, saveThreads, toArchivedTasks, clearHistory, 
 import type { AgentTask, SoftDeletedThread } from '@/types'
 
 beforeEach(() => {
+  Object.defineProperty(window, '__TAURI_INTERNALS__', {
+    value: {},
+    configurable: true,
+  })
   vi.clearAllMocks()
 })
 

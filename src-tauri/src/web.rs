@@ -1,4 +1,5 @@
 use std::collections::{BTreeSet, HashMap};
+use std::ffi::OsString;
 use std::io::{Read, Write};
 use std::net::SocketAddr;
 use std::path::{Path, PathBuf};
@@ -177,12 +178,17 @@ struct RpcError {
 }
 
 pub async fn serve(options: ServeOptions) -> Result<(), String> {
+    let has_explicit_token = options
+        .token
+        .as_ref()
+        .filter(|t| !t.trim().is_empty())
+        .is_some();
     let token = options
         .token
         .clone()
         .filter(|t| !t.trim().is_empty())
         .unwrap_or_else(|| uuid::Uuid::new_v4().simple().to_string());
-    if options.host == "0.0.0.0" && token.trim().is_empty() {
+    if is_wildcard_host(&options.host) && !has_explicit_token {
         return Err("--host 0.0.0.0 requires a non-empty --token".to_string());
     }
 
@@ -251,15 +257,24 @@ fn resolve_dist(explicit: Option<PathBuf>) -> Result<PathBuf, String> {
     if let Ok(exe) = std::env::current_exe() {
         if let Some(parent) = exe.parent() {
             candidates.push(parent.join("dist"));
-            candidates.push(parent.join("../dist"));
+            if let Ok(canonical) = parent.join("../dist").canonicalize() {
+                candidates.push(canonical);
+            }
         }
     }
     for candidate in candidates {
-        if candidate.join("index.html").is_file() {
-            return Ok(candidate);
+        let index_file = candidate.join("index.html");
+        if index_file.is_file() {
+            return candidate
+                .canonicalize()
+                .map_err(|e| format!("Failed to resolve frontend bundle path: {e}"));
         }
     }
     Err("Frontend bundle not found. Run `bun run build:renderer`, pass `--dist PATH`, or use `--dev-ui http://localhost:5174`.".to_string())
+}
+
+fn is_wildcard_host(host: &str) -> bool {
+    matches!(host, "0.0.0.0" | "::" | "[::]")
 }
 
 async fn auth_middleware(
@@ -278,9 +293,11 @@ async fn auth_middleware(
         return (StatusCode::UNAUTHORIZED, "Missing or invalid Kirodex web token").into_response();
     }
     let should_set_cookie = query_token.as_deref() == Some(runtime.token.as_str());
+    let should_secure_cookie = is_https_request(&req);
     let mut response = next.run(req).await;
     if should_set_cookie {
-        let cookie = format!("kirodex_token={}; HttpOnly; SameSite=Lax; Path=/", runtime.token);
+        let secure = if should_secure_cookie { "; Secure" } else { "" };
+        let cookie = format!("kirodex_token={}; HttpOnly; SameSite=Lax; Path=/{}", runtime.token, secure);
         if let Ok(value) = header::HeaderValue::from_str(&cookie) {
             response.headers_mut().insert(header::SET_COOKIE, value);
         }
@@ -306,6 +323,22 @@ fn cookie_token(req: &Request<Body>) -> Option<&str> {
         let trimmed = part.trim();
         trimmed.strip_prefix("kirodex_token=")
     })
+}
+
+fn is_https_request(req: &Request<Body>) -> bool {
+    req.headers()
+        .get("x-forwarded-proto")
+        .and_then(|value| value.to_str().ok())
+        .is_some_and(|value| value.eq_ignore_ascii_case("https"))
+        || req
+            .headers()
+            .get("forwarded")
+            .and_then(|value| value.to_str().ok())
+            .is_some_and(|value| {
+                value
+                    .split(';')
+                    .any(|part| part.trim().eq_ignore_ascii_case("proto=https"))
+            })
 }
 
 fn url_encode(input: &str) -> String {
@@ -1857,6 +1890,11 @@ impl acp_proto::Client for WebKirodexClient {
     ) -> acp_proto::Result<acp_proto::ReadTextFileResponse> {
         let val = serde_json::to_value(&args).unwrap_or_default();
         let path = val.get("path").and_then(Value::as_str).unwrap_or("");
+        if path.is_empty() {
+            return Err(acp_proto::Error::invalid_params().data(json!({
+                "reason": "Missing path"
+            })));
+        }
         if !path.is_empty() && !app_acp::is_within_workspace(&self.workspace, path) {
             let allowed = self.allowed_paths.lock();
             let path_ok = if self.tight_sandbox {
@@ -1872,10 +1910,13 @@ impl acp_proto::Client for WebKirodexClient {
                 })));
             }
         }
-        match std::fs::read_to_string(path) {
-            Ok(content) => Ok(serde_json::from_value(json!({ "content": content })).unwrap()),
-            Err(_) => Ok(serde_json::from_value(json!({ "content": "" })).unwrap()),
-        }
+        let content = std::fs::read_to_string(path).map_err(|e| {
+            acp_proto::Error::internal_error().data(json!({
+                "path": path,
+                "error": e.to_string()
+            }))
+        })?;
+        Ok(serde_json::from_value(json!({ "content": content })).unwrap())
     }
 
     async fn write_text_file(
@@ -1885,6 +1926,11 @@ impl acp_proto::Client for WebKirodexClient {
         let val = serde_json::to_value(&args).unwrap_or_default();
         let path = val.get("path").and_then(Value::as_str).unwrap_or("");
         let content = val.get("content").and_then(Value::as_str).unwrap_or("");
+        if path.is_empty() {
+            return Err(acp_proto::Error::invalid_params().data(json!({
+                "reason": "Missing path"
+            })));
+        }
         if !path.is_empty() && !app_acp::is_within_workspace(&self.workspace, path) {
             let allowed = self.allowed_paths.lock();
             let path_ok = if self.tight_sandbox {
@@ -1900,7 +1946,12 @@ impl acp_proto::Client for WebKirodexClient {
                 })));
             }
         }
-        let _ = std::fs::write(path, content);
+        std::fs::write(path, content).map_err(|e| {
+            acp_proto::Error::internal_error().data(json!({
+                "path": path,
+                "error": e.to_string()
+            }))
+        })?;
         Ok(serde_json::from_value(json!({})).unwrap())
     }
 
@@ -1926,19 +1977,17 @@ async fn run_web_acp_connection(
     tight_sandbox: bool,
     mut pending_preamble: Option<String>,
 ) -> Result<(), String> {
-    let mut child = tokio::process::Command::new(&kiro_bin)
+    let mut command = tokio::process::Command::new(&kiro_bin);
+    command
         .arg("acp")
         .current_dir(&workspace)
         .stdin(std::process::Stdio::piped())
         .stdout(std::process::Stdio::piped())
-        .stderr(std::process::Stdio::piped())
-        .env(
-            "PATH",
-            format!(
-                "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:{}",
-                std::env::var("PATH").unwrap_or_default()
-            ),
-        )
+        .stderr(std::process::Stdio::piped());
+    if let Some(path) = child_path_env() {
+        command.env("PATH", path);
+    }
+    let mut child = command
         .spawn()
         .map_err(|e| format!("Failed to spawn kiro-cli: {e}"))?;
     let stdin = child.stdin.take().ok_or("No stdin")?;
@@ -2155,6 +2204,27 @@ async fn run_web_acp_connection(
     }
     let _ = child.kill().await;
     Ok(())
+}
+
+fn child_path_env() -> Option<OsString> {
+    let mut paths = Vec::<PathBuf>::new();
+    #[cfg(target_os = "macos")]
+    {
+        for candidate in ["/opt/homebrew/bin", "/usr/local/bin"] {
+            let path = PathBuf::from(candidate);
+            if path.is_dir() {
+                paths.push(path);
+            }
+        }
+    }
+
+    if paths.is_empty() {
+        return None;
+    }
+    if let Some(current) = std::env::var_os("PATH") {
+        paths.extend(std::env::split_paths(&current));
+    }
+    std::env::join_paths(paths).ok()
 }
 
 async fn web_list_models(runtime: Arc<WebRuntime>, kiro_bin: Option<String>) -> Result<Value, String> {

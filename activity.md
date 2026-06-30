@@ -1,3 +1,11 @@
+## 2026-06-30 09:24 GST (Dubai)
+
+### PR Review: Web mode hardening
+
+Addressed GitHub review feedback for the built-in web server mode by tightening token/public-host handling, canonicalizing static bundle paths, securing HTTPS-proxied cookies, validating browser RPC override URLs, and surfacing ACP file I/O failures. Updated desktop-runtime tests so the new browser guard does not break mocked Tauri suites.
+
+**Modified:** `src-tauri/src/web.rs`, `src/renderer/lib/web-rpc.ts`, `src/renderer/lib/history-store.test.ts`, `src/renderer/components/unified-title-bar/unified-title-bar.test.tsx`, `src/renderer/hooks/useAttachments.test.ts`, `src/renderer/hooks/useUpdateChecker.test.ts`
+
 ## 2026-06-29 15:01 GST (Dubai)
 
 ### Mobile UI: Responsive browser polish

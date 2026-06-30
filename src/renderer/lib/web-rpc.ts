@@ -23,13 +23,33 @@ const RECONNECT_DELAYS = [250, 500, 1_000, 2_000, 5_000]
 export const isTauriRuntime = (): boolean =>
   typeof window !== 'undefined' && Boolean((window as unknown as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__)
 
+const getDefaultWebSocketUrl = (): URL =>
+  new URL(`${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/rpc`)
+
+const isLoopbackHostname = (hostname: string): boolean =>
+  hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1' || hostname === '[::1]'
+
+const isAllowedExplicitRpcUrl = (url: URL): boolean => {
+  if (url.protocol !== 'ws:' && url.protocol !== 'wss:') return false
+  if (url.hostname === window.location.hostname) return true
+  return isLoopbackHostname(url.hostname) && isLoopbackHostname(window.location.hostname)
+}
+
 const getWebSocketUrl = (): string => {
   const params = new URLSearchParams(window.location.search)
   const explicit = params.get('kirodexRpc')
   const token = params.get('token')
-  const url = explicit
-    ? new URL(explicit)
-    : new URL(`${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/rpc`)
+  let url = getDefaultWebSocketUrl()
+  if (explicit) {
+    try {
+      const candidate = new URL(explicit)
+      if (isAllowedExplicitRpcUrl(candidate)) {
+        url = candidate
+      }
+    } catch {
+      url = getDefaultWebSocketUrl()
+    }
+  }
   if (token && !url.searchParams.has('token')) {
     url.searchParams.set('token', token)
   }

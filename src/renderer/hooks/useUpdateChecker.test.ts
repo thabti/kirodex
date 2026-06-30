@@ -24,6 +24,10 @@ import { useUpdateStore } from '@/stores/updateStore'
 import { useUpdateChecker } from './useUpdateChecker'
 
 beforeEach(() => {
+  Object.defineProperty(window, '__TAURI_INTERNALS__', {
+    value: {},
+    configurable: true,
+  })
   vi.clearAllMocks()
   mockCheck.mockResolvedValue(null)
   useUpdateStore.setState({
