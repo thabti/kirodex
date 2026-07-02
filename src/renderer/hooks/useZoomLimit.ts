@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { getCurrentWebview } from '@tauri-apps/api/webview'
+import { isTauriRuntime } from '@/lib/web-rpc'
 import { useSettingsStore } from '@/stores/settingsStore'
 
 const ZOOM_MIN = 0.5
@@ -51,13 +51,18 @@ export const useZoomLimit = (): void => {
   const baseFontSizesRef = useRef<{ ui: number; chat: number } | null>(null)
 
   useEffect(() => {
-    const webview = getCurrentWebview()
+    const setNativeZoom = (value: number): void => {
+      if (!isTauriRuntime()) return
+      import('@tauri-apps/api/webview')
+        .then(({ getCurrentWebview }) => getCurrentWebview().setZoom(value))
+        .catch(() => {})
+    }
 
     // Restore persisted zoom level or fall back to the default
     const stored = readStoredZoom()
     const initial = stored ? clampZoom(parseFloat(stored)) : ZOOM_DEFAULT
     zoomRef.current = initial
-    webview.setZoom(initial)
+    setNativeZoom(initial)
 
     // Capture the base font sizes on mount (the user's configured values).
     const { settings } = useSettingsStore.getState()
@@ -89,7 +94,7 @@ export const useZoomLimit = (): void => {
       const clamped = clampZoom(next)
       if (clamped === zoomRef.current) return
       zoomRef.current = clamped
-      webview.setZoom(clamped)
+      setNativeZoom(clamped)
       writeStoredZoom(clamped)
 
       // Scale font sizes proportionally with zoom.

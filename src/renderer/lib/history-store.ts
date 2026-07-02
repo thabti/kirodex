@@ -1,10 +1,12 @@
 /**
- * Persistent history store using tauri-plugin-store (LazyStore).
+ * Persistent history store using tauri-plugin-store (LazyStore) on desktop
+ * and the web server JSON store in browser mode.
  * Stores thread conversations and project metadata in a separate
  * `history.json` file in the app data directory.
  * Lazy-loaded: no disk I/O until first access.
  */
-import type { LazyStore } from '@tauri-apps/plugin-store'
+import { ipc } from '@/lib/ipc'
+import { isTauriRuntime } from '@/lib/web-rpc'
 import type { AgentTask, TaskMessage, ToolCall, ToolCallSplit, SoftDeletedThread, AppSettings } from '@/types'
 
 // ── Persisted types ──────────────────────────────────────────────
@@ -45,7 +47,83 @@ interface SavedProject {
 const HISTORY_FILE = import.meta.env.DEV ? 'history-dev.json' : 'history.json'
 const BACKUP_FILE = import.meta.env.DEV ? 'history-dev.backup.json' : 'history.backup.json'
 
-let _store: LazyStore | null = null
+interface HistoryStoreAdapter {
+  get<T>(key: string): Promise<T | null>
+  set<T>(key: string, value: T): Promise<void>
+  delete(key: string): Promise<void>
+  clear(): Promise<void>
+  save(): Promise<void>
+  onKeyChange(key: string, cb: () => void): Promise<() => void>
+}
+
+class WebHistoryStore implements HistoryStoreAdapter {
+  constructor(private readonly file: string) {}
+
+  get<T>(key: string): Promise<T | null> {
+    return ipc.webStoreGet<T>(this.file, key)
+  }
+
+  set<T>(key: string, value: T): Promise<void> {
+    return ipc.webStoreSet(this.file, key, value)
+  }
+
+  delete(key: string): Promise<void> {
+    return ipc.webStoreDelete(this.file, key)
+  }
+
+  clear(): Promise<void> {
+    return ipc.webStoreClear(this.file)
+  }
+
+  save(): Promise<void> {
+    return ipc.webStoreFlush(this.file)
+  }
+
+  async onKeyChange(key: string, cb: () => void): Promise<() => void> {
+    return ipc.onWebStoreChanged((event) => {
+      if (event.file !== this.file) return
+      if (event.key !== null && event.key !== key) return
+      cb()
+    })
+  }
+}
+
+class TauriHistoryStore implements HistoryStoreAdapter {
+  constructor(private readonly store: {
+    get<T>(key: string): Promise<T | null | undefined>
+    set<T>(key: string, value: T): Promise<void>
+    delete(key: string): Promise<unknown>
+    clear(): Promise<void>
+    save(): Promise<void>
+    onKeyChange(key: string, cb: () => void): Promise<() => void>
+  }) {}
+
+  async get<T>(key: string): Promise<T | null> {
+    return (await this.store.get<T>(key)) ?? null
+  }
+
+  set<T>(key: string, value: T): Promise<void> {
+    return this.store.set(key, value)
+  }
+
+  async delete(key: string): Promise<void> {
+    await this.store.delete(key)
+  }
+
+  clear(): Promise<void> {
+    return this.store.clear()
+  }
+
+  save(): Promise<void> {
+    return this.store.save()
+  }
+
+  onKeyChange(key: string, cb: () => void): Promise<() => void> {
+    return this.store.onKeyChange(key, cb)
+  }
+}
+
+let _store: HistoryStoreAdapter | null = null
 
 /**
  * Guard flag: true while this window is writing to the store.
@@ -57,21 +135,27 @@ let _selfWriteCount = 0
 /** Returns true if this window is currently writing to the store. */
 export const isSelfWriting = (): boolean => _selfWriteCount > 0
 
-const getStore = async (): Promise<LazyStore> => {
+const getStore = async (): Promise<HistoryStoreAdapter> => {
   if (!_store) {
+    if (!isTauriRuntime()) {
+      _store = new WebHistoryStore(HISTORY_FILE)
+      return _store
+    }
+
     const { LazyStore } = await import('@tauri-apps/plugin-store')
-    _store = new LazyStore(HISTORY_FILE, { autoSave: 500, defaults: {} })
+    const tauriStore = new LazyStore(HISTORY_FILE, { autoSave: 500, defaults: {} })
+    _store = new TauriHistoryStore(tauriStore)
     // Validate the store is readable — if corrupted, reset it
     try {
-      await _store.get<unknown>('threads')
+      await tauriStore.get<unknown>('threads')
     } catch (err) {
       console.warn('[history-store] Store corrupted, resetting:', err)
       try {
-        await _store.clear()
-        await _store.save()
+        await tauriStore.clear()
+        await tauriStore.save()
       } catch {
         // If clear also fails, recreate the store instance
-        _store = new LazyStore(HISTORY_FILE, { autoSave: 500, defaults: {} })
+        _store = new TauriHistoryStore(new LazyStore(HISTORY_FILE, { autoSave: 500, defaults: {} }))
       }
     }
   }
@@ -324,12 +408,17 @@ export async function loadUiState(): Promise<PersistedUiState | null> {
 }
 
 /** Backup store singleton (separate file from primary) */
-let _backupStore: LazyStore | null = null
+let _backupStore: HistoryStoreAdapter | null = null
 
-const getBackupStore = async (): Promise<LazyStore> => {
+const getBackupStore = async (): Promise<HistoryStoreAdapter> => {
   if (!_backupStore) {
+    if (!isTauriRuntime()) {
+      _backupStore = new WebHistoryStore(BACKUP_FILE)
+      return _backupStore
+    }
+
     const { LazyStore } = await import('@tauri-apps/plugin-store')
-    _backupStore = new LazyStore(BACKUP_FILE, { autoSave: false, defaults: {} })
+    _backupStore = new TauriHistoryStore(new LazyStore(BACKUP_FILE, { autoSave: false, defaults: {} }))
   }
   return _backupStore
 }

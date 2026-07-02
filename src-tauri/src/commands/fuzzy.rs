@@ -71,6 +71,15 @@ pub fn fuzzy_match(
     candidates: Vec<FuzzyCandidate>,
     limit: Option<usize>,
 ) -> Vec<FuzzyMatch> {
+    fuzzy_match_core(&state, query, candidates, limit)
+}
+
+pub(crate) fn fuzzy_match_core(
+    state: &FuzzyState,
+    query: String,
+    candidates: Vec<FuzzyCandidate>,
+    limit: Option<usize>,
+) -> Vec<FuzzyMatch> {
     let trimmed = query.trim();
     if trimmed.is_empty() {
         let cap = limit.unwrap_or(candidates.len());

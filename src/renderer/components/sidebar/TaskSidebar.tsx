@@ -205,7 +205,9 @@ interface TaskSidebarProps {
   onResize: (width: number) => void
   position?: 'left' | 'right'
   onCollapse?: () => void
+  onNavigate?: () => void
   onCloneFromGitHub?: () => void
+  isMobileOverlay?: boolean
 }
 
 /** Sidebar section showing saved split view pairings */
@@ -251,11 +253,12 @@ const SplitViewsList = memo(function SplitViewsList() {
   }
 
   return (
-    <div className="pb-1">
-      <div className="px-3 py-2">
-        <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Side-by-side</span>
+    <div className="px-2 pb-1">
+      <div className="px-2 pb-1 pt-1.5">
+        <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground/70">Side-by-side</span>
       </div>
-      <ul className="flex flex-col gap-0.5 px-2">
+      <div className="rounded-lg bg-muted/30 p-1">
+      <ul className="flex flex-col gap-px">
         {splitViews.map((sv) => {
           const leftName = tasks[sv.left]?.name ?? 'Thread'
           const rightName = tasks[sv.right]?.name ?? 'Thread'
@@ -267,7 +270,7 @@ const SplitViewsList = memo(function SplitViewsList() {
                 onClick={() => setActiveSplit(sv.id)}
                 onContextMenu={(e) => handleContextMenu(e, sv.id)}
                 className={cn(
-                  'flex min-w-0 h-8 w-full items-center gap-2 rounded-lg px-2 text-[12px] select-none transition-colors',
+                  'flex min-w-0 h-7 w-full items-center gap-2 rounded-lg px-2 text-[12px] select-none transition-colors',
                   isActive
                     ? 'bg-primary/10 text-primary font-medium'
                     : 'text-muted-foreground hover:bg-accent hover:text-foreground',
@@ -290,6 +293,7 @@ const SplitViewsList = memo(function SplitViewsList() {
           )
         })}
       </ul>
+      </div>
       {ctxMenu && (
         <>
           <div className="fixed inset-0 z-[299]" onClick={() => setCtxMenu(null)} onContextMenu={(e) => { e.preventDefault(); setCtxMenu(null) }} />
@@ -366,25 +370,27 @@ interface PinnedThreadsListProps {
 const PinnedThreadsList = memo(function PinnedThreadsList({ tasks, selectedTaskId, onSelectTask, onDeleteTask, onRenameTask }: PinnedThreadsListProps) {
   if (tasks.length === 0) return null
   return (
-    <div className="flex flex-col">
-      <div className="px-3 py-2">
-        <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Pinned</span>
+    <div className="flex flex-col px-2 pb-1">
+      <div className="px-2 pb-1 pt-1.5">
+        <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground/70">Pinned</span>
       </div>
-      <ul className="flex min-w-0 flex-col gap-0 px-2 pb-1">
-        {tasks.map((task) => (
-          <ThreadItem
-            key={task.id}
-            task={task}
-            isActive={selectedTaskId === task.id}
-            jumpLabel={null}
-            canMoveUp={false}
-            canMoveDown={false}
-            onSelect={() => onSelectTask(task.id)}
-            onDelete={() => onDeleteTask(task.id)}
-            onRename={(n) => onRenameTask(task.id, n)}
-          />
-        ))}
-      </ul>
+      <div className="rounded-lg bg-muted/30 p-1">
+        <ul className="flex min-w-0 flex-col gap-px">
+          {tasks.map((task) => (
+            <ThreadItem
+              key={task.id}
+              task={task}
+              isActive={selectedTaskId === task.id}
+              jumpLabel={null}
+              canMoveUp={false}
+              canMoveDown={false}
+              onSelect={() => onSelectTask(task.id)}
+              onDelete={() => onDeleteTask(task.id)}
+              onRename={(n) => onRenameTask(task.id, n)}
+            />
+          ))}
+        </ul>
+      </div>
     </div>
   )
 })
@@ -393,11 +399,7 @@ const PinnedThreadsList = memo(function PinnedThreadsList({ tasks, selectedTaskI
 const SidebarDivider = memo(function SidebarDivider() {
   const hasSplits = useTaskStore((s) => s.splitViews.length > 0)
   if (!hasSplits) return null
-  return (
-    <div className="flex justify-center py-1">
-      <div className="h-px w-8 bg-border/30" />
-    </div>
-  )
+  return <div className="h-px mx-4 bg-border/20" />
 })
 
 const SORT_STORAGE_KEY = 'kirodex-sidebar-sort'
@@ -414,7 +416,7 @@ const saveSortPreference = (sort: SortKey): void => {
   try { localStorage.setItem(SORT_STORAGE_KEY, sort) } catch { /* best-effort */ }
 }
 
-export const TaskSidebar = memo(function TaskSidebar({ width, onResize, position = 'left', onCollapse, onCloneFromGitHub }: TaskSidebarProps) {
+export const TaskSidebar = memo(function TaskSidebar({ width, onResize, position = 'left', onCollapse, onNavigate, onCloneFromGitHub, isMobileOverlay = false }: TaskSidebarProps) {
   const isRight = position === 'right'
   const [sort, setSort] = useState<SortKey>(loadSortPreference)
   const handleSortChange = useCallback((s: SortKey) => {
@@ -504,7 +506,8 @@ export const TaskSidebar = memo(function TaskSidebar({ width, onResize, position
         setSelectedTask(id); setView('chat')
       }
     }
-  }, [setSelectedTask, setView])
+    onNavigate?.()
+  }, [setSelectedTask, setView, onNavigate])
   const handleDeleteTask = useCallback((id: string) => {
     if (id.startsWith('draft:')) {
       const ws = id.slice(6)
@@ -519,7 +522,10 @@ export const TaskSidebar = memo(function TaskSidebar({ width, onResize, position
       void ipc.cancelTask(id).catch(() => {}); removeTask(id); void ipc.deleteTask(id)
     }
   }, [removeTask])
-  const handleNewThread = useCallback((workspace: string) => { useTaskStore.getState().setPendingWorkspace(workspace) }, [])
+  const handleNewThread = useCallback((workspace: string) => {
+    useTaskStore.getState().setPendingWorkspace(workspace)
+    onNavigate?.()
+  }, [onNavigate])
 
   // Sidebar edge resize
   const handleResizeStart = useResizeHandle({
@@ -527,7 +533,16 @@ export const TaskSidebar = memo(function TaskSidebar({ width, onResize, position
   })
 
   return (
-    <div data-testid="task-sidebar" onContextMenu={handleContextMenu} className={cn('relative flex h-full min-h-0 shrink-0 flex-col overflow-hidden rounded-xl bg-sidebar pt-9 text-foreground', isRight && 'order-last')} style={{ width }}>
+    <div
+      data-testid="task-sidebar"
+      onContextMenu={handleContextMenu}
+      className={cn(
+        'relative flex h-full min-h-0 shrink-0 flex-col overflow-hidden bg-sidebar text-foreground shadow-2xl shadow-black/20 sm:rounded-xl sm:shadow-none',
+        isMobileOverlay ? 'rounded-2xl pt-10 ring-1 ring-border/60' : 'rounded-xl pt-9',
+        isRight && 'order-last',
+      )}
+      style={{ width }}
+    >
       {/* NavHistoryButtons disabled for now */}
       {/* Collapse button in traffic lights zone */}
       {onCollapse && (
@@ -557,7 +572,7 @@ export const TaskSidebar = memo(function TaskSidebar({ width, onResize, position
         aria-label="Resize sidebar"
         tabIndex={0}
         onMouseDown={handleResizeStart}
-        className={cn('absolute top-0 z-10 h-full w-1 cursor-col-resize hover:bg-primary/20 active:bg-primary/30 transition-colors', isRight ? 'left-0' : 'right-0')}
+        className={cn('absolute top-0 z-10 h-full w-1 cursor-col-resize hover:bg-primary/20 active:bg-primary/30 transition-colors', isRight ? 'left-0' : 'right-0', isMobileOverlay && 'hidden')}
       />
       <SplitViewsList />
       <PendingReplaceHint />
@@ -568,8 +583,8 @@ export const TaskSidebar = memo(function TaskSidebar({ width, onResize, position
         onDeleteTask={handleDeleteTask}
         onRenameTask={renameTask}
       />
-      <div className="flex items-center justify-between px-3 pt-0 pb-2">
-        <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Projects</span>
+      <div className="flex items-center justify-between px-4 pb-1.5 pt-1.5">
+        <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground/70">Projects</span>
         <div className="flex shrink-0 items-center gap-1">
           <SortDropdown sort={sort} onChange={handleSortChange} />
           <AddProjectDropdown onCloneFromGitHub={onCloneFromGitHub} />
@@ -579,7 +594,7 @@ export const TaskSidebar = memo(function TaskSidebar({ width, onResize, position
       <ScrollArea className="min-h-0 flex-1 overflow-hidden px-2">
         <div className="min-w-0 pb-2">
           <div className="relative flex min-w-0 flex-col">
-            <ul className="flex min-w-0 flex-col gap-0.5">
+            <ul className="flex min-w-0 flex-col gap-px rounded-lg bg-muted/30 p-1">
               {projectList.length === 0 && (
                 <li className="flex flex-col items-center gap-3 px-3 py-8 text-center">
                   <div className="flex size-10 items-center justify-center rounded-xl bg-muted/30">

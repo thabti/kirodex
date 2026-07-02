@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { IconDownload, IconRefresh, IconLoader2 } from '@tabler/icons-react'
 import { useUpdateStore } from '@/stores/updateStore'
 import { useTaskStore } from '@/stores/taskStore'
+import { isTauriRuntime } from '@/lib/web-rpc'
 import { SettingRow } from './settings-shared'
 
 export const UpdatesCard = () => {
@@ -9,6 +10,7 @@ export const UpdatesCard = () => {
   const [isChecking, setIsChecking] = useState(false)
 
   const handleCheck = async () => {
+    if (!isTauriRuntime()) return
     setIsChecking(true)
     try {
       const { check } = await import('@tauri-apps/plugin-updater')

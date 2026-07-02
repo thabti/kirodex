@@ -90,7 +90,7 @@ export const ChatTextarea = memo(function ChatTextarea({
   }, [value, textareaRef])
 
   return (
-    <div className="relative px-3 pb-2 pt-3.5 sm:px-4 sm:pt-4" style={{ isolation: 'isolate' }}>
+    <div className="relative px-2.5 pb-2 pt-3 sm:px-4 sm:pt-4" style={{ isolation: 'isolate' }}>
       {showPicker && (
         <SlashCommandPicker
           query={slashQuery}
@@ -179,7 +179,7 @@ export const ChatTextarea = memo(function ChatTextarea({
         disabled={disabled}
         rows={1}
         className={cn(
-          'block max-h-[200px] min-h-[70px] w-full resize-none rounded-lg bg-transparent leading-[1.6] text-foreground outline-none placeholder:text-muted-foreground',
+          'block max-h-[36dvh] min-h-[56px] w-full resize-none rounded-lg bg-transparent leading-[1.55] text-foreground outline-none placeholder:text-muted-foreground sm:max-h-[200px] sm:min-h-[70px] sm:leading-[1.6]',
           hasContextRing && 'pr-8',
           disabled && 'cursor-not-allowed opacity-50',
         )}

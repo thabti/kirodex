@@ -53,9 +53,9 @@ export const ChatToolbar = memo(function ChatToolbar({
   const buttonBg = isPlanMode ? 'bg-teal-500/90 hover:bg-teal-500' : 'bg-blue-500/90 hover:bg-blue-500'
 
   return (
-    <div className="relative z-10 flex min-w-0 items-center justify-between gap-2 overflow-visible px-3 pb-3 sm:px-4 @container/toolbar">
+    <div className="relative z-10 flex min-w-0 flex-wrap items-center justify-between gap-2 overflow-visible px-2.5 pb-2.5 sm:flex-nowrap sm:px-4 sm:pb-3 @container/toolbar">
       {/* Left: AI controls (mode + model) */}
-      <div className="flex min-w-0 flex-1 items-center gap-1.5">
+      <div className="flex min-w-[180px] flex-1 items-center gap-1.5 overflow-hidden">
         <ToolbarGroup className="min-w-0">
           <PlanToggle />
           <Dot />
@@ -66,7 +66,7 @@ export const ChatToolbar = memo(function ChatToolbar({
       </div>
 
       {/* Right: attach + git + send/pause */}
-      <div className="flex shrink-0 items-center gap-1.5">
+      <div className="ml-auto flex shrink-0 items-center gap-1">
         <Tooltip>
           <TooltipTrigger asChild>
             <button
@@ -81,7 +81,9 @@ export const ChatToolbar = memo(function ChatToolbar({
           </TooltipTrigger>
           <TooltipContent side="top" className="text-[11px]">Attach files or images</TooltipContent>
         </Tooltip>
-        <BranchSelector workspace={workspace ?? null} isWorktree={isWorktree} />
+        <div className="hidden sm:block">
+          <BranchSelector workspace={workspace ?? null} isWorktree={isWorktree} />
+        </div>
         <input
           ref={fileInputRef}
           type="file"

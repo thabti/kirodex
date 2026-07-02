@@ -108,7 +108,7 @@ export const HeaderBreadcrumb = memo(function HeaderBreadcrumb({
       {/* Project */}
       {projectName ? (
         <span
-          className="min-w-0 max-w-[160px] truncate rounded-sm text-[13px] text-muted-foreground px-0.5"
+          className="min-w-0 max-w-[30vw] truncate rounded-sm px-0.5 text-[12px] text-muted-foreground sm:max-w-[160px] sm:text-[13px]"
           title={workspace ?? undefined}
         >
           {projectName}
@@ -135,7 +135,7 @@ export const HeaderBreadcrumb = memo(function HeaderBreadcrumb({
                 if (e.key === "Enter") commitThreadRename()
                 if (e.key === "Escape") setEditingThread(false)
               }}
-              className="min-w-0 max-w-[200px] truncate rounded-sm bg-transparent px-0.5 text-[13px] font-medium text-foreground outline-none ring-1 ring-ring"
+              className="min-w-0 max-w-[38vw] truncate rounded-sm bg-transparent px-0.5 text-[12px] font-medium text-foreground outline-none ring-1 ring-ring sm:max-w-[200px] sm:text-[13px]"
             />
           ) : (
             <span
@@ -148,7 +148,7 @@ export const HeaderBreadcrumb = memo(function HeaderBreadcrumb({
                 if (e.key === "Enter" || e.key === "F2")
                   handleThreadDoubleClick()
               }}
-              className="min-w-0 max-w-[200px] cursor-default truncate rounded-sm text-[13px] font-medium text-foreground hover:bg-accent/50 px-0.5 transition-colors"
+              className="min-w-0 max-w-[38vw] cursor-default truncate rounded-sm px-0.5 text-[12px] font-medium text-foreground transition-colors hover:bg-accent/50 sm:max-w-[200px] sm:text-[13px]"
               title={taskName}
             >
               {taskName}
@@ -169,7 +169,7 @@ export const HeaderBreadcrumb = memo(function HeaderBreadcrumb({
       ) : pendingWorkspace ? (
         <>
           <Sep />
-          <span className="text-[13px] text-muted-foreground">New thread</span>
+          <span className="text-[12px] text-muted-foreground sm:text-[13px]">New thread</span>
         </>
       ) : !workspace ? (
         <>

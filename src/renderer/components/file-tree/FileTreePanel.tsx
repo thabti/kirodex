@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import {
   IconX, IconRefresh, IconChevronRight, IconChevronDown,
   IconEyeOff, IconEye, IconFoldDown, IconFilePlus, IconFolderPlus,
@@ -380,10 +380,13 @@ export const FileTreePanel = memo(function FileTreePanel({ onClose, workspace: w
 
   return (
     <>
-      <div className="relative ml-3 flex h-full shrink-0 flex-col border-l border-border bg-background" style={{ width }}>
+      <div
+        className="relative flex h-full w-full shrink-0 flex-col border-l border-border bg-background sm:ml-3 sm:w-[var(--panel-width)]"
+        style={{ '--panel-width': `${width}px` } as CSSProperties}
+      >
         {/* Resize handle */}
         <div
-          className="absolute left-0 top-0 z-10 h-full w-1 cursor-col-resize hover:bg-primary/20 active:bg-primary/30"
+          className="absolute left-0 top-0 z-10 hidden h-full w-1 cursor-col-resize hover:bg-primary/20 active:bg-primary/30 sm:block"
           onMouseDown={handleResizeStart}
         />
         {/* Header */}
