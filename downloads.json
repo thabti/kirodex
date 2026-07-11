@@ -1,11 +1,11 @@
 {
-  "updated_at": "2026-07-10T09:56:18Z",
+  "updated_at": "2026-07-11T08:16:40Z",
   "releases": [
     {
       "tag": "v0.65.1",
       "published": "2026-06-02T13:31:51Z",
-      "total": 134,
-      "update_checks": 2586,
+      "total": 135,
+      "update_checks": 2626,
       "assets": [
         {
           "name": "Kirodex_0.65.1_aarch64.dmg",
@@ -29,7 +29,7 @@
         },
         {
           "name": "Kirodex_0.65.1_x64-setup.exe",
-          "downloads": 53,
+          "downloads": 54,
           "platform": "windows"
         },
         {
@@ -123,7 +123,7 @@
     {
       "tag": "v0.63.0",
       "published": "2026-05-31T21:13:40Z",
-      "total": 10,
+      "total": 12,
       "update_checks": 3,
       "assets": [
         {
@@ -138,12 +138,12 @@
         },
         {
           "name": "Kirodex_0.63.0_amd64.AppImage.tar.gz",
-          "downloads": 1,
+          "downloads": 2,
           "platform": "linux"
         },
         {
           "name": "Kirodex_0.63.0_amd64.deb",
-          "downloads": 1,
+          "downloads": 2,
           "platform": "linux"
         },
         {
@@ -166,7 +166,7 @@
     {
       "tag": "v0.62.0",
       "published": "2026-05-31T21:06:09Z",
-      "total": 3,
+      "total": 5,
       "update_checks": 0,
       "assets": [
         {
@@ -176,12 +176,12 @@
         },
         {
           "name": "Kirodex_0.62.0_amd64.AppImage",
-          "downloads": 0,
+          "downloads": 1,
           "platform": "linux"
         },
         {
           "name": "Kirodex_0.62.0_amd64.AppImage.tar.gz",
-          "downloads": 0,
+          "downloads": 1,
           "platform": "linux"
         },
         {
@@ -252,7 +252,7 @@
     {
       "tag": "v0.60.0",
       "published": "2026-05-31T20:40:14Z",
-      "total": 6,
+      "total": 7,
       "update_checks": 0,
       "assets": [
         {
@@ -262,7 +262,7 @@
         },
         {
           "name": "Kirodex_0.60.0_amd64.AppImage",
-          "downloads": 0,
+          "downloads": 1,
           "platform": "linux"
         },
         {
@@ -295,7 +295,7 @@
     {
       "tag": "v0.59.0",
       "published": "2026-05-31T15:24:16Z",
-      "total": 9,
+      "total": 10,
       "update_checks": 42,
       "assets": [
         {
@@ -310,7 +310,7 @@
         },
         {
           "name": "Kirodex_0.59.0_amd64.AppImage.tar.gz",
-          "downloads": 0,
+          "downloads": 1,
           "platform": "linux"
         },
         {
@@ -381,7 +381,7 @@
     {
       "tag": "v0.57.1",
       "published": "2026-05-31T09:47:10Z",
-      "total": 12,
+      "total": 13,
       "update_checks": 23,
       "assets": [
         {
@@ -416,7 +416,7 @@
         },
         {
           "name": "Kirodex_aarch64.app.tar.gz",
-          "downloads": 3,
+          "downloads": 4,
           "platform": "macos"
         }
       ]
@@ -424,7 +424,7 @@
     {
       "tag": "v0.57.0",
       "published": "2026-05-22T03:45:29Z",
-      "total": 86,
+      "total": 87,
       "update_checks": 1242,
       "assets": [
         {
@@ -449,7 +449,7 @@
         },
         {
           "name": "Kirodex_0.57.0_x64-setup.exe",
-          "downloads": 25,
+          "downloads": 26,
           "platform": "windows"
         },
         {
@@ -639,7 +639,7 @@
     {
       "tag": "v0.50.0",
       "published": "2026-05-15T02:34:39Z",
-      "total": 17,
+      "total": 18,
       "update_checks": 36,
       "assets": [
         {
@@ -669,7 +669,7 @@
         },
         {
           "name": "Kirodex_0.50.0_x64-setup.nsis.zip",
-          "downloads": 0,
+          "downloads": 1,
           "platform": "windows"
         },
         {
@@ -3480,7 +3480,7 @@
     {
       "tag": "v0.8.1",
       "published": "2026-04-11T14:48:23Z",
-      "total": 19,
+      "total": 20,
       "update_checks": 0,
       "assets": [
         {
@@ -3505,7 +3505,7 @@
         },
         {
           "name": "Kirodex_0.8.1_x64-setup.exe",
-          "downloads": 1,
+          "downloads": 2,
           "platform": "windows"
         },
         {
@@ -3517,11 +3517,11 @@
     }
   ],
   "totals": {
-    "all": 1310,
-    "update_checks": 10068,
-    "macos": 684,
-    "windows": 361,
-    "linux": 265
+    "all": 1321,
+    "update_checks": 10108,
+    "macos": 685,
+    "windows": 365,
+    "linux": 271
   },
   "homebrew_tap": null
 }
