@@ -1,11 +1,11 @@
 {
-  "updated_at": "2026-07-15T08:38:50Z",
+  "updated_at": "2026-07-16T08:36:57Z",
   "releases": [
     {
       "tag": "v0.65.1",
       "published": "2026-06-02T13:31:51Z",
-      "total": 149,
-      "update_checks": 2758,
+      "total": 151,
+      "update_checks": 2765,
       "assets": [
         {
           "name": "Kirodex_0.65.1_aarch64.dmg",
@@ -29,7 +29,7 @@
         },
         {
           "name": "Kirodex_0.65.1_x64-setup.exe",
-          "downloads": 57,
+          "downloads": 59,
           "platform": "windows"
         },
         {
@@ -47,7 +47,7 @@
     {
       "tag": "v0.65.0",
       "published": "2026-05-31T21:57:56Z",
-      "total": 28,
+      "total": 29,
       "update_checks": 181,
       "assets": [
         {
@@ -62,7 +62,7 @@
         },
         {
           "name": "Kirodex_0.65.0_amd64.AppImage.tar.gz",
-          "downloads": 1,
+          "downloads": 2,
           "platform": "linux"
         },
         {
@@ -467,7 +467,7 @@
     {
       "tag": "v0.55.0",
       "published": "2026-05-20T07:39:08Z",
-      "total": 33,
+      "total": 34,
       "update_checks": 403,
       "assets": [
         {
@@ -477,7 +477,7 @@
         },
         {
           "name": "Kirodex_0.55.0_amd64.AppImage",
-          "downloads": 3,
+          "downloads": 4,
           "platform": "linux"
         },
         {
@@ -3265,7 +3265,7 @@
     {
       "tag": "v0.8.8",
       "published": "2026-04-11T20:48:00Z",
-      "total": 30,
+      "total": 31,
       "update_checks": 37,
       "assets": [
         {
@@ -3300,7 +3300,7 @@
         },
         {
           "name": "Kirodex_aarch64.app.tar.gz",
-          "downloads": 4,
+          "downloads": 5,
           "platform": "macos"
         }
       ]
@@ -3517,11 +3517,11 @@
     }
   ],
   "totals": {
-    "all": 1369,
-    "update_checks": 10240,
-    "macos": 699,
-    "windows": 382,
-    "linux": 288
+    "all": 1374,
+    "update_checks": 10247,
+    "macos": 700,
+    "windows": 384,
+    "linux": 290
   },
   "homebrew_tap": null
 }
