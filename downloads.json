@@ -1,15 +1,15 @@
 {
-  "updated_at": "2026-07-22T09:04:12Z",
+  "updated_at": "2026-07-23T09:03:17Z",
   "releases": [
     {
       "tag": "v0.65.1",
       "published": "2026-06-02T13:31:51Z",
-      "total": 161,
-      "update_checks": 2896,
+      "total": 163,
+      "update_checks": 2928,
       "assets": [
         {
           "name": "Kirodex_0.65.1_aarch64.dmg",
-          "downloads": 51,
+          "downloads": 53,
           "platform": "macos"
         },
         {
@@ -47,7 +47,7 @@
     {
       "tag": "v0.65.0",
       "published": "2026-05-31T21:57:56Z",
-      "total": 32,
+      "total": 33,
       "update_checks": 181,
       "assets": [
         {
@@ -72,7 +72,7 @@
         },
         {
           "name": "Kirodex_0.65.0_x64-setup.exe",
-          "downloads": 8,
+          "downloads": 9,
           "platform": "windows"
         },
         {
@@ -166,7 +166,7 @@
     {
       "tag": "v0.62.0",
       "published": "2026-05-31T21:06:09Z",
-      "total": 6,
+      "total": 7,
       "update_checks": 0,
       "assets": [
         {
@@ -191,7 +191,7 @@
         },
         {
           "name": "Kirodex_0.62.0_x64-setup.exe",
-          "downloads": 0,
+          "downloads": 1,
           "platform": "windows"
         },
         {
@@ -295,12 +295,12 @@
     {
       "tag": "v0.59.0",
       "published": "2026-05-31T15:24:16Z",
-      "total": 16,
+      "total": 17,
       "update_checks": 42,
       "assets": [
         {
           "name": "Kirodex_0.59.0_aarch64.dmg",
-          "downloads": 4,
+          "downloads": 5,
           "platform": "macos"
         },
         {
@@ -338,7 +338,7 @@
     {
       "tag": "v0.58.0",
       "published": "2026-05-31T15:06:48Z",
-      "total": 12,
+      "total": 13,
       "update_checks": 1,
       "assets": [
         {
@@ -348,7 +348,7 @@
         },
         {
           "name": "Kirodex_0.58.0_amd64.AppImage",
-          "downloads": 1,
+          "downloads": 2,
           "platform": "linux"
         },
         {
@@ -467,7 +467,7 @@
     {
       "tag": "v0.55.0",
       "published": "2026-05-20T07:39:08Z",
-      "total": 34,
+      "total": 35,
       "update_checks": 403,
       "assets": [
         {
@@ -487,7 +487,7 @@
         },
         {
           "name": "Kirodex_0.55.0_amd64.deb",
-          "downloads": 2,
+          "downloads": 3,
           "platform": "linux"
         },
         {
@@ -553,7 +553,7 @@
     {
       "tag": "v0.54.0",
       "published": "2026-05-17T07:10:54Z",
-      "total": 35,
+      "total": 36,
       "update_checks": 228,
       "assets": [
         {
@@ -563,7 +563,7 @@
         },
         {
           "name": "Kirodex_0.54.0_amd64.AppImage",
-          "downloads": 4,
+          "downloads": 5,
           "platform": "linux"
         },
         {
@@ -639,7 +639,7 @@
     {
       "tag": "v0.50.0",
       "published": "2026-05-15T02:34:39Z",
-      "total": 19,
+      "total": 20,
       "update_checks": 36,
       "assets": [
         {
@@ -649,7 +649,7 @@
         },
         {
           "name": "Kirodex_0.50.0_amd64.AppImage",
-          "downloads": 0,
+          "downloads": 1,
           "platform": "linux"
         },
         {
@@ -3265,7 +3265,7 @@
     {
       "tag": "v0.8.8",
       "published": "2026-04-11T20:48:00Z",
-      "total": 31,
+      "total": 32,
       "update_checks": 37,
       "assets": [
         {
@@ -3285,7 +3285,7 @@
         },
         {
           "name": "Kirodex_0.8.8_amd64.deb",
-          "downloads": 3,
+          "downloads": 4,
           "platform": "linux"
         },
         {
@@ -3394,7 +3394,7 @@
     {
       "tag": "v0.8.4",
       "published": "2026-04-11T16:47:16Z",
-      "total": 21,
+      "total": 23,
       "update_checks": 0,
       "assets": [
         {
@@ -3419,7 +3419,7 @@
         },
         {
           "name": "Kirodex_0.8.4_x64-setup.exe",
-          "downloads": 2,
+          "downloads": 3,
           "platform": "windows"
         },
         {
@@ -3429,7 +3429,7 @@
         },
         {
           "name": "Kirodex_aarch64.app.tar.gz",
-          "downloads": 3,
+          "downloads": 4,
           "platform": "macos"
         }
       ]
@@ -3480,7 +3480,7 @@
     {
       "tag": "v0.8.1",
       "published": "2026-04-11T14:48:23Z",
-      "total": 21,
+      "total": 22,
       "update_checks": 0,
       "assets": [
         {
@@ -3505,7 +3505,7 @@
         },
         {
           "name": "Kirodex_0.8.1_x64-setup.exe",
-          "downloads": 2,
+          "downloads": 3,
           "platform": "windows"
         },
         {
@@ -3517,11 +3517,11 @@
     }
   ],
   "totals": {
-    "all": 1414,
-    "update_checks": 10378,
-    "macos": 713,
-    "windows": 397,
-    "linux": 304
+    "all": 1427,
+    "update_checks": 10410,
+    "macos": 717,
+    "windows": 401,
+    "linux": 309
   },
   "homebrew_tap": null
 }
