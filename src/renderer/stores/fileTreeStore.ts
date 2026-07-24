@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { listen } from '@tauri-apps/api/event'
+import { listenEvent } from '@/lib/web-rpc'
 import { useDiffStore } from './diffStore'
 import { ipc } from '@/lib/ipc'
 
@@ -303,9 +303,9 @@ export function startTreeWatcher() {
 
   const myId = ++watcherStartId
 
-  listen<TreeChangeEvent>('project-tree-changed', (event) => {
+  const unlisten = listenEvent<TreeChangeEvent>('project-tree-changed', (payload) => {
     const { workspace } = useFileTreeStore.getState()
-    if (event.payload.workspace !== workspace) return
+    if (payload.workspace !== workspace) return
 
     // Debounce rapid filesystem events (e.g., git operations, builds)
     if (refreshDebounceTimer) clearTimeout(refreshDebounceTimer)
@@ -316,21 +316,16 @@ export function startTreeWatcher() {
 
     // Also schedule a VCS status refresh (debounced separately at 2s)
     import('@/stores/vcsStatusStore').then(({ scheduleVcsRefresh }) => {
-      scheduleVcsRefresh(event.payload.workspace)
+      scheduleVcsRefresh(payload.workspace)
     }).catch((e) => {
       if (import.meta.env.DEV) console.warn('[fileTreeStore] vcsStatusStore import failed:', e)
     })
-  }).then((unlisten) => {
-    // If `stopTreeWatcher` (or another start) ran while we were registering,
-    // discard this listener instead of leaking it.
-    if (myId !== watcherStartId || watcherUnlisten) {
-      unlisten()
-      return
-    }
-    watcherUnlisten = unlisten
-  }).catch((e) => {
-    console.error('[fileTree] failed to start watcher:', e)
   })
+  if (myId !== watcherStartId || watcherUnlisten) {
+    unlisten()
+    return
+  }
+  watcherUnlisten = unlisten
 }
 
 export function stopTreeWatcher() {

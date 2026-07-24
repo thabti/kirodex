@@ -1,6 +1,5 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { IconRobot, IconBolt, IconCompass, IconChevronRight, IconSearch, IconPlug, IconEdit, IconHandFinger, IconPlus, IconAlignLeft, IconSettings, IconBug, IconDownload, IconDots } from '@tabler/icons-react'
-import { getVersion } from '@tauri-apps/api/app'
 import { KiroGhostIcon } from '@/components/icons/KiroGhostIcon'
 import { useKiroStore } from '@/stores/kiroStore'
 import { useTaskStore } from '@/stores/taskStore'
@@ -21,6 +20,7 @@ import { HeaderUserMenu } from '@/components/header-user-menu'
 import { useMenuPosition } from '@/hooks/useMenuPosition'
 import { measureMemory, formatBytes } from '@/lib/thread-memory'
 import { deriveConnectionUiState, type ConnectionUiState } from '@/lib/connection-state'
+import { getRuntimeVersion } from '@/lib/web-rpc'
 
 const MEMORY_SPIKE_THRESHOLD = 100 * 1024 * 1024
 const MEMORY_CHECK_INTERVAL_MS = 5000
@@ -91,7 +91,7 @@ export const KiroConfigPanel = memo(function KiroConfigPanel({
   useEffect(() => { void loadConfig(activeWorkspace ?? undefined) }, [loadConfig, activeWorkspace])
 
   useEffect(() => {
-    getVersion().then(setAppVersion).catch(() => {})
+    getRuntimeVersion().then(setAppVersion).catch(() => {})
   }, [])
 
   useEffect(() => {

@@ -6,6 +6,7 @@ import '../tailwind.css'
 
 // Apply persisted theme immediately to prevent flash
 import { readPersistedTheme, applyTheme } from './lib/theme'
+import { invokeCommand } from './lib/web-rpc'
 applyTheme(readPersistedTheme())
 
 function showError(err: unknown) {
@@ -45,8 +46,7 @@ class ErrorBoundary extends React.Component<
 
   private handleResetAppData = async () => {
     try {
-      const { invoke } = await import('@tauri-apps/api/core')
-      await invoke('reset_app_data')
+      await invokeCommand('reset_app_data')
       window.location.reload()
     } catch (err) {
       console.error('[ErrorBoundary] Reset failed:', err)
@@ -175,4 +175,3 @@ if (splash) {
   splash.addEventListener('transitionend', handleRemove, { once: true })
   setTimeout(handleRemove, 500)
 }
-

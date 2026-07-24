@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef, type RefObject } from 'react'
-import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow'
 import { ipc } from '@/lib/ipc'
+import { isTauriRuntime } from '@/lib/web-rpc'
 import { processDroppedFile, processNativePath } from '@/components/chat/attachment-utils'
 import type { Attachment, ProjectFile } from '@/types'
 
@@ -102,9 +102,11 @@ export function useAttachments(initialAttachments?: Attachment[], initialFolderP
   // HTML5 drag events (dragenter, dragover, drop) never fire because Tauri's native
   // WebKit handler intercepts them at the OS level.
   useEffect(() => {
+    if (!isTauriRuntime()) return
     let cancelled = false
-    const appWindow = getCurrentWebviewWindow()
-    const unlistenPromise = appWindow.onDragDropEvent(async (event) => {
+    const unlistenPromise = import('@tauri-apps/api/webviewWindow').then(({ getCurrentWebviewWindow }) => {
+      const appWindow = getCurrentWebviewWindow()
+      return appWindow.onDragDropEvent(async (event) => {
       if (cancelled) return
       if (!isActive) {
         setIsDragOver(false)
@@ -161,10 +163,11 @@ export function useAttachments(initialAttachments?: Attachment[], initialFolderP
         // 'leave' or 'cancel'
         setIsDragOver(false)
       }
+      })
     })
     return () => {
       cancelled = true
-      unlistenPromise.then((fn) => fn())
+      unlistenPromise.then((fn) => fn()).catch(() => {})
     }
   }, [isActive])
 

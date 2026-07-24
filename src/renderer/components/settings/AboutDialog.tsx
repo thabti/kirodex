@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react'
-import { getVersion } from '@tauri-apps/api/app'
 import {
   IconBrandGithub, IconDownload, IconRefresh, IconLoader2, IconCheck,
 } from '@tabler/icons-react'
@@ -9,6 +8,7 @@ import {
 import { useUpdateStore } from '@/stores/updateStore'
 import { cn } from '@/lib/utils'
 import { handleExternalLinkClick, handleExternalLinkKeyDown } from '@/lib/open-external'
+import { getRuntimeVersion, isTauriRuntime } from '@/lib/web-rpc'
 import { useSettingsStore } from '@/stores/settingsStore'
 import defaultAppIcon from '../../../../src-tauri/icons/prod/icon.png'
 
@@ -24,10 +24,11 @@ export const AboutDialog = ({ open, onOpenChange }: AboutDialogProps) => {
   const displayIcon = customAppIcon || defaultAppIcon
 
   useEffect(() => {
-    if (open) getVersion().then(setAppVersion).catch(() => {})
+    if (open) getRuntimeVersion().then(setAppVersion).catch(() => {})
   }, [open])
 
   const handleCheck = useCallback(async () => {
+    if (!isTauriRuntime()) return
     try {
       const { check } = await import('@tauri-apps/plugin-updater')
       useUpdateStore.getState().setStatus('checking')

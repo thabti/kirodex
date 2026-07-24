@@ -34,6 +34,10 @@ import { UnifiedTitleBarLinux } from './UnifiedTitleBarLinux'
 import { UnifiedTitleBar } from './index'
 
 beforeEach(() => {
+  Object.defineProperty(window, '__TAURI_INTERNALS__', {
+    value: {},
+    configurable: true,
+  })
   vi.clearAllMocks()
 })
 
@@ -84,16 +88,16 @@ describe('TrafficLights', () => {
     expect(screen.getByLabelText('Maximize')).toBeInTheDocument()
   })
 
-  it('calls close on close button click', () => {
+  it('calls close on close button click', async () => {
     render(<TrafficLights />)
     fireEvent.click(screen.getByLabelText('Close'))
-    expect(mockClose).toHaveBeenCalledTimes(1)
+    await vi.waitFor(() => expect(mockClose).toHaveBeenCalledTimes(1))
   })
 
-  it('calls minimize on minimize button click', () => {
+  it('calls minimize on minimize button click', async () => {
     render(<TrafficLights />)
     fireEvent.click(screen.getByLabelText('Minimize'))
-    expect(mockMinimize).toHaveBeenCalledTimes(1)
+    await vi.waitFor(() => expect(mockMinimize).toHaveBeenCalledTimes(1))
   })
 
   it('calls isFullscreen on maximize click', async () => {
@@ -126,16 +130,16 @@ describe('WindowsControls', () => {
     expect(screen.getByLabelText('Close')).toBeInTheDocument()
   })
 
-  it('calls minimize on minimize click', () => {
+  it('calls minimize on minimize click', async () => {
     render(<WindowsControls />)
     fireEvent.click(screen.getByLabelText('Minimize'))
-    expect(mockMinimize).toHaveBeenCalledTimes(1)
+    await vi.waitFor(() => expect(mockMinimize).toHaveBeenCalledTimes(1))
   })
 
-  it('calls close on close click', () => {
+  it('calls close on close click', async () => {
     render(<WindowsControls />)
     fireEvent.click(screen.getByLabelText('Close'))
-    expect(mockClose).toHaveBeenCalledTimes(1)
+    await vi.waitFor(() => expect(mockClose).toHaveBeenCalledTimes(1))
   })
 
   it('calls isMaximized on maximize click', async () => {

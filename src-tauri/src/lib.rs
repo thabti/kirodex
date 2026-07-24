@@ -5,6 +5,7 @@
 extern crate objc;
 
 pub mod commands;
+pub mod web;
 
 use commands::{acp, analytics, branch_ai, checkpoint, diff_parse, fs_ops, fuzzy, git, git_ai, git_history, git_pr, git_stack, highlight, kiro_config, kiro_watcher, markdown, pattern_extract, pr_ai, process_diagnostics, project_watcher, pty, settings, streaming_diff, thread_db, thread_title, tracing as app_tracing, transport, vcs_status};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -729,4 +730,14 @@ pub fn run() {
             eprintln!("Failed to start Kirodex: {e}");
             std::process::exit(1);
         });
+}
+
+pub fn run_serve(options: web::ServeOptions) -> Result<(), String> {
+    install_panic_hook();
+    let runtime = tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .thread_name("kirodex-web")
+        .build()
+        .map_err(|e| format!("Failed to start async runtime: {e}"))?;
+    runtime.block_on(web::serve(options))
 }
