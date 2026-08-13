@@ -5,7 +5,7 @@ use agent_client_protocol as acp;
 use acp::Agent as _;
 use tokio_util::compat::{TokioAsyncReadCompatExt, TokioAsyncWriteCompatExt};
 
-use super::connection::spawn_connection;
+use super::connection::{spawn_connection, ConnectionConfig};
 use super::types::*;
 use super::now_rfc3339;
 
@@ -94,6 +94,7 @@ pub fn task_create(
         auto_approve: Some(auto_approve),
         user_paused: None,
         parent_task_id: None,
+        reasoning_effort: params.effort,
     };
 
     // If a stale connection somehow lingers for this id, terminate it before
@@ -117,16 +118,18 @@ pub fn task_create(
         return Ok(task);
     }
 
-    let handle = spawn_connection(
-        id.clone(),
-        params.workspace,
+    let handle = spawn_connection(ConnectionConfig {
+        task_id: id.clone(),
+        workspace: params.workspace,
         kiro_bin,
         auto_approve,
-        app.clone(),
-        params.mode_id,
+        app: app.clone(),
+        initial_mode_id: params.mode_id,
         initial_model_id,
+        initial_effort: params.effort,
         tight_sandbox,
-    )?;
+        pending_preamble: None,
+    })?;
 
     // Send initial prompt with UI formatting rules prepended (not shown in UI)
     let mut system_prefix = String::from(concat!(
@@ -263,10 +266,14 @@ pub fn task_send_message(
         let kiro_bin = settings.settings.kiro_bin.clone();
         let global_auto_approve = settings.settings.auto_approve;
 
-        let (workspace, task_auto_approve) = {
+        let (workspace, task_auto_approve, task_effort) = {
             let tasks = state.tasks.lock();
             let t = tasks.get(&task_id).ok_or("Task not found")?;
-            (t.workspace.clone(), t.auto_approve.unwrap_or(global_auto_approve))
+            (
+                t.workspace.clone(),
+                t.auto_approve.unwrap_or(global_auto_approve),
+                t.reasoning_effort,
+            )
         };
 
         let tight_sandbox = settings.settings.project_prefs.as_ref()
@@ -281,10 +288,18 @@ pub fn task_send_message(
             let _ = old.cmd_tx.send(AcpCommand::Kill);
         }
 
-        let handle = spawn_connection(
-            task_id.clone(), workspace, kiro_bin, task_auto_approve,
-            app.clone(), None, initial_model_id, tight_sandbox,
-        )?;
+        let handle = spawn_connection(ConnectionConfig {
+            task_id: task_id.clone(),
+            workspace,
+            kiro_bin,
+            auto_approve: task_auto_approve,
+            app: app.clone(),
+            initial_mode_id: None,
+            initial_model_id,
+            initial_effort: task_effort,
+            tight_sandbox,
+            pending_preamble: None,
+        })?;
         let _ = handle.cmd_tx.send(AcpCommand::Prompt(message, attachments.unwrap_or_default()));
         state.connections.lock().insert(task_id.clone(), handle);
     } else {
@@ -463,20 +478,22 @@ pub async fn task_fork(
         auto_approve: Some(auto_approve),
         user_paused: None,
         parent_task_id: Some(task_id.clone()),
+        reasoning_effort: parent.as_ref().and_then(|task| task.reasoning_effort),
     };
     state.tasks.lock().insert(new_id.clone(), fork_task.clone());
     let preamble_opt = if pending_preamble.is_empty() { None } else { Some(pending_preamble) };
-    let handle = super::connection::spawn_connection_with_preamble(
-        new_id.clone(),
+    let handle = super::connection::spawn_connection_with_preamble(ConnectionConfig {
+        task_id: new_id.clone(),
         workspace,
         kiro_bin,
         auto_approve,
         app,
-        None,
+        initial_mode_id: None,
         initial_model_id,
+        initial_effort: fork_task.reasoning_effort,
         tight_sandbox,
-        preamble_opt,
-    )?;
+        pending_preamble: preamble_opt,
+    })?;
     state.connections.lock().insert(new_id, handle);
     Ok(fork_task)
 }
@@ -583,6 +600,98 @@ pub fn set_model(
     if let Some(h) = conns.get(&task_id) {
         h.cmd_tx.send(AcpCommand::SetModel(model_id)).map_err(|e| e.to_string())?;
     }
+    Ok(())
+}
+
+/// Apply reasoning effort to an idle task. The CLI exposes effort as an ACP
+/// startup flag, so the live session is replaced and its transcript is
+/// replayed once with the user's next prompt.
+#[tauri::command]
+pub fn set_effort(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, AcpState>,
+    settings_state: tauri::State<'_, crate::commands::settings::SettingsState>,
+    task_id: String,
+    effort: ReasoningEffort,
+    mode_id: Option<String>,
+    model_id: Option<String>,
+    messages: Option<Vec<TaskMessage>>,
+) -> Result<(), String> {
+    let (workspace, auto_approve) = {
+        let tasks = state.tasks.lock();
+        let task = tasks.get(&task_id).ok_or("Task not found")?;
+        if task.status == "running" || task.status == "pending_permission" {
+            return Err("Wait for the current turn to finish before changing effort".to_string());
+        }
+        (task.workspace.clone(), task.auto_approve)
+    };
+
+    let settings = settings_state.0.lock();
+    let kiro_bin = settings.settings.kiro_bin.clone();
+    let resolved_auto_approve = auto_approve.unwrap_or(settings.settings.auto_approve);
+    let tight_sandbox = settings.settings.project_prefs.as_ref()
+        .and_then(|prefs| prefs.get(&workspace))
+        .and_then(|prefs| prefs.tight_sandbox)
+        .unwrap_or(true);
+    let initial_model_id = resolve_initial_model(model_id, &workspace, &settings.settings);
+    drop(settings);
+
+    // Serialize replacement against send/cancel/delete. Do not tear down the
+    // old session until the new CLI process has initialized successfully.
+    let mut connections = state.connections.lock();
+    let transcript = {
+        let tasks = state.tasks.lock();
+        let task = tasks.get(&task_id).ok_or("Task not found")?;
+        if task.status == "running" || task.status == "pending_permission" {
+            return Err("Wait for the current turn to finish before changing effort".to_string());
+        }
+        messages.unwrap_or_else(|| task.messages.clone())
+    };
+
+    if !connections.contains_key(&task_id) {
+        drop(connections);
+        if let Some(task) = state.tasks.lock().get_mut(&task_id) {
+            task.reasoning_effort = Some(effort);
+        }
+        return Ok(());
+    }
+
+    let pending_preamble = super::build_resumption_preamble(
+        &transcript,
+        "Resumed conversation after effort change",
+        "The reasoning effort changed, so this conversation is continuing in a fresh agent session. The transcript below is context only. Do not repeat completed work or tool calls. The user's next message follows after the transcript.",
+    );
+    let handle = super::connection::spawn_connection_with_preamble(ConnectionConfig {
+        task_id: task_id.clone(),
+        workspace,
+        kiro_bin,
+        auto_approve: resolved_auto_approve,
+        app,
+        initial_mode_id: mode_id,
+        initial_model_id,
+        initial_effort: Some(effort),
+        tight_sandbox,
+        pending_preamble: (!pending_preamble.is_empty()).then_some(pending_preamble),
+    })?;
+    if let Err(error) = handle.wait_until_ready(std::time::Duration::from_secs(15)) {
+        let _ = handle.cmd_tx.send(AcpCommand::Kill);
+        return Err(error);
+    }
+    if let Some(old_connection) = connections.remove(&task_id) {
+        let _ = old_connection.cmd_tx.send(AcpCommand::Kill);
+    }
+    connections.insert(task_id.clone(), handle);
+    drop(connections);
+
+    let mut tasks = state.tasks.lock();
+    let Some(task) = tasks.get_mut(&task_id) else {
+        drop(tasks);
+        if let Some(handle) = state.connections.lock().remove(&task_id) {
+            let _ = handle.cmd_tx.send(AcpCommand::Kill);
+        }
+        return Err("Task not found".to_string());
+    };
+    task.reasoning_effort = Some(effort);
     Ok(())
 }
 

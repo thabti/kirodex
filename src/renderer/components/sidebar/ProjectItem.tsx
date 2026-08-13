@@ -22,7 +22,7 @@ interface ProjectItemProps {
   canMoveDown: boolean
   autoFocus?: boolean
   jumpLabel?: string | null
-  isMetaHeld?: boolean
+  isModifierHeld?: boolean
   isCustomSort?: boolean
   onSelectTask: (id: string) => void
   onNewThread: () => void
@@ -38,7 +38,7 @@ interface ProjectItemProps {
 const DEFAULT_VISIBLE_THREADS = 3
 
 export const ProjectItem = memo(function ProjectItem({
-  name, cwd, tasks, selectedTaskId, isActiveProject, canMoveUp, canMoveDown, autoFocus, jumpLabel, isMetaHeld, isCustomSort,
+  name, cwd, tasks, selectedTaskId, isActiveProject, canMoveUp, canMoveDown, autoFocus, jumpLabel, isModifierHeld, isCustomSort,
   onSelectTask, onNewThread, onDeleteTask, onRenameTask,
   onRemoveProject, onArchiveThreads,
   onMoveUp, onMoveDown, onMoveThread,
@@ -72,24 +72,26 @@ export const ProjectItem = memo(function ProjectItem({
 
   return (
     <li
+      data-slot="sidebar-project"
       className="group/menu-item relative min-w-0 rounded-md transition-colors"
     >
       <div className="relative flex items-center">
         <button
           ref={buttonRef}
           type="button"
+          aria-expanded={expanded}
           onClick={() => setExpanded((v) => !v)}
           onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); setCtxMenu({ x: e.clientX, y: e.clientY }) }}
           className={cn(
-            'peer/menu-button flex w-full h-8 cursor-pointer items-center gap-1 overflow-hidden rounded-lg px-1.5 py-1 text-[13px] text-left',
+            'peer/menu-button flex h-7 w-full cursor-pointer items-center gap-1.5 overflow-hidden rounded-md px-1.5 text-left text-[13px]',
             'outline-none focus-visible:ring-2 focus-visible:ring-ring',
-            'hover:bg-accent hover:text-foreground transition-colors',
+            'text-foreground/85 transition-colors hover:bg-accent/20 hover:text-foreground/90',
           )}
         >
           <ProjectIcon icon={projectIcon} />
-          <span className={cn('flex-1 truncate text-[13px] text-foreground/85', isActiveProject ? 'font-medium' : 'font-normal')}>{name}</span>
+          <span className={cn('flex-1 truncate text-[13px]', isActiveProject ? 'font-medium text-foreground' : 'font-normal')}>{name}</span>
           {jumpLabel && (
-            <kbd className="pointer-events-none ml-auto mr-1 inline-flex h-4 shrink-0 items-center rounded-sm bg-muted px-1 font-mono text-[10px] font-medium text-muted-foreground select-none">
+            <kbd className="pointer-events-none ml-auto inline-flex h-4 min-w-4 shrink-0 items-center justify-center rounded-md bg-muted px-1 font-mono text-[9px] font-medium text-muted-foreground select-none">
               {jumpLabel}
             </kbd>
           )}
@@ -103,27 +105,14 @@ export const ProjectItem = memo(function ProjectItem({
                 type="button"
                 aria-label={`New thread in ${name}`}
                 onClick={onNewThread}
-                className="flex size-5 cursor-pointer items-center justify-center rounded-md text-muted-foreground/80 hover:text-foreground outline-none focus-visible:opacity-100"
+                className="flex size-6 cursor-pointer items-center justify-center rounded-md text-muted-foreground/80 outline-none hover:bg-accent hover:text-foreground focus-visible:opacity-100 focus-visible:ring-1 focus-visible:ring-ring"
               >
-                <IconEdit className="size-3" />
+                <IconEdit className="size-3" aria-hidden />
               </button>
             </TooltipTrigger>
             <TooltipContent side="top">New thread</TooltipContent>
           </Tooltip>
 
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                aria-label={`Remove ${name}`}
-                onClick={onRemoveProject}
-                className="flex size-5 cursor-pointer items-center justify-center rounded-md text-muted-foreground/80 hover:text-destructive outline-none focus-visible:opacity-100"
-              >
-                <IconTrash className="size-3" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="top">Remove project</TooltipContent>
-          </Tooltip>
         </div>
       </div>
 
@@ -191,10 +180,10 @@ export const ProjectItem = memo(function ProjectItem({
       />
 
       {expanded && tasks.length > 0 && (
-        <div className="flex min-w-0 flex-col overflow-hidden">
-          <ul className="flex min-w-0 flex-col gap-0">
+        <div data-slot="sidebar-project-threads" className="ml-2 flex min-w-0 flex-col overflow-hidden">
+          <ul className="flex min-w-0 flex-col gap-px">
             {visibleTasks.map((task, i) => {
-              const threadJumpLabel = isMetaHeld && i < 9 ? `${i + 1}` : null
+              const threadJumpLabel = isModifierHeld && i < 9 ? `${i + 1}` : null
               return (
                 <ThreadItem
                   key={task.id}
@@ -216,7 +205,7 @@ export const ProjectItem = memo(function ProjectItem({
             <button
               type="button"
               onClick={handleToggleShowAll}
-              className="flex h-7 w-full items-center rounded-md px-2 text-left text-[12px] text-muted-foreground/70 transition-colors hover:bg-accent hover:text-foreground"
+              className="flex h-6 w-full items-center rounded-md px-1.5 text-left text-[11px] text-muted-foreground/70 transition-colors hover:bg-accent/20 hover:text-foreground/90"
             >
               {showAllThreads ? 'Show less' : `Show ${tasks.length - DEFAULT_VISIBLE_THREADS} more`}
             </button>
@@ -225,9 +214,9 @@ export const ProjectItem = memo(function ProjectItem({
       )}
 
       {expanded && tasks.length === 0 && (
-        <div className="flex items-center gap-2 px-2 py-2">
-          <IconMessage className="size-3.5 text-muted-foreground/50" aria-hidden />
-          <span className="text-[12px] text-muted-foreground/60">No threads yet</span>
+        <div className="ml-2 flex items-center gap-1.5 px-1.5 py-1">
+          <IconMessage className="size-3 text-muted-foreground/50" aria-hidden />
+          <span className="text-[11px] text-muted-foreground/60">No threads yet</span>
         </div>
       )}
     </li>

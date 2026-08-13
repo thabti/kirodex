@@ -4,6 +4,7 @@ import { useTaskStore } from '@/stores/taskStore'
 import { usePanelResolvedTaskId } from './PanelContext'
 import type { WorkingRow as WorkingRowData } from '@/lib/timeline'
 import { ipc } from '@/lib/ipc'
+import { AgentHandoffLoader } from './AgentHandoffLoader'
 
 const LOADING_WORDS = [
   'Thinking',
@@ -28,11 +29,6 @@ function formatElapsed(startMs: number, nowMs: number): string {
   const min = Math.floor(diffSec / 60)
   const sec = diffSec % 60
   return sec > 0 ? `${min}m ${String(sec).padStart(2, '0')}s` : `${min}m`
-}
-
-/** Renders a formatted elapsed string, driven by the parent's tick. */
-function ElapsedTimer({ startMs, nowMs }: { startMs: number; nowMs: number }) {
-  return <>{formatElapsed(startMs, nowMs)}</>
 }
 
 export const WorkingRow = memo(function WorkingRow({ row }: { row: WorkingRowData }) {
@@ -119,40 +115,30 @@ export const WorkingRow = memo(function WorkingRow({ row }: { row: WorkingRowDat
   // ── Streaming dot: subtle indicator when text is already visible ──
   if (row.hasStreamingContent) {
     return (
-      <div className="py-2 select-none" data-timeline-row-kind="working">
-        <div className="flex items-center gap-2">
-          <span
-            className={`inline-block size-1.5 animate-pulse rounded-full ${isPlan ? 'bg-teal-500' : 'bg-primary'}`}
-            aria-label="Agent is working"
-          />
-          <span className="text-[11px] text-muted-foreground/60">
-            Working for <ElapsedTimer startMs={startMsRef.current} nowMs={nowMs} />
-          </span>
-        </div>
+      <div className="py-0.5 select-none" data-timeline-row-kind="working">
+        <AgentHandoffLoader
+          compact
+          label={isPlan ? 'Kiro is refining the plan…' : 'Kiro is responding…'}
+          detail={formatElapsed(startMsRef.current, nowMs)}
+          announcement="Kiro is working"
+          className="justify-start"
+        />
       </div>
     )
   }
 
   // ── Normal cycling spinner ──
   return (
-    <div className="py-2 select-none" data-timeline-row-kind="working">
-      <div className="flex items-center gap-2">
-        <span className="inline-flex shrink-0 items-center gap-[3px]">
-          <span className={`h-1 w-1 rounded-full animate-pulse ${isPlan ? 'bg-teal-500/60' : 'bg-blue-500/60'}`} />
-          <span className={`h-1 w-1 rounded-full animate-pulse [animation-delay:200ms] ${isPlan ? 'bg-teal-500/60' : 'bg-blue-500/60'}`} />
-          <span className={`h-1 w-1 rounded-full animate-pulse [animation-delay:400ms] ${isPlan ? 'bg-teal-500/60' : 'bg-blue-500/60'}`} />
-        </span>
-        <span
-          className={`shrink-0 whitespace-nowrap text-[12px] font-medium transition-opacity duration-300 ${isPlan ? 'text-teal-600 dark:text-teal-400' : 'text-blue-600 dark:text-blue-400'}`}
-          style={{ opacity: visible ? 1 : 0, minWidth: '5.5em' }}
-        >
-          {LOADING_WORDS[idx]}&hellip;
-        </span>
-        <span className="shrink-0 text-[11px] text-muted-foreground/30" aria-hidden="true">·</span>
-        <span className="shrink-0 whitespace-nowrap text-[11px] tabular-nums text-muted-foreground/50">
-          <ElapsedTimer startMs={startMsRef.current} nowMs={nowMs} />
-        </span>
-      </div>
+    <div className="py-0.5 select-none" data-timeline-row-kind="working">
+      <AgentHandoffLoader
+        compact
+        label={`${isPlan ? 'Planning' : LOADING_WORDS[idx]}…`}
+        detail={formatElapsed(startMsRef.current, nowMs)}
+        announcement="Kiro is working"
+        className="justify-start"
+        isLabelVisible={visible}
+        reserveLabelWidth
+      />
     </div>
   )
 })

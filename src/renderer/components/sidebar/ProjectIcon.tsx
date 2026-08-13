@@ -1,4 +1,5 @@
 import { memo } from 'react'
+import { IconFolder } from '@tabler/icons-react'
 import { FRAMEWORK_ICONS } from '@/lib/framework-icons'
 import type { ProjectIconResult } from '@/hooks/useProjectIcon'
 
@@ -8,7 +9,7 @@ interface ProjectIconProps {
 
 /** Renders a small circular project icon (favicon image, framework SVG, or emoji). */
 export const ProjectIcon = memo(function ProjectIcon({ icon }: ProjectIconProps) {
-  if (!icon) return null
+  if (!icon) return <IconFolder className="size-3.5 shrink-0 text-muted-foreground/70" aria-hidden />
 
   if (icon.type === 'emoji') {
     return (

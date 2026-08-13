@@ -106,6 +106,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   notifiedTaskIds: [],
   taskModes: {},
   taskModels: {},
+  taskEfforts: {},
   sessionIds: {},
   isForking: false,
   lastAddedProject: null,
@@ -272,6 +273,8 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
       taskIds.forEach((id) => { delete taskModes[id] })
       const taskModels = { ...s.taskModels }
       taskIds.forEach((id) => { delete taskModels[id] })
+      const taskEfforts = { ...s.taskEfforts }
+      taskIds.forEach((id) => { delete taskEfforts[id] })
       // Clean up projectIds entries that point to this UUID
       const projectIds = { ...s.projectIds }
       for (const [ws, pid] of Object.entries(projectIds)) {
@@ -287,6 +290,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
         drafts,
         taskModes,
         taskModels,
+        taskEfforts,
         pendingWorkspace: s.pendingWorkspace === workspace ? null : s.pendingWorkspace,
         view: selectedTaskId === null && s.view === 'chat' ? 'dashboard' : s.view,
       }
@@ -349,6 +353,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
         && prev.worktreePath === (task.worktreePath ?? prev.worktreePath)
         && prev.originalWorkspace === (task.originalWorkspace ?? prev.originalWorkspace)
         && prev.projectId === (task.projectId ?? prev.projectId)
+        && prev.reasoningEffort === (task.reasoningEffort ?? prev.reasoningEffort)
       ) {
         return state
       }
@@ -361,6 +366,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
         ...(prev?.worktreePath && !task.worktreePath ? { worktreePath: prev.worktreePath } : {}),
         ...(prev?.originalWorkspace && !task.originalWorkspace ? { originalWorkspace: prev.originalWorkspace } : {}),
         ...(prev?.projectId && !task.projectId ? { projectId: prev.projectId } : {}),
+        ...(prev?.reasoningEffort && !task.reasoningEffort ? { reasoningEffort: prev.reasoningEffort } : {}),
       }
       const statusChanged = !prev || prev.status !== task.status
       if (statusChanged && (task.status === 'completed' || task.status === 'error' || task.status === 'cancelled')) {
@@ -477,6 +483,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
       const { [id]: _ts, ...splits } = state.liveToolSplits
       const { [id]: _m, ...modes } = state.taskModes
       const { [id]: _mdl, ...models } = state.taskModels
+      const { [id]: _effort, ...efforts } = state.taskEfforts
       const { [id]: _ds, ...remainingSnapshots } = state.dispatchSnapshots
       const deletedTaskIds = new Set(state.deletedTaskIds)
       deletedTaskIds.add(id)
@@ -492,6 +499,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
         liveToolSplits: splits,
         taskModes: modes,
         taskModels: models,
+        taskEfforts: efforts,
         dispatchSnapshots: remainingSnapshots,
         deletedTaskIds: capDeletedIds(deletedTaskIds),
         softDeleted,
@@ -889,6 +897,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
       if (task?.worktreePath) forked.worktreePath = task.worktreePath
       if (task?.originalWorkspace) forked.originalWorkspace = task.originalWorkspace
       forked.projectId = task?.projectId ?? get().getProjectId(task?.originalWorkspace ?? forked.workspace)
+      const parentEffort = get().taskEfforts[taskId] ?? forked.reasoningEffort
       set((state) => {
         const realWorkspace = forked.originalWorkspace ?? forked.workspace
         const projects = realWorkspace && !state.projects.includes(realWorkspace)
@@ -896,6 +905,9 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
           : state.projects
         return {
           tasks: { ...state.tasks, [forked.id]: forked },
+          taskEfforts: parentEffort
+            ? { ...state.taskEfforts, [forked.id]: parentEffort }
+            : state.taskEfforts,
           selectedTaskId: forked.id,
           view: 'chat' as const,
           projects,
@@ -903,6 +915,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
         }
       })
       get().persistHistory()
+      get().persistUiState()
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
       const { selectedTaskId, tasks, upsertTask } = get()
@@ -1066,6 +1079,12 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   setTaskModel: (taskId, modelId) => {
     if (get().taskModels[taskId] === modelId) return
     set((s) => ({ taskModels: { ...s.taskModels, [taskId]: modelId } }))
+    get().persistUiState()
+  },
+
+  setTaskEffort: (taskId, effort) => {
+    if (get().taskEfforts[taskId] === effort) return
+    set((s) => ({ taskEfforts: { ...s.taskEfforts, [taskId]: effort } }))
     get().persistUiState()
   },
 
@@ -1458,7 +1477,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
   },
 
   persistUiState: () => {
-    const { selectedTaskId, view, splitViews, activeSplitId, pinnedThreadIds, taskModels, taskModes } = get()
+    const { selectedTaskId, view, splitViews, activeSplitId, pinnedThreadIds, taskModels, taskModes, taskEfforts } = get()
     historyStore.saveUiState({
       selectedTaskId,
       view,
@@ -1469,6 +1488,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
       pinnedThreadIds,
       taskModels,
       taskModes,
+      taskEfforts,
     }).catch((err) => {
       console.warn('[persistUiState] failed:', err)
     })
@@ -1518,6 +1538,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
       threadOrders: {},
       taskModes: {},
       taskModels: {},
+      taskEfforts: {},
       sessionIds: {},
       splitViews: [],
       pinnedThreadIds: [],
@@ -1561,6 +1582,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
         const { [taskId]: _ts, ...splits } = state.liveToolSplits
         const { [taskId]: _m, ...modes } = state.taskModes
         const { [taskId]: _mdl, ...models } = state.taskModels
+        const { [taskId]: _effort, ...efforts } = state.taskEfforts
         const { [taskId]: _ds, ...remainingSnapshots } = state.dispatchSnapshots
         const deletedTaskIds = new Set(state.deletedTaskIds)
         deletedTaskIds.add(taskId)
@@ -1576,6 +1598,7 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
           liveToolSplits: splits,
           taskModes: modes,
           taskModels: models,
+          taskEfforts: efforts,
           dispatchSnapshots: remainingSnapshots,
           deletedTaskIds,
           softDeleted,
@@ -1712,4 +1735,3 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     get().persistHistory()
   },
 }))
-

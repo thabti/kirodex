@@ -4,8 +4,10 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { cn } from '@/lib/utils'
 import { BranchSelector } from './BranchSelector'
 import { ModelPicker } from './ModelPicker'
+import { ReasoningEffortPicker } from './ReasoningEffortPicker'
 import { PlanToggle } from './PlanToggle'
 import { AutoApproveToggle } from './AutoApproveToggle'
+import { MODIFIER_KEY_LABEL } from '@/lib/platform'
 
 /** Pill-shaped group wrapper for toolbar items */
 const ToolbarGroup = ({ children, className }: { children: React.ReactNode; className?: string }) => (
@@ -17,10 +19,6 @@ const ToolbarGroup = ({ children, className }: { children: React.ReactNode; clas
 /** Thin dot separator within a group */
 const Dot = () => <span className="mx-0.5 size-[3px] shrink-0 rounded-full bg-border" aria-hidden />
 
-/** Detect macOS for keyboard shortcut labels */
-const IS_MAC = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.userAgent)
-const MOD_KEY = IS_MAC ? '⌘' : 'Ctrl'
-
 interface ChatToolbarProps {
   isPlanMode: boolean
   isRunning?: boolean
@@ -29,6 +27,8 @@ interface ChatToolbarProps {
   workspace: string | null
   isWorktree?: boolean
   isMetaHeld?: boolean
+  isEffortPickerOpen: boolean
+  onEffortPickerOpenChange: (isOpen: boolean) => void
   fileInputRef: React.RefObject<HTMLInputElement | null>
   onFilePickerClick: () => void
   onFileInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void
@@ -44,6 +44,8 @@ export const ChatToolbar = memo(function ChatToolbar({
   workspace,
   isWorktree,
   isMetaHeld,
+  isEffortPickerOpen,
+  onEffortPickerOpenChange,
   fileInputRef,
   onFilePickerClick,
   onFileInputChange,
@@ -55,11 +57,16 @@ export const ChatToolbar = memo(function ChatToolbar({
   return (
     <div className="relative z-10 flex min-w-0 flex-wrap items-center justify-between gap-2 overflow-visible px-2.5 pb-2.5 sm:flex-nowrap sm:px-4 sm:pb-3 @container/toolbar">
       {/* Left: AI controls (mode + model) */}
-      <div className="flex min-w-[180px] flex-1 items-center gap-1.5 overflow-hidden">
+      <div className="flex min-w-[180px] flex-1 items-center gap-1.5 overflow-visible">
         <ToolbarGroup className="min-w-0">
           <PlanToggle />
           <Dot />
           <ModelPicker />
+          <Dot />
+          <ReasoningEffortPicker
+            isOpen={isEffortPickerOpen}
+            onOpenChange={onEffortPickerOpenChange}
+          />
           <Dot />
           <AutoApproveToggle />
         </ToolbarGroup>
@@ -89,13 +96,13 @@ export const ChatToolbar = memo(function ChatToolbar({
           type="file"
           multiple
           className="hidden"
+          aria-label="Choose files to attach"
           onChange={onFileInputChange}
           tabIndex={-1}
-          aria-hidden
         />
-        {/* Send hint — visible only when Cmd is held */}
+        {/* Send hint — visible only while the platform modifier is held */}
         {isMetaHeld && (
-          <kbd className="rounded-sm bg-muted px-1 font-mono text-[10px] text-muted-foreground">{MOD_KEY}⏎</kbd>
+          <kbd className="rounded-sm bg-muted px-1 font-mono text-[10px] text-muted-foreground">{MODIFIER_KEY_LABEL}⏎</kbd>
         )}
         {isRunning ? (
           <Tooltip>
@@ -106,7 +113,7 @@ export const ChatToolbar = memo(function ChatToolbar({
                 aria-label="Pause agent (Escape)"
                 data-testid="pause-button"
                 className={cn(
-                  'flex h-8 w-8 items-center justify-center rounded-full text-white transition-all duration-150 hover:scale-105',
+                  'flex size-8 items-center justify-center rounded-full text-white transition-transform duration-150 motion-safe:hover:scale-105',
                   isPlanMode ? 'bg-teal-500/90 hover:bg-teal-500' : 'bg-blue-500/90 hover:bg-blue-500',
                 )}
               >
@@ -127,12 +134,12 @@ export const ChatToolbar = memo(function ChatToolbar({
                 type="button"
                 onClick={onSend}
                 disabled={!canSend}
-                aria-label={isRunning ? 'Queue message (Enter)' : 'Send message (Enter)'}
+                aria-label={`Send message (Enter)${hasQueuedMessages ? '. Messages queued' : ''}`}
                 data-testid="send-button"
                 className={cn(
-                  'relative flex h-8 w-8 items-center justify-center rounded-full text-white transition-all duration-200 ease-out',
+                  'relative flex size-8 items-center justify-center rounded-full text-white transition-transform duration-200 ease-out',
                   canSend ? buttonBg : 'bg-muted/60',
-                  canSend && 'hover:scale-105',
+                  canSend && 'motion-safe:hover:scale-105',
                   'disabled:pointer-events-none disabled:hover:scale-100',
                 )}
               >
@@ -140,7 +147,7 @@ export const ChatToolbar = memo(function ChatToolbar({
                   <path d="M7 11.5V2.5M7 2.5L3 6.5M7 2.5L11 6.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
                 {hasQueuedMessages && (
-                  <span className="absolute -top-1 -right-1 flex size-3 items-center justify-center rounded-full bg-amber-500" aria-label="Messages queued">
+                  <span className="absolute -right-1 -top-1 flex size-3 items-center justify-center rounded-full bg-warning" aria-hidden>
                     <span className="size-1.5 rounded-full bg-white" />
                   </span>
                 )}

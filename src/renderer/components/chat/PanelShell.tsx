@@ -11,9 +11,9 @@ export function PanelShell({ children, onDismiss }: { children: React.ReactNode;
             aria-label="Close panel"
             tabIndex={0}
             onMouseDown={(e) => { e.preventDefault(); onDismiss() }}
-            className="flex size-6 items-center justify-center rounded-md text-muted-foreground/70 transition-colors hover:bg-accent hover:text-foreground"
+            className="flex size-6 items-center justify-center rounded-md text-muted-foreground/70 transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            <IconX className="size-3.5" />
+            <IconX className="size-3.5" aria-hidden />
           </button>
         </div>
       )}

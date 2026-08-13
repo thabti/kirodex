@@ -946,6 +946,7 @@ fn task_serializes_auto_approve_true() {
         auto_approve: Some(true),
         user_paused: None,
         parent_task_id: None,
+        reasoning_effort: None,
     };
     let json = serde_json::to_value(&task).unwrap();
     assert_eq!(json["autoApprove"], true);
@@ -966,6 +967,7 @@ fn task_serializes_auto_approve_false() {
         auto_approve: Some(false),
         user_paused: None,
         parent_task_id: None,
+        reasoning_effort: None,
     };
     let json = serde_json::to_value(&task).unwrap();
     assert_eq!(json["autoApprove"], false);
@@ -986,6 +988,7 @@ fn task_omits_auto_approve_when_none() {
         auto_approve: None,
         user_paused: None,
         parent_task_id: None,
+        reasoning_effort: None,
     };
     let json = serde_json::to_value(&task).unwrap();
     assert!(json.get("autoApprove").is_none());
@@ -1006,6 +1009,7 @@ fn task_auto_approve_roundtrip() {
         auto_approve: Some(true),
         user_paused: None,
         parent_task_id: None,
+        reasoning_effort: None,
     };
     let json_str = serde_json::to_string(&task).unwrap();
     let restored: Task = serde_json::from_str(&json_str).unwrap();
@@ -1252,6 +1256,65 @@ fn create_task_params_defer_spawn_round_trips() {
     let json = r#"{"name":"t","workspace":"/tmp","prompt":"","deferSpawn":true}"#;
     let params: CreateTaskParams = serde_json::from_str(json).unwrap();
     assert!(params.defer_spawn);
+}
+
+#[test]
+fn create_task_params_accepts_supported_effort_levels() {
+    for effort in ["low", "medium", "high", "xhigh", "max"] {
+        let json = format!(
+            r#"{{"name":"t","workspace":"/tmp","prompt":"hi","effort":"{effort}"}}"#
+        );
+        let params: CreateTaskParams = serde_json::from_str(&json).unwrap();
+        assert_eq!(params.effort.unwrap().as_str(), effort);
+    }
+}
+
+#[test]
+fn create_task_params_rejects_unknown_effort() {
+    let json = r#"{"name":"t","workspace":"/tmp","prompt":"hi","effort":"ultra"}"#;
+    assert!(serde_json::from_str::<CreateTaskParams>(json).is_err());
+}
+
+#[test]
+fn connection_handle_waits_for_session_readiness() {
+    use std::sync::atomic::{AtomicBool, Ordering};
+    use std::sync::Arc;
+
+    let (cmd_tx, _cmd_rx) = tokio::sync::mpsc::unbounded_channel();
+    let ready = Arc::new(AtomicBool::new(false));
+    let ready_for_thread = ready.clone();
+    let handle = ConnectionHandle {
+        cmd_tx,
+        alive: Arc::new(AtomicBool::new(true)),
+        ready,
+        auto_approve: Arc::new(AtomicBool::new(false)),
+    };
+    let worker = std::thread::spawn(move || {
+        std::thread::sleep(std::time::Duration::from_millis(20));
+        ready_for_thread.store(true, Ordering::Release);
+    });
+
+    assert!(handle.wait_until_ready(std::time::Duration::from_secs(1)).is_ok());
+    worker.join().unwrap();
+}
+
+#[test]
+fn connection_handle_reports_startup_failure() {
+    use std::sync::atomic::AtomicBool;
+    use std::sync::Arc;
+
+    let (cmd_tx, _cmd_rx) = tokio::sync::mpsc::unbounded_channel();
+    let handle = ConnectionHandle {
+        cmd_tx,
+        alive: Arc::new(AtomicBool::new(false)),
+        ready: Arc::new(AtomicBool::new(false)),
+        auto_approve: Arc::new(AtomicBool::new(false)),
+    };
+
+    let error = handle
+        .wait_until_ready(std::time::Duration::from_millis(50))
+        .unwrap_err();
+    assert!(error.contains("could not start"));
 }
 
 // ── resolve_initial_model ──────────────────────────────────────────────

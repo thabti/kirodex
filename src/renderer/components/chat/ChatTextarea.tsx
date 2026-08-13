@@ -23,7 +23,6 @@ interface ChatTextareaProps {
   commands: SlashCommand[]
   slashIndex: number
   onSelectCommand: (cmd: SlashCommand) => void
-  onDismissSlash: () => void
   // Inline /model and /agent quick-swap picker
   showInlinePicker: boolean
   inlineCommand: { kind: InlineCommandKind; query: string } | null
@@ -64,7 +63,7 @@ export const ChatTextarea = memo(function ChatTextarea({
   placeholderText,
   textareaRef,
   hasContextRing,
-  showPicker, slashQuery, commands, slashIndex, onSelectCommand, onDismissSlash,
+  showPicker, slashQuery, commands, slashIndex, onSelectCommand,
   showInlinePicker, inlineCommand, inlineIndex, onInlineItemsChange, onInlineCommit, onInlineDismiss,
   showFilePicker, mentionTrigger, mentionIndex, mentionedFiles, workspace, onSelectFile, onDismissMention,
   panel, onDismissPanel,
@@ -96,7 +95,6 @@ export const ChatTextarea = memo(function ChatTextarea({
           query={slashQuery}
           commands={commands}
           onSelect={onSelectCommand}
-          onDismiss={onDismissSlash}
           activeIndex={slashIndex}
         />
       )}
@@ -169,6 +167,7 @@ export const ChatTextarea = memo(function ChatTextarea({
         ref={textareaRef}
         data-testid="chat-textarea"
         data-chat-input
+        aria-label="Message"
         value={value}
         onChange={onChange}
         onKeyDown={onKeyDown}

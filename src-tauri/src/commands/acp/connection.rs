@@ -11,7 +11,8 @@ use tokio_util::compat::{TokioAsyncReadCompatExt, TokioAsyncWriteCompatExt};
 use super::client::KirodexClient;
 use super::sandbox::{extract_paths_from_message, friendly_prompt_error};
 use super::types::{
-    AcpCommand, AcpState, AttachmentData, ConnectionHandle, PendingPermission, PermissionOption, PermissionReply,
+    AcpCommand, AcpState, AttachmentData, ConnectionHandle, PendingPermission, PermissionOption,
+    PermissionReply, ReasoningEffort,
 };
 
 /// Strip embedded `<image src="data:..." />` tags and their `[Attached image: ...]` prefixes
@@ -70,7 +71,6 @@ pub(crate) fn build_content_blocks(text: String, attachments: &[AttachmentData])
 /// Configuration for spawning a new ACP connection. Groups the many
 /// parameters that `spawn_connection` previously accepted positionally,
 /// making call sites easier to read and extend.
-#[allow(dead_code)]
 pub(crate) struct ConnectionConfig {
     pub task_id: String,
     pub workspace: String,
@@ -79,44 +79,38 @@ pub(crate) struct ConnectionConfig {
     pub app: tauri::AppHandle,
     pub initial_mode_id: Option<String>,
     pub initial_model_id: Option<String>,
+    pub initial_effort: Option<ReasoningEffort>,
     pub tight_sandbox: bool,
     pub pending_preamble: Option<String>,
 }
 
-pub(crate) fn spawn_connection(
-    task_id: String,
-    workspace: String,
-    kiro_bin: String,
-    auto_approve: bool,
-    app: tauri::AppHandle,
-    initial_mode_id: Option<String>,
-    initial_model_id: Option<String>,
-    tight_sandbox: bool,
-) -> Result<ConnectionHandle, String> {
-    spawn_connection_with_preamble(
-        task_id, workspace, kiro_bin, auto_approve, app,
-        initial_mode_id, initial_model_id, tight_sandbox, None,
-    )
+pub(crate) fn spawn_connection(mut config: ConnectionConfig) -> Result<ConnectionHandle, String> {
+    config.pending_preamble = None;
+    spawn_connection_with_preamble(config)
 }
 
 /// Spawn a connection and stash a one-shot preamble that will be prepended to
 /// the very first `Prompt` command this connection receives. Used by
-/// `task_fork` so the freshly spawned `kiro-cli` subprocess inherits the
-/// parent thread's transcript when the user sends their next message.
-pub(crate) fn spawn_connection_with_preamble(
-    task_id: String,
-    workspace: String,
-    kiro_bin: String,
-    auto_approve: bool,
-    app: tauri::AppHandle,
-    initial_mode_id: Option<String>,
-    initial_model_id: Option<String>,
-    tight_sandbox: bool,
-    pending_preamble: Option<String>,
-) -> Result<ConnectionHandle, String> {
+/// `task_fork` and effort changes so a fresh `kiro-cli` subprocess inherits
+/// the existing thread's transcript when the user sends their next message.
+pub(crate) fn spawn_connection_with_preamble(config: ConnectionConfig) -> Result<ConnectionHandle, String> {
+    let ConnectionConfig {
+        task_id,
+        workspace,
+        kiro_bin,
+        auto_approve,
+        app,
+        initial_mode_id,
+        initial_model_id,
+        initial_effort,
+        tight_sandbox,
+        pending_preamble,
+    } = config;
     let (cmd_tx, mut cmd_rx) = mpsc::unbounded_channel::<AcpCommand>();
     let alive = Arc::new(std::sync::atomic::AtomicBool::new(true));
     let alive_clone = alive.clone();
+    let ready = Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let ready_for_connection = ready.clone();
     let auto_approve_flag = Arc::new(std::sync::atomic::AtomicBool::new(auto_approve));
     let auto_approve_for_client = auto_approve_flag.clone();
 
@@ -203,7 +197,8 @@ pub(crate) fn spawn_connection_with_preamble(
                 let result = run_acp_connection(
                     tid3.clone(), workspace, kiro_bin, auto_approve_for_client,
                     app3.clone(), perm_tx, &mut cmd_rx, initial_mode_id,
-                    initial_model_id, tight_sandbox, pending_preamble,
+                    initial_model_id, initial_effort, tight_sandbox, pending_preamble,
+                    ready_for_connection,
                 ).await;
 
                 alive_clone.store(false, std::sync::atomic::Ordering::SeqCst);
@@ -277,7 +272,7 @@ pub(crate) fn spawn_connection_with_preamble(
         }
     });
 
-    Ok(ConnectionHandle { cmd_tx, alive, auto_approve: auto_approve_flag })
+    Ok(ConnectionHandle { cmd_tx, alive, ready, auto_approve: auto_approve_flag })
 }
 
 pub(crate) async fn run_acp_connection(
@@ -290,12 +285,18 @@ pub(crate) async fn run_acp_connection(
     cmd_rx: &mut mpsc::UnboundedReceiver<AcpCommand>,
     initial_mode_id: Option<String>,
     initial_model_id: Option<String>,
+    initial_effort: Option<ReasoningEffort>,
     tight_sandbox: bool,
     mut pending_preamble: Option<String>,
+    ready: Arc<std::sync::atomic::AtomicBool>,
 ) -> Result<(), String> {
-    // Spawn kiro-cli acp subprocess in the project workspace directory
-    let mut child = tokio::process::Command::new(&kiro_bin)
-        .arg("acp")
+    // Kiro CLI currently applies effort through its ACP startup flag.
+    let mut command = tokio::process::Command::new(&kiro_bin);
+    command.arg("acp");
+    if let Some(effort) = initial_effort {
+        command.arg("--effort").arg(effort.as_str());
+    }
+    let mut child = command
         .current_dir(&workspace)
         .stdin(std::process::Stdio::piped())
         .stdout(std::process::Stdio::piped())
@@ -420,6 +421,8 @@ pub(crate) async fn run_acp_connection(
         }
     }
 
+    ready.store(true, std::sync::atomic::Ordering::Release);
+
     // Process commands from the main thread.
     // Uses tokio::select! during prompt so Cancel/Kill are handled immediately
     // instead of queuing behind the blocking prompt future.
@@ -484,6 +487,17 @@ pub(crate) async fn run_acp_connection(
                             .and_then(|v| v.as_str())
                             .unwrap_or("end_turn")
                             .to_string();
+                        use tauri::Manager;
+                        if let Some(state) = app.try_state::<AcpState>() {
+                            if let Some(task) = state.tasks.lock().get_mut(&task_id) {
+                                task.status = if task.user_paused == Some(true) {
+                                    "paused".to_string()
+                                } else {
+                                    "completed".to_string()
+                                };
+                                task.pending_permission = None;
+                            }
+                        }
                         use tauri::Emitter;
                         let _ = app.emit("turn_end", serde_json::json!({ "taskId": task_id, "stopReason": stop_reason }));
                         let _ = app.emit("debug_log", serde_json::json!({
@@ -496,6 +510,13 @@ pub(crate) async fn run_acp_connection(
                         use tauri::Emitter;
                         let err_str = e.to_string();
                         let message = friendly_prompt_error(&err_str);
+                        use tauri::Manager;
+                        if let Some(state) = app.try_state::<AcpState>() {
+                            if let Some(task) = state.tasks.lock().get_mut(&task_id) {
+                                task.status = "error".to_string();
+                                task.pending_permission = None;
+                            }
+                        }
                         let _ = app.emit("task_error", serde_json::json!({
                             "taskId": task_id, "message": message
                         }));

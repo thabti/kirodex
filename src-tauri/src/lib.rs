@@ -148,28 +148,30 @@ fn kill_window_ptys(app: &tauri::AppHandle, window_label: &str) {
 fn reposition_traffic_lights(ns_window: cocoa::base::id) {
     use cocoa::appkit::{NSView, NSWindow, NSWindowButton};
     use cocoa::foundation::NSRect;
-    const TRAFFIC_LIGHT_X: f64 = 13.0;
-    const TRAFFIC_LIGHT_Y: f64 = 13.0;
+    const TRAFFIC_LIGHT_X: f64 = 14.0;
+    const TRAFFIC_LIGHT_Y: f64 = 22.0;
     unsafe {
         let close = ns_window.standardWindowButton_(NSWindowButton::NSWindowCloseButton);
         let miniaturize = ns_window.standardWindowButton_(NSWindowButton::NSWindowMiniaturizeButton);
         let zoom = ns_window.standardWindowButton_(NSWindowButton::NSWindowZoomButton);
-        if close.is_null() {
+        if close.is_null() || miniaturize.is_null() || zoom.is_null() {
             return;
         }
         let title_bar_container = close.superview().superview();
         if title_bar_container.is_null() {
             return;
         }
-        let title_bar_frame: NSRect = NSView::frame(title_bar_container);
+
         let close_rect: NSRect = NSView::frame(close);
-        let button_height = close_rect.size.height;
-        let vertical_offset = TRAFFIC_LIGHT_Y - (title_bar_frame.size.height - button_height) / 2.0;
-        let space_between = 20.0_f64;
+        let mut title_bar_frame: NSRect = NSView::frame(title_bar_container);
+        title_bar_frame.size.height = close_rect.size.height + TRAFFIC_LIGHT_Y;
+        title_bar_frame.origin.y = NSWindow::frame(ns_window).size.height - title_bar_frame.size.height;
+        let _: () = objc::msg_send![title_bar_container, setFrame: title_bar_frame];
+
+        let space_between = NSView::frame(miniaturize).origin.x - close_rect.origin.x;
         for (i, button) in [close, miniaturize, zoom].iter().enumerate() {
             let mut rect: NSRect = NSView::frame(*button);
             rect.origin.x = TRAFFIC_LIGHT_X + (i as f64 * space_between);
-            rect.origin.y = (title_bar_frame.size.height - button_height) / 2.0 - vertical_offset;
             button.setFrameOrigin(rect.origin);
         }
     }
@@ -606,6 +608,7 @@ pub fn run() {
             acp::task_set_auto_approve,
             acp::set_mode,
             acp::set_model,
+            acp::set_effort,
             acp::list_models,
             acp::probe_capabilities,
             // PTY

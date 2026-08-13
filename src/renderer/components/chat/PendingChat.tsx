@@ -6,10 +6,11 @@ import { useSettingsStore } from '@/stores/settingsStore'
 import { resolveModelId } from '@/lib/resolve-model'
 import { slugify, isValidWorktreeSlug } from '@/lib/utils'
 import { stripImageDataForTitleGen } from '@/lib/message-utils'
-import type { Attachment, IpcAttachment, ProjectFile } from '@/types'
+import type { AgentTask, Attachment, IpcAttachment, ProjectFile } from '@/types'
 import type { PastedChunk } from '@/hooks/useChatInput'
 import { Checkbox } from '@/components/ui/checkbox'
 import { ChatInput } from './ChatInput'
+import { AgentHandoffLoader } from './AgentHandoffLoader'
 import { EmptyThreadSplash } from './EmptyThreadSplash'
 import { TerminalDrawer } from './TerminalDrawer'
 
@@ -20,6 +21,8 @@ interface PendingChatProps {
 }
 
 export function PendingChat({ workspace }: PendingChatProps) {
+  const [isCreatingTask, setIsCreatingTask] = useState(false)
+  const isCreatingTaskRef = useRef(false)
   const upsertTask = useTaskStore((s) => s.upsertTask)
   const getProjectId = useTaskStore((s) => s.getProjectId)
   const draft = useTaskStore((s) => s.drafts[workspace])
@@ -35,8 +38,6 @@ export function PendingChat({ workspace }: PendingChatProps) {
   const setDraftMentionedFiles = useTaskStore((s) => s.setDraftMentionedFiles)
   const removeDraftMentionedFiles = useTaskStore((s) => s.removeDraftMentionedFiles)
 
-  const settings = useSettingsStore((s) => s.settings)
-  const projectPrefs = settings.projectPrefs?.[workspace]
   const [useWorktree, setUseWorktree] = useState(false)
   const [worktreeSlug, setWorktreeSlug] = useState('')
   const [isSlugEdited, setIsSlugEdited] = useState(false)
@@ -87,83 +88,88 @@ export function PendingChat({ workspace }: PendingChatProps) {
   }, [])
 
   const handleSend = useCallback(async (msg: string, attachments?: IpcAttachment[]) => {
-    removeDraft(workspace)
-    removeDraftAttachments(workspace)
-    removeDraftPastedChunks(workspace)
-    removeDraftMentionedFiles(workspace)
-    const cleanMsg = stripImageDataForTitleGen(msg.replace(/<\/?kirodex_tangent>/g, '').trim())
-    const name = cleanMsg.length > 60 ? cleanMsg.slice(0, 57) + '\u2026' : cleanMsg
-    const { settings: currentSettings, activeWorkspace, currentModeId, currentModelId } = useSettingsStore.getState()
-    const prefs = activeWorkspace ? currentSettings.projectPrefs?.[activeWorkspace] : undefined
-    const autoApprove = prefs?.autoApprove !== undefined ? prefs.autoApprove : currentSettings.autoApprove
-    const modeId = currentModeId && currentModeId !== 'kiro_default' ? currentModeId : undefined
-    const modelId = resolveModelId({ projectPrefs: prefs, settings: currentSettings, currentModelId })
+    if (isCreatingTaskRef.current) return
+    isCreatingTaskRef.current = true
+    setIsCreatingTask(true)
+    try {
+      const clearDraft = (): void => {
+        removeDraft(workspace)
+        removeDraftAttachments(workspace)
+        removeDraftPastedChunks(workspace)
+        removeDraftMentionedFiles(workspace)
+      }
+      const cleanMsg = stripImageDataForTitleGen(msg.replace(/<\/?kirodex_tangent>/g, '').trim())
+      const name = cleanMsg.length > 60 ? `${cleanMsg.slice(0, 57)}\u2026` : cleanMsg
+      const { settings: currentSettings, currentModeId, currentModelId } = useSettingsStore.getState()
+      const prefs = currentSettings.projectPrefs?.[workspace]
+      const autoApprove = prefs?.autoApprove ?? currentSettings.autoApprove
+      const modeId = currentModeId && currentModeId !== 'kiro_default' ? currentModeId : undefined
+      const modelId = resolveModelId({ projectPrefs: prefs, settings: currentSettings, currentModelId })
 
-    if (useWorktree && worktreeSlug && isValidWorktreeSlug(worktreeSlug)) {
-      // Create worktree first, then create task in it
-      try {
-        const symlinkDirs = prefs?.symlinkDirectories ?? ['node_modules']
-        const wtResult = await ipc.gitWorktreeCreate(workspace, worktreeSlug)
+      const completeTaskCreation = (created: AgentTask, taskForStore: AgentTask): void => {
+        upsertTask(taskForStore)
+        if (currentModeId && currentModeId !== 'kiro_default') {
+          useTaskStore.getState().setTaskMode(created.id, currentModeId)
+        }
+        clearDraft()
+        useTaskStore.setState({ pendingWorkspace: null, selectedTaskId: created.id })
+        if (msg.includes('<kirodex_tangent>')) {
+          const question = msg.replace(/<\/?kirodex_tangent>/g, '').trim()
+          useTaskStore.getState().enterBtwMode(created.id, question)
+        }
+      }
+
+      if (useWorktree && worktreeSlug && isValidWorktreeSlug(worktreeSlug)) {
+        let worktreeResult: Awaited<ReturnType<typeof ipc.gitWorktreeCreate>> | null = null
         try {
-          await ipc.gitWorktreeSetup(workspace, wtResult.worktreePath, symlinkDirs)
-        } catch {
-          void ipc.gitWorktreeRemove(workspace, wtResult.worktreePath).catch(() => {})
-          throw new Error('Worktree setup failed')
+          const symlinkDirs = prefs?.symlinkDirectories ?? ['node_modules']
+          worktreeResult = await ipc.gitWorktreeCreate(workspace, worktreeSlug)
+          await ipc.gitWorktreeSetup(workspace, worktreeResult.worktreePath, symlinkDirs)
+        } catch (worktreeError) {
+          if (worktreeResult) {
+            await ipc.gitWorktreeRemove(workspace, worktreeResult.worktreePath).catch((cleanupError: unknown) => {
+              console.warn('[PendingChat] Failed to clean up worktree:', cleanupError)
+            })
+          }
+          const errorMessage = worktreeError instanceof Error ? worktreeError.message : String(worktreeError)
+          const created = await ipc.createTask({ name, workspace, prompt: msg, autoApprove, modeId, modelId, attachments })
+          completeTaskCreation(created, {
+            ...created,
+            projectId: getProjectId(workspace),
+            messages: [
+              { role: 'system', content: `\u26a0\ufe0f Worktree creation failed: ${errorMessage}. Running in the original workspace.`, timestamp: new Date().toISOString() },
+              ...created.messages,
+            ],
+          })
+          return
         }
-        const created = await ipc.createTask({ name, workspace: wtResult.worktreePath, prompt: msg, autoApprove, modeId, modelId, attachments })
-        upsertTask({
-          ...created,
-          projectId: getProjectId(workspace),
-          worktreePath: wtResult.worktreePath,
-          originalWorkspace: workspace,
-          messages: [
-            { role: 'system', content: `Working in worktree \`${wtResult.worktreePath}\` on branch \`${wtResult.branch}\``, timestamp: new Date().toISOString() },
-            ...created.messages,
-          ],
-        })
-        if (currentModeId && currentModeId !== 'kiro_default') {
-          useTaskStore.getState().setTaskMode(created.id, currentModeId)
-        }
-        useTaskStore.setState({ pendingWorkspace: null, selectedTaskId: created.id })
-        if (msg.includes('<kirodex_tangent>')) {
-          const question = msg.replace(/<\/?kirodex_tangent>/g, '').trim()
-          useTaskStore.getState().enterBtwMode(created.id, question)
-        }
-        return
-      } catch (wtErr) {
-        // Worktree failed — fall back to original workspace with inline error
-        const errMsg = wtErr instanceof Error ? wtErr.message : String(wtErr)
-        const created = await ipc.createTask({ name, workspace, prompt: msg, autoApprove, modeId, modelId, attachments })
-        upsertTask({
-          ...created,
-          projectId: getProjectId(workspace),
-          messages: [
-            { role: 'system', content: `\u26a0\ufe0f Worktree creation failed: ${errMsg}. Running in the original workspace.`, timestamp: new Date().toISOString() },
-            ...created.messages,
-          ],
-        })
-        if (currentModeId && currentModeId !== 'kiro_default') {
-          useTaskStore.getState().setTaskMode(created.id, currentModeId)
-        }
-        useTaskStore.setState({ pendingWorkspace: null, selectedTaskId: created.id })
-        if (msg.includes('<kirodex_tangent>')) {
-          const question = msg.replace(/<\/?kirodex_tangent>/g, '').trim()
-          useTaskStore.getState().enterBtwMode(created.id, question)
+
+        try {
+          const created = await ipc.createTask({ name, workspace: worktreeResult.worktreePath, prompt: msg, autoApprove, modeId, modelId, attachments })
+          completeTaskCreation(created, {
+            ...created,
+            projectId: getProjectId(workspace),
+            worktreePath: worktreeResult.worktreePath,
+            originalWorkspace: workspace,
+            messages: [
+              { role: 'system', content: `Working in worktree \`${worktreeResult.worktreePath}\` on branch \`${worktreeResult.branch}\``, timestamp: new Date().toISOString() },
+              ...created.messages,
+            ],
+          })
+        } catch (taskError) {
+          await ipc.gitWorktreeRemove(workspace, worktreeResult.worktreePath).catch((cleanupError: unknown) => {
+            console.warn('[PendingChat] Failed to clean up unused worktree:', cleanupError)
+          })
+          throw taskError
         }
         return
       }
-    }
 
-    const created = await ipc.createTask({ name, workspace, prompt: msg, autoApprove, modeId, modelId, attachments })
-    upsertTask({ ...created, projectId: getProjectId(workspace) })
-    if (currentModeId && currentModeId !== 'kiro_default') {
-      useTaskStore.getState().setTaskMode(created.id, currentModeId)
-    }
-    useTaskStore.setState({ pendingWorkspace: null, selectedTaskId: created.id })
-    // If this was a /btw question, enter btw mode on the new task
-    if (msg.includes('<kirodex_tangent>')) {
-      const question = msg.replace(/<\/?kirodex_tangent>/g, '').trim()
-      useTaskStore.getState().enterBtwMode(created.id, question)
+      const created = await ipc.createTask({ name, workspace, prompt: msg, autoApprove, modeId, modelId, attachments })
+      completeTaskCreation(created, { ...created, projectId: getProjectId(workspace) })
+    } finally {
+      isCreatingTaskRef.current = false
+      setIsCreatingTask(false)
     }
   }, [workspace, upsertTask, removeDraft, removeDraftAttachments, removeDraftPastedChunks, removeDraftMentionedFiles, useWorktree, worktreeSlug, getProjectId])
 
@@ -178,7 +184,9 @@ export function PendingChat({ workspace }: PendingChatProps) {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex flex-1 flex-col items-center justify-center gap-4">
-        {isLoggedOut ? (
+        {isCreatingTask ? (
+          <AgentHandoffLoader label="Sending to Kiro…" />
+        ) : isLoggedOut ? (
           <div className="flex flex-col items-center gap-3 text-center">
             <div className="flex size-12 items-center justify-center rounded-full bg-amber-500/10">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-amber-600 dark:text-amber-400" aria-hidden>
@@ -254,7 +262,7 @@ export function PendingChat({ workspace }: PendingChatProps) {
           </div>
         </div>
       )}
-      <ChatInput autoFocus disabled={isLoggedOut} initialValue={draft} initialAttachments={draftAttachments} initialPastedChunks={draftPastedChunks} initialMentionedFiles={draftMentionedFiles} onDraftChange={handleDraftChange} onAttachmentsChange={handleAttachmentsChange} onPastedChunksChange={handlePastedChunksChange} onMentionedFilesChange={handleMentionedFilesChange} onSendMessage={handleSend} workspace={workspace} isWorktree={useWorktree} />
+      <ChatInput autoFocus disabled={isLoggedOut || isCreatingTask} disabledReason={isCreatingTask ? 'Starting thread…' : undefined} initialValue={draft} initialAttachments={draftAttachments} initialPastedChunks={draftPastedChunks} initialMentionedFiles={draftMentionedFiles} onDraftChange={handleDraftChange} onAttachmentsChange={handleAttachmentsChange} onPastedChunksChange={handlePastedChunksChange} onMentionedFilesChange={handleMentionedFilesChange} onSendMessage={handleSend} workspace={workspace} isWorktree={useWorktree} />
       {isWorkspaceTerminalOpen && (
         <TerminalDrawer
           key={`pending:${workspace}`}

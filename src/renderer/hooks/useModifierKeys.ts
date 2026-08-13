@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
+import { IS_MACOS } from '@/lib/platform'
 
 const SHOW_DELAY_MS = 100
 
 /**
- * Tracks whether the Meta (Cmd) key is held down.
+ * Tracks whether the platform's primary modifier key is held down.
+ * Uses Command on macOS and Control on Windows/Linux.
  * Uses delayed show (100ms) and instant hide to prevent flicker.
  * Clears on window blur to avoid stuck state.
  */
@@ -31,15 +33,15 @@ export const useModifierKeys = (): boolean => {
         setIsVisible(false)
       }
     }
-    const handleKeyDown = (e: KeyboardEvent): void => {
-      if (e.key === 'Meta' || e.key === 'OS' || e.key === 'Command') {
-        show()
-      }
+    const isPrimaryModifier = (event: KeyboardEvent): boolean => {
+      if (IS_MACOS) return event.key === 'Meta' || event.key === 'OS' || event.key === 'Command'
+      return event.key === 'Control'
     }
-    const handleKeyUp = (e: KeyboardEvent): void => {
-      if (e.key === 'Meta' || e.key === 'OS' || e.key === 'Command') {
-        hide()
-      }
+    const handleKeyDown = (event: KeyboardEvent): void => {
+      if (isPrimaryModifier(event)) show()
+    }
+    const handleKeyUp = (event: KeyboardEvent): void => {
+      if (isPrimaryModifier(event)) hide()
     }
     const handleBlur = (): void => {
       hide()

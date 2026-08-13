@@ -1,5 +1,5 @@
 import { invokeCommand, listenEvent } from '@/lib/web-rpc'
-import type { AgentTask, AppSettings, KiroConfig, ToolCall, PlanStep, DebugLogEntry, ProjectFile, IpcAttachment } from '@/types'
+import type { AgentTask, AppSettings, KiroConfig, ToolCall, PlanStep, DebugLogEntry, ProjectFile, IpcAttachment, ReasoningEffort } from '@/types'
 
 type UnsubscribeFn = () => void
 
@@ -8,7 +8,7 @@ const tauriListen = <T>(event: string, cb: (payload: T) => void): UnsubscribeFn 
 }
 
 export const ipc = {
-  createTask: (params: { name: string; workspace: string; prompt: string; autoApprove?: boolean; modeId?: string; modelId?: string; attachments?: IpcAttachment[]; existingId?: string; existingMessages?: Array<{ role: string; content: string; timestamp: string; thinking?: string; toolCalls?: ToolCall[] }>; deferSpawn?: boolean }): Promise<AgentTask> =>
+  createTask: (params: { name: string; workspace: string; prompt: string; autoApprove?: boolean; modeId?: string; modelId?: string; effort?: ReasoningEffort; attachments?: IpcAttachment[]; existingId?: string; existingMessages?: Array<{ role: string; content: string; timestamp: string; thinking?: string; toolCalls?: ToolCall[] }>; deferSpawn?: boolean }): Promise<AgentTask> =>
     invokeCommand('task_create', { params }),
   listTasks: (): Promise<AgentTask[]> =>
     invokeCommand('task_list'),
@@ -416,9 +416,17 @@ export const ipc = {
   traceClear: (): Promise<void> =>
     invokeCommand('trace_clear'),
 
-  // ── ACP: model selection ───────────────────────────────────────────────
+  // ── ACP: model and reasoning selection ──────────────────────────────
   setModel: (taskId: string, modelId: string): Promise<void> =>
     invokeCommand('set_model', { taskId, modelId }),
+  setEffort: (
+    taskId: string,
+    effort: ReasoningEffort,
+    modeId?: string,
+    modelId?: string,
+    messages?: Array<{ role: string; content: string; timestamp: string; thinking?: string }>,
+  ): Promise<void> =>
+    invokeCommand('set_effort', { taskId, effort, modeId, modelId, messages }),
 
   // ── Checkpoints (per-turn snapshots) ────────────────────────────────────
   checkpointCreate: (taskId: string, turn: number): Promise<{ turn: number; refName: string; oid: string; message: string; timestamp: number }> =>

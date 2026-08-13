@@ -7,10 +7,11 @@ import { preloadHighlighterIdle } from "@/lib/chatHighlighter";
 import { warmTerminalRuntime } from "@/components/chat/TerminalDrawer";
 import { startConnectionHealthMonitor } from "@/lib/connection-health";
 import { getReceiptBus } from "@/lib/typed-receipts";
+import { isReasoningEffort } from "@/lib/reasoning-effort";
 import { AppHeader } from "@/components/AppHeader";
 import { TaskSidebar } from "@/components/sidebar/TaskSidebar";
+import { AgentHandoffLoader } from "@/components/chat/AgentHandoffLoader";
 
-const IS_MAC = typeof navigator !== 'undefined' && navigator.userAgent.toLowerCase().includes('mac')
 const ChatPanel = lazy(() =>
   import("@/components/chat/ChatPanel").then((m) => ({ default: m.ChatPanel })),
 );
@@ -48,7 +49,7 @@ import { useSettingsStore } from "@/stores/settingsStore";
 import { useDebugStore } from "@/stores/debugStore";
 import { useDiffStore } from "@/stores/diffStore";
 import { useFileTreeStore } from "@/stores/fileTreeStore";
-import { useKiroStore, initKiroListeners } from "@/stores/kiroStore";
+import { initKiroListeners } from "@/stores/kiroStore";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useSessionTracker } from "@/hooks/useSessionTracker";
 import { useZoomLimit } from "@/hooks/useZoomLimit";
@@ -440,6 +441,17 @@ export function App() {
               useTaskStore.setState({ taskModes: validModes })
             }
           }
+          if (ui.taskEfforts) {
+            const validEfforts: NonNullable<typeof ui.taskEfforts> = {}
+            for (const [tid, effort] of Object.entries(ui.taskEfforts)) {
+              if ((tasks[tid] || archivedMeta[tid]) && isReasoningEffort(effort)) {
+                validEfforts[tid] = effort
+              }
+            }
+            if (Object.keys(validEfforts).length > 0) {
+              useTaskStore.setState({ taskEfforts: validEfforts })
+            }
+          }
         }).catch(() => {})
       })
     });
@@ -511,7 +523,7 @@ export function App() {
       listen('app://flush-before-quit', () => {
         useTaskStore.getState().persistHistory()
         import('@/lib/history-store').then((hs) => {
-          const { selectedTaskId, view, splitViews, activeSplitId, pinnedThreadIds, taskModels, taskModes } = useTaskStore.getState()
+          const { selectedTaskId, view, splitViews, activeSplitId, pinnedThreadIds, taskModels, taskModes, taskEfforts } = useTaskStore.getState()
           hs.saveUiState({
             selectedTaskId,
             view,
@@ -522,6 +534,7 @@ export function App() {
             pinnedThreadIds,
             taskModels,
             taskModes,
+            taskEfforts,
           }).catch(() => {})
           hs.flush().then(() => {
             // Ack the flush so Rust can proceed with shutdown
@@ -720,6 +733,14 @@ export function App() {
     }).catch(() => {});
   }, []);
 
+  const mainLoadingLabel = view === 'analytics'
+    ? 'Opening analytics…'
+    : selectedTaskId
+      ? 'Opening the thread…'
+      : pendingWorkspace
+        ? 'Starting a new thread…'
+        : 'Loading Kirodex…'
+
   if (settingsLoaded && !hasOnboardedV2)
     return (
       <Suspense>
@@ -729,7 +750,7 @@ export function App() {
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div data-testid="app-container" className="flex h-full gap-0 bg-background text-foreground sm:gap-3 sm:p-3">
+      <div data-testid="app-container" className="flex h-full bg-sidebar text-foreground">
         {/* Sidebar — desktop column, mobile drawer */}
         <ErrorBoundary>
           {!isMobileViewport && !isSidebarCollapsed && (
@@ -768,7 +789,7 @@ export function App() {
         </ErrorBoundary>
 
         {/* Right column: header + content */}
-        <div className={cn("flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden", isRightSidebar && "order-first")}>
+        <div className={cn("flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-background", isRightSidebar && "order-first")}>
           {/* Top-level breadcrumb header */}
           <ErrorBoundary>
             <AppHeader
@@ -788,7 +809,7 @@ export function App() {
                 className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
                 style={{ fontSize: 'var(--app-font-size, 13px)' }}
               >
-                <Suspense>
+                <Suspense fallback={<AgentHandoffLoader label={mainLoadingLabel} className="min-h-0 flex-1" />}>
                   {view === 'analytics' ? (
                     <AnalyticsDashboard />
                   ) : selectedTaskId && activeSplitId ? (

@@ -388,6 +388,8 @@ export interface PersistedUiState {
   /** Per-thread mode selection so picks made in a specific thread survive
    *  restart. Mirrors {@link taskStore.taskModes}. */
   taskModes?: Record<string, string>
+  /** Per-thread effort selection so Kiro CLI reconnects with the same level. */
+  taskEfforts?: Record<string, import('@/types').ReasoningEffort>
 }
 
 /** Save the current UI state so it can be restored on next launch */

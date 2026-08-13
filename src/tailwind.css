@@ -104,6 +104,7 @@
     --warning-foreground: #b45309;
     --pink: #ec4899;
     --pink-foreground: #ffffff;
+    --handoff-violet: #a78bfa;
 }
 
 .dark {
@@ -121,7 +122,7 @@
     --muted: color-mix(in srgb, white 6%, transparent);
     --muted-foreground: #8A8A8C;
     --accent: color-mix(in srgb, white 8%, transparent);
-    --sidebar: #28282A;
+    --sidebar: #141416;
     --accent-foreground: #E4E4E6;
     --destructive: #f87171;
     --border: color-mix(in srgb, white 3%, transparent);
@@ -136,6 +137,7 @@
     --warning-foreground: #fcd34d;
     --pink: #f472b6;
     --pink-foreground: #ffffff;
+    --handoff-violet: #8b5cf6;
 }
 
 /* Base font-size is controlled by the user's font-size setting (applied via

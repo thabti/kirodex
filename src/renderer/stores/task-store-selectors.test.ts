@@ -59,6 +59,7 @@ const makeState = (overrides: Partial<TaskStore> = {}): TaskStore => ({
   notifiedTaskIds: [],
   taskModes: {},
   taskModels: {},
+  taskEfforts: {},
   isForking: false,
   lastAddedProject: null,
   worktreeCleanupPending: null,

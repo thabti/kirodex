@@ -584,6 +584,19 @@ async fn dispatch(runtime: Arc<WebRuntime>, method: &str, params: Value) -> Resu
             }
             Ok(Value::Null)
         }
+        "set_effort" => {
+            let task_id: String = get_param(&params, "taskId")?;
+            let effort: app_acp::ReasoningEffort = get_param(&params, "effort")?;
+            let mode_id = opt_param::<String>(&params, "modeId")?;
+            let model_id = opt_param::<String>(&params, "modelId")?;
+            let messages = opt_param::<Vec<app_acp::TaskMessage>>(&params, "messages")?;
+            tokio::task::spawn_blocking(move || {
+                web_set_effort(runtime, task_id, effort, mode_id, model_id, messages)
+            })
+            .await
+            .map_err(|error| format!("Effort update task failed: {error}"))??;
+            Ok(Value::Null)
+        }
         "list_models" => {
             let kiro_bin = opt_param::<String>(&params, "kiroBin")?;
             web_list_models(runtime, kiro_bin).await
@@ -998,6 +1011,7 @@ fn web_task_create(
         auto_approve: Some(auto_approve),
         user_paused: None,
         parent_task_id: None,
+        reasoning_effort: params.effort,
     };
     runtime.acp.tasks.lock().insert(id.clone(), task.clone());
     runtime.emit("task_update", task.clone());
@@ -1014,6 +1028,7 @@ fn web_task_create(
         auto_approve,
         params.mode_id,
         initial_model_id,
+        params.effort,
         tight_sandbox,
         None,
     )?;
@@ -1098,10 +1113,14 @@ fn web_task_send_message(
         let settings_guard = runtime.settings.0.lock();
         let kiro_bin = settings_guard.settings.kiro_bin.clone();
         let global_auto_approve = settings_guard.settings.auto_approve;
-        let (workspace, task_auto_approve) = {
+        let (workspace, task_auto_approve, task_effort) = {
             let tasks = runtime.acp.tasks.lock();
             let task = tasks.get(&task_id).ok_or("Task not found")?;
-            (task.workspace.clone(), task.auto_approve.unwrap_or(global_auto_approve))
+            (
+                task.workspace.clone(),
+                task.auto_approve.unwrap_or(global_auto_approve),
+                task.reasoning_effort,
+            )
         };
         let tight_sandbox = settings_guard
             .settings
@@ -1124,6 +1143,7 @@ fn web_task_send_message(
             task_auto_approve,
             None,
             initial_model_id,
+            task_effort,
             tight_sandbox,
             None,
         )?;
@@ -1145,6 +1165,91 @@ fn web_task_send_message(
         .get(&task_id)
         .cloned()
         .ok_or_else(|| "Task not found".to_string())
+}
+
+fn web_set_effort(
+    runtime: Arc<WebRuntime>,
+    task_id: String,
+    effort: app_acp::ReasoningEffort,
+    mode_id: Option<String>,
+    model_id: Option<String>,
+    messages: Option<Vec<app_acp::TaskMessage>>,
+) -> Result<(), String> {
+    let (workspace, auto_approve) = {
+        let tasks = runtime.acp.tasks.lock();
+        let task = tasks.get(&task_id).ok_or("Task not found")?;
+        if task.status == "running" || task.status == "pending_permission" {
+            return Err("Wait for the current turn to finish before changing effort".to_string());
+        }
+        (task.workspace.clone(), task.auto_approve)
+    };
+
+    let settings = runtime.settings.0.lock();
+    let kiro_bin = settings.settings.kiro_bin.clone();
+    let resolved_auto_approve = auto_approve.unwrap_or(settings.settings.auto_approve);
+    let tight_sandbox = settings.settings.project_prefs.as_ref()
+        .and_then(|prefs| prefs.get(&workspace))
+        .and_then(|prefs| prefs.tight_sandbox)
+        .unwrap_or(true);
+    let initial_model_id =
+        app_acp::resolve_initial_model(model_id, &workspace, &settings.settings);
+    drop(settings);
+
+    let mut connections = runtime.acp.connections.lock();
+    let transcript = {
+        let tasks = runtime.acp.tasks.lock();
+        let task = tasks.get(&task_id).ok_or("Task not found")?;
+        if task.status == "running" || task.status == "pending_permission" {
+            return Err("Wait for the current turn to finish before changing effort".to_string());
+        }
+        messages.unwrap_or_else(|| task.messages.clone())
+    };
+
+    if !connections.contains_key(&task_id) {
+        drop(connections);
+        if let Some(task) = runtime.acp.tasks.lock().get_mut(&task_id) {
+            task.reasoning_effort = Some(effort);
+        }
+        return Ok(());
+    }
+
+    let pending_preamble = app_acp::build_resumption_preamble(
+        &transcript,
+        "Resumed conversation after effort change",
+        "The reasoning effort changed, so this conversation is continuing in a fresh agent session. The transcript below is context only. Do not repeat completed work or tool calls. The user's next message follows after the transcript.",
+    );
+    let handle = spawn_web_connection(
+        runtime.clone(),
+        task_id.clone(),
+        workspace,
+        kiro_bin,
+        resolved_auto_approve,
+        mode_id,
+        initial_model_id,
+        Some(effort),
+        tight_sandbox,
+        (!pending_preamble.is_empty()).then_some(pending_preamble),
+    )?;
+    if let Err(error) = handle.wait_until_ready(std::time::Duration::from_secs(15)) {
+        let _ = handle.cmd_tx.send(app_acp::AcpCommand::Kill);
+        return Err(error);
+    }
+    if let Some(old_connection) = connections.remove(&task_id) {
+        let _ = old_connection.cmd_tx.send(app_acp::AcpCommand::Kill);
+    }
+    connections.insert(task_id.clone(), handle);
+    drop(connections);
+
+    let mut tasks = runtime.acp.tasks.lock();
+    let Some(task) = tasks.get_mut(&task_id) else {
+        drop(tasks);
+        if let Some(handle) = runtime.acp.connections.lock().remove(&task_id) {
+            let _ = handle.cmd_tx.send(app_acp::AcpCommand::Kill);
+        }
+        return Err("Task not found".to_string());
+    };
+    task.reasoning_effort = Some(effort);
+    Ok(())
 }
 
 fn web_task_pause(runtime: Arc<WebRuntime>, task_id: String) -> Result<app_acp::Task, String> {
@@ -1255,6 +1360,7 @@ async fn web_task_fork(
         auto_approve: Some(auto_approve),
         user_paused: None,
         parent_task_id: Some(params.task_id),
+        reasoning_effort: parent.as_ref().and_then(|task| task.reasoning_effort),
     };
     runtime.acp.tasks.lock().insert(new_id.clone(), fork_task.clone());
     let handle = spawn_web_connection(
@@ -1265,6 +1371,7 @@ async fn web_task_fork(
         auto_approve,
         None,
         initial_model_id,
+        fork_task.reasoning_effort,
         tight_sandbox,
         (!pending_preamble.is_empty()).then_some(pending_preamble),
     )?;
@@ -1527,12 +1634,15 @@ fn spawn_web_connection(
     auto_approve: bool,
     initial_mode_id: Option<String>,
     initial_model_id: Option<String>,
+    initial_effort: Option<app_acp::ReasoningEffort>,
     tight_sandbox: bool,
     pending_preamble: Option<String>,
 ) -> Result<app_acp::ConnectionHandle, String> {
     let (cmd_tx, mut cmd_rx) = mpsc::unbounded_channel::<app_acp::AcpCommand>();
     let alive = Arc::new(std::sync::atomic::AtomicBool::new(true));
     let alive_clone = alive.clone();
+    let ready = Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let ready_for_connection = ready.clone();
     let auto_approve_flag = Arc::new(std::sync::atomic::AtomicBool::new(auto_approve));
     let auto_approve_for_client = auto_approve_flag.clone();
     let (perm_tx, mut perm_rx) = mpsc::unbounded_channel::<(
@@ -1615,8 +1725,10 @@ fn spawn_web_connection(
                     &mut cmd_rx,
                     initial_mode_id,
                     initial_model_id,
+                    initial_effort,
                     tight_sandbox,
                     pending_preamble,
+                    ready_for_connection,
                 )
                 .await;
                 alive_clone.store(false, std::sync::atomic::Ordering::SeqCst);
@@ -1648,6 +1760,7 @@ fn spawn_web_connection(
     Ok(app_acp::ConnectionHandle {
         cmd_tx,
         alive,
+        ready,
         auto_approve: auto_approve_flag,
     })
 }
@@ -1974,12 +2087,17 @@ async fn run_web_acp_connection(
     cmd_rx: &mut mpsc::UnboundedReceiver<app_acp::AcpCommand>,
     initial_mode_id: Option<String>,
     initial_model_id: Option<String>,
+    initial_effort: Option<app_acp::ReasoningEffort>,
     tight_sandbox: bool,
     mut pending_preamble: Option<String>,
+    ready: Arc<std::sync::atomic::AtomicBool>,
 ) -> Result<(), String> {
     let mut command = tokio::process::Command::new(&kiro_bin);
+    command.arg("acp");
+    if let Some(effort) = initial_effort {
+        command.arg("--effort").arg(effort.as_str());
+    }
     command
-        .arg("acp")
         .current_dir(&workspace)
         .stdin(std::process::Stdio::piped())
         .stdout(std::process::Stdio::piped())
@@ -2078,6 +2196,8 @@ async fn run_web_acp_connection(
             .set_session_model(acp_proto::SetSessionModelRequest::new(session_id.clone(), model_id))
             .await;
     }
+
+    ready.store(true, std::sync::atomic::Ordering::Release);
 
     let mut killed = false;
     while let Some(cmd) = cmd_rx.recv().await {

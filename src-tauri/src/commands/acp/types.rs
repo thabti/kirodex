@@ -64,6 +64,28 @@ pub struct PendingPermission {
     pub options: Vec<PermissionOption>,
 }
 
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum ReasoningEffort {
+    Low,
+    Medium,
+    High,
+    Xhigh,
+    Max,
+}
+
+impl ReasoningEffort {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Low => "low",
+            Self::Medium => "medium",
+            Self::High => "high",
+            Self::Xhigh => "xhigh",
+            Self::Max => "max",
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Task {
@@ -85,6 +107,8 @@ pub struct Task {
     pub user_paused: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub parent_task_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reasoning_effort: Option<ReasoningEffort>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -119,7 +143,27 @@ pub enum AcpCommand {
 pub struct ConnectionHandle {
     pub cmd_tx: mpsc::UnboundedSender<AcpCommand>,
     pub alive: Arc<std::sync::atomic::AtomicBool>,
+    /// Becomes true only after ACP initialization and session setup complete.
+    pub ready: Arc<std::sync::atomic::AtomicBool>,
     pub auto_approve: Arc<std::sync::atomic::AtomicBool>,
+}
+
+impl ConnectionHandle {
+    pub fn wait_until_ready(&self, timeout: std::time::Duration) -> Result<(), String> {
+        let started_at = std::time::Instant::now();
+        loop {
+            if self.ready.load(std::sync::atomic::Ordering::Acquire) {
+                return Ok(());
+            }
+            if !self.alive.load(std::sync::atomic::Ordering::Acquire) {
+                return Err("The replacement Kiro session could not start".to_string());
+            }
+            if started_at.elapsed() >= timeout {
+                return Err("Timed out while starting the replacement Kiro session".to_string());
+            }
+            std::thread::sleep(std::time::Duration::from_millis(10));
+        }
+    }
 }
 
 // ── Global ACP state ───────────────────────────────────────────────────
@@ -159,6 +203,8 @@ pub struct CreateTaskParams {
     /// Falls back to project pref → global `defaultModel` → CLI default
     /// when not provided.
     pub model_id: Option<String>,
+    /// Optional reasoning effort applied when the ACP subprocess starts.
+    pub effort: Option<ReasoningEffort>,
     pub attachments: Option<Vec<AttachmentData>>,
     /// When provided, the backend reuses this id and seeds the task with the
     /// supplied historical messages instead of generating a new uuid. Used for
