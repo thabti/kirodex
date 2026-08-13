@@ -1,5 +1,15 @@
 # Changelog
 
+## [v0.66.0] - 2026-08-13
+
+### Features
+
+- add web mode, reasoning controls, and compact desktop UI (#32) ([`4196b72`](https://github.com/thabti/kirodex/commit/4196b72eedb2446e3bbb3477b304ae6f72be176f))
+
+### Bug fixes
+
+- cap unbounded state growth causing macOS unresponsiveness ([`8bd0c53`](https://github.com/thabti/kirodex/commit/8bd0c53dce069ef8ba7f2b33077a31b19f0d7ce6))
+
 ## [v0.65.1] - 2026-06-02
 
 ### Bug fixes

@@ -1,3 +1,11 @@
+## 2026-08-13 15:38 GST (Dubai)
+
+### Release: Prepared v0.66.0 across every package surface
+
+Prepared the feature-sized v0.66.0 release, corrected the version bump so a stale Rust package version is synchronized, ensured Cargo.lock is committed, and filtered automated analytics snapshots from generated release notes. Aligned the release inputs so GitHub Actions can build, sign, and publish every platform artifact from the tag.
+
+**Modified:** `package.json`, `src-tauri/Cargo.toml`, `src-tauri/Cargo.lock`, `src-tauri/tauri.conf.json`, `CHANGELOG.md`, `scripts/bump-version.sh`, `scripts/release.sh`, `scripts/generate-notes.sh`, `activity.md`
+
 ## 2026-08-13 15:27 GST (Dubai)
 
 ### Loading states: Removed the warning-style surface

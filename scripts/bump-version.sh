@@ -26,23 +26,38 @@ esac
 NEW="$MAJOR.$MINOR.$PATCH"
 
 if [ "$NEW" = "$CURRENT" ]; then
-  echo "Already at $CURRENT"
-  exit 0
+  echo "Synchronizing version files at $CURRENT"
+else
+  echo "Bumping $CURRENT → $NEW"
 fi
 
-echo "Bumping $CURRENT → $NEW"
+replace_in_file() {
+  local expression="$1"
+  local file="$2"
+  sed -i.bak "$expression" "$file"
+  rm -f "${file}.bak"
+}
 
 # 1. package.json
-sed -i '' "s/\"version\": \"$CURRENT\"/\"version\": \"$NEW\"/" package.json
+replace_in_file "s/\"version\": \"$CURRENT\"/\"version\": \"$NEW\"/" package.json
 
-# 2. src-tauri/Cargo.toml (only the first version line)
-sed -i '' "0,/^version = \"$CURRENT\"/s//version = \"$NEW\"/" src-tauri/Cargo.toml
+# 2. src-tauri/Cargo.toml (the only line-starting version is the package version)
+replace_in_file 's/^version = "[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*"/version = "'"$NEW"'"/' src-tauri/Cargo.toml
 
 # 3. src-tauri/tauri.conf.json
-sed -i '' "s/\"version\": \"$CURRENT\"/\"version\": \"$NEW\"/" src-tauri/tauri.conf.json
+replace_in_file "s/\"version\": \"$CURRENT\"/\"version\": \"$NEW\"/" src-tauri/tauri.conf.json
 
 # 4. Update Cargo.lock
 (cd src-tauri && cargo update -p kirodex 2>/dev/null || true)
+
+PACKAGE_VERSION=$(grep '"version"' package.json | head -1 | sed 's/.*"\([0-9]*\.[0-9]*\.[0-9]*\)".*/\1/')
+CARGO_VERSION=$(sed -n 's/^version = "\([0-9]*\.[0-9]*\.[0-9]*\)"/\1/p' src-tauri/Cargo.toml | head -1)
+TAURI_VERSION=$(grep '"version"' src-tauri/tauri.conf.json | head -1 | sed 's/.*"\([0-9]*\.[0-9]*\.[0-9]*\)".*/\1/')
+
+if [ "$PACKAGE_VERSION" != "$NEW" ] || [ "$CARGO_VERSION" != "$NEW" ] || [ "$TAURI_VERSION" != "$NEW" ]; then
+  echo "Version synchronization failed: package=$PACKAGE_VERSION cargo=$CARGO_VERSION tauri=$TAURI_VERSION" >&2
+  exit 1
+fi
 
 echo ""
 echo "Updated:"

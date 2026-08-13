@@ -37,6 +37,7 @@ pr_author_for_commit() {
 # Collect commit hash + subject, skip release commits and CI SKIP
 COMMITS=$(git log "${FROM}..${TO}" --pretty=format:"%H %s" \
   | grep -v "chore: release" \
+  | grep -v "chore(analytics): update downloads.json" \
   | grep -v "\[CI SKIP\]" \
   | grep -v "^\s*$" || true)
 

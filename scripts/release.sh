@@ -55,7 +55,7 @@ fi
 echo "   Updated CHANGELOG.md"
 
 # 6. Commit
-git add package.json src-tauri/Cargo.toml src-tauri/tauri.conf.json CHANGELOG.md
+git add package.json src-tauri/Cargo.toml src-tauri/Cargo.lock src-tauri/tauri.conf.json CHANGELOG.md
 git commit -m "chore: release $TAG
 
 $CO_AUTHOR"

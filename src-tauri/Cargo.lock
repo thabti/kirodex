@@ -2657,7 +2657,7 @@ dependencies = [
 
 [[package]]
 name = "kirodex"
-version = "0.23.0"
+version = "0.66.0"
 dependencies = [
  "agent-client-protocol",
  "async-trait",
