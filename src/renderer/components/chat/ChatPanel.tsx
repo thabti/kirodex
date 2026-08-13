@@ -127,12 +127,15 @@ async function sendMessageDirect(targetTaskId: string, msg: string, attachments?
     const effectiveModeId = modeId && modeId !== 'kiro_default' ? modeId : undefined
     const taskModelId = taskState.taskModels[targetTaskId]
     const modelId = resolveModelId({ taskModelId, projectPrefs, settings, currentModelId })
+    const effort = taskState.taskEfforts[targetTaskId] ?? task.reasoningEffort
     const created = await ipc.createTask({
       name: task.name,
       workspace: task.workspace,
       prompt: msg,
       autoApprove,
       modeId: effectiveModeId,
+      modelId,
+      effort,
       attachments,
       ...(isResumed
         ? {
@@ -163,6 +166,9 @@ async function sendMessageDirect(targetTaskId: string, msg: string, attachments?
     const resolvedMode = taskState.taskModes[targetTaskId] ?? currentModeId
     if (resolvedMode && resolvedMode !== 'kiro_default') {
       useTaskStore.getState().setTaskMode(created.id, resolvedMode)
+    }
+    if (effort) {
+      useTaskStore.getState().setTaskEffort(created.id, effort)
     }
     // Re-key the dispatch snapshot from the draft id to the backend-assigned
     // id atomically so a concurrent `turn_end` event can't observe the

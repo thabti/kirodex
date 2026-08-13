@@ -55,9 +55,11 @@ interface UseChatInputOptions {
 export function useChatInput({ disabled, isRunning, isActive, taskId: taskIdProp, workspace, initialValue, initialAttachments, initialFolderPaths, initialPastedChunks, initialMentionedFiles, onSendMessage, onPause, onDraftChange, onAttachmentsChange, onFolderPathsChange, onPastedChunksChange, onMentionedFilesChange }: UseChatInputOptions) {
   const [value, setValue] = useState(initialValue ?? '')
   const [slashIndex, setSlashIndex] = useState(0)
+  const [isEffortPickerOpen, setIsEffortPickerOpen] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const backendCommands = useSettingsStore((s) => s.availableCommands)
-  const { panel, dismissPanel, execute, executeFullInput } = useSlashAction()
+  const handleOpenEffortPicker = useCallback(() => setIsEffortPickerOpen(true), [])
+  const { panel, dismissPanel, execute, executeFullInput } = useSlashAction(taskIdProp, handleOpenEffortPicker)
 
   const containerRef = useRef<HTMLDivElement | null>(null)
   const attachmentsBag = useAttachments(initialAttachments, initialFolderPaths, isActive, containerRef)
@@ -222,6 +224,7 @@ export function useChatInput({ disabled, isRunning, isActive, taskId: taskIdProp
       { name: 'settings', description: 'Open application settings' },
       { name: 'clear', description: 'Clear the current conversation' },
       { name: 'model', description: 'Switch the active AI model' },
+      { name: 'effort', description: 'Set reasoning effort for this conversation' },
       { name: 'agent', description: 'Switch between agents or list available ones' },
       { name: 'plan', description: 'Toggle plan mode on or off' },
       { name: 'upload', description: 'Upload images or files' },
@@ -316,6 +319,20 @@ export function useChatInput({ disabled, isRunning, isActive, taskId: taskIdProp
     if ((!trimmed && !hasAttachments) || disabled) return
     dismissPanel()
     let message = expandChunks(trimmed)
+    // /effort is a Kiro CLI session setting, never prompt text.
+    if (/^\/effort\b/i.test(message)) {
+      const handled = executeFullInput(message)
+      if (handled) {
+        setValue('')
+        setSlashIndex(0)
+        setPastedChunks([])
+        mentionBag.clearMentions()
+        attachmentsBag.clearAttachments()
+        if (textareaRef.current) textareaRef.current.style.height = 'auto'
+        textareaRef.current?.focus()
+        return
+      }
+    }
     // Intercept /btw and /tangent commands before sending
     if (/^\/(?:btw|tangent)\b/i.test(message)) {
       const handled = executeFullInput(message)
@@ -646,6 +663,8 @@ export function useChatInput({ disabled, isRunning, isActive, taskId: taskIdProp
     showPicker,
     panel,
     dismissPanel,
+    isEffortPickerOpen,
+    setIsEffortPickerOpen,
     handleSelectCommand,
     // Inline /model and /agent quick-swap picker
     inlineCommand,

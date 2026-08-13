@@ -11,6 +11,7 @@ Unknown commands return `handled: false` and are forwarded to ACP as regular mes
 | /tangent | Alias for /btw | — |
 | /clear | Clear all messages in the current thread | Yes |
 | /model | Open model picker panel | Yes |
+| /effort [low\|medium\|high\|xhigh\|max] | Set reasoning depth for subsequent messages in this thread | No (restarts the thread's ACP session) |
 | /agent | Open agent picker panel | Yes |
 | /settings | Open settings panel | Yes |
 | /upload | Trigger file upload dialog | Yes |
@@ -32,6 +33,16 @@ Unknown commands return `handled: false` and are forwarded to ACP as regular mes
 `/btw` (tangent mode) creates a conversation checkpoint, sends the question to the agent, and displays the response in a floating overlay. Press Escape to dismiss (discards the Q&A from history) or click Keep to preserve it. `/tangent` is an alias. The agent has full context visibility but the exchange is ephemeral by default.
 
 `/plan` is special: it switches the mode optimistically on the client, then syncs with the backend via `ipc.setMode()` and `ipc.sendMessage()`. This means it works even before ACP connects.
+
+`/effort` is handled locally and is never sent to the model as prompt text. Use `/effort` to open the reasoning-effort picker in the chat toolbar, or set a level directly, such as `/effort high`. The selection applies to subsequent messages, is stored per thread, and is reapplied after reconnection or app restart.
+
+- `low`: quick checks and straightforward edits
+- `medium`: balanced depth for everyday work
+- `high`: more analysis for complex tasks
+- `xhigh`: extended analysis for difficult problems
+- `max`: deepest analysis for the hardest tasks
+
+Higher levels can take longer. Kiro CLI 2.9 does not expose ACP session configuration options, so Kirodex recreates the idle thread's ACP process with `kiro-cli acp --effort <level>` and replays conversation context on the next prompt. Pause or finish the current turn before changing effort.
 
 `/close` and `/exit` archive the thread instead of deleting it. The conversation is preserved and accessible in a read-only view.
 

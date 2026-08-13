@@ -99,7 +99,8 @@ chmod +x Kirodex_*.AppImage && ./Kirodex_*.AppImage
 - Pinned threads — pin important threads to the top of the sidebar for quick access
 - Light and dark themes — full light mode support with proper contrast across all components including diffs, analytics, and git panels
 - Empty thread splash screen with clickable slash commands and `@` mentions to get started fast
-- Slash commands (`/clear`, `/close`, `/model`, `/agent`, `/plan`, `/chat`, `/data`, `/branch`, `/worktree`, `/fork`, `/btw`, `/tangent`, `/goal`) with fuzzy search across all pickers
+- Slash commands (`/clear`, `/close`, `/model`, `/effort`, `/agent`, `/plan`, `/chat`, `/data`, `/branch`, `/worktree`, `/fork`, `/btw`, `/tangent`, `/goal`) with fuzzy search across all pickers
+- Per-thread reasoning effort — choose `low`, `medium`, `high`, `xhigh`, or `max` from the toolbar or with `/effort`; the selected level is reapplied across reconnects and app restarts
 - `/btw` side questions — ask a quick question in a floating overlay without polluting conversation history; `/tangent` is an alias. Press Escape to discard or Keep to preserve the exchange
 - `/fork` — fork the current thread into a new conversation, preserving context
 - `/goal` — autonomous agent loop: give the agent a durable objective and walk away. It keeps working through plan → implement → verify cycles with self-correction until done, budget-limited, or paused. Inspired by Codex CLI's goal mode and the Ralph Loop pattern.

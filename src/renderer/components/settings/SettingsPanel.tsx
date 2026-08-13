@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { getVersion } from '@tauri-apps/api/app'
 import { IconX, IconArrowLeft, IconBrandGithub, IconSearch, IconRotate, IconCircleFilled, IconAlertTriangle } from '@tabler/icons-react'
 import { useTaskStore } from '@/stores/taskStore'
 import { useSettingsStore } from '@/stores/settingsStore'
@@ -10,6 +9,7 @@ import { handleExternalLinkClick, handleExternalLinkKeyDown } from '@/lib/open-e
 import { ipc } from '@/lib/ipc'
 import type { AppSettings } from '@/types'
 import { applyTheme, persistTheme } from '@/lib/theme'
+import { getRuntimeVersion } from '@/lib/web-rpc'
 import { AboutDialog } from './AboutDialog'
 import { NAV, NAV_GROUP_LABELS, SEARCHABLE_SETTINGS, type Section, type NavGroup } from './settings-shared'
 import { AccountSection } from './account-section'
@@ -48,7 +48,7 @@ export const SettingsPanel = () => {
 
   const hasDirtyState = useMemo(() => isDirty(draft, settings), [draft, settings])
 
-  useEffect(() => { getVersion().then(setAppVersion).catch(() => {}) }, [])
+  useEffect(() => { getRuntimeVersion().then(setAppVersion).catch(() => {}) }, [])
   useEffect(() => { if (open && !kiroAuthChecked) checkAuth() }, [open, kiroAuthChecked, checkAuth])
   useEffect(() => { setDraft(settings) }, [settings])
 
@@ -145,12 +145,12 @@ export const SettingsPanel = () => {
     <div data-testid="settings-panel" className="fixed inset-0 z-50 flex animate-in fade-in-0 duration-150">
       <div className="absolute inset-0 bg-background/95 backdrop-blur-xl" />
 
-      <div className="relative z-10 flex w-full">
+      <div className="relative z-10 flex w-full min-h-0 flex-col md:flex-row">
         {/* Sidebar */}
-        <nav data-testid="settings-nav" className="flex w-56 shrink-0 flex-col border-r border-border bg-sidebar px-2 pt-12 pb-3">
-          <div className="mb-4 px-2">
+        <nav data-testid="settings-nav" className="flex max-h-[42dvh] w-full shrink-0 flex-col border-b border-border bg-sidebar px-2 pb-2 pt-3 md:max-h-none md:w-56 md:border-b-0 md:border-r md:pb-3 md:pt-12">
+          <div className="mb-2 px-2 md:mb-4">
             <h2 className="text-[15px] font-semibold text-foreground">Settings</h2>
-            <p className="mt-0.5 text-[12px] text-muted-foreground">Configure Kirodex</p>
+            <p className="mt-0.5 hidden text-[12px] text-muted-foreground sm:block">Configure Kirodex</p>
           </div>
 
           {/* Search */}
@@ -190,7 +190,7 @@ export const SettingsPanel = () => {
             <div className="flex flex-1 flex-col gap-0.5 overflow-y-auto" role="tablist" aria-label="Settings sections">
               {navGroups.map(({ group, items }, groupIdx) => (
                 <div key={group} className={cn(groupIdx > 0 && 'mt-2.5')}>
-                  <p className="mb-1 px-2 text-[12px] font-medium uppercase tracking-wider text-muted-foreground">
+                  <p className="mb-1 px-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground md:text-[12px]">
                     {NAV_GROUP_LABELS[group]}
                   </p>
                   {items.map((item) => (
@@ -200,7 +200,7 @@ export const SettingsPanel = () => {
                       aria-selected={section === item.id}
                       onClick={() => setSection(item.id)}
                       className={cn(
-                        'flex w-full h-8 items-center gap-2 rounded-lg px-2 text-left transition-colors',
+                        'flex h-9 w-full items-center gap-2 rounded-lg px-2 text-left transition-colors md:h-8',
                         section === item.id
                           ? 'bg-accent/85 dark:bg-accent/55 text-foreground font-medium'
                           : 'text-muted-foreground hover:bg-accent hover:text-foreground',
@@ -215,7 +215,7 @@ export const SettingsPanel = () => {
             </div>
           )}
 
-          <div className="mt-auto px-2 pt-3 border-t border-border space-y-1">
+          <div className="mt-2 space-y-1 border-t border-border px-2 pt-2 md:mt-auto md:pt-3">
             <button
               onClick={handleAttemptClose}
               className="flex w-full h-8 items-center gap-2 rounded-lg px-2 text-[14px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
@@ -235,19 +235,19 @@ export const SettingsPanel = () => {
         </nav>
 
         {/* Main content */}
-        <div className="flex flex-1 flex-col min-h-0">
-          <div className="flex h-14 shrink-0 items-center justify-between border-b border-border/60 px-6">
+        <div className="flex min-h-0 flex-1 flex-col">
+          <div className="flex min-h-14 shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border/60 px-3 py-2 sm:px-6">
             <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
               <span>Settings</span>
               <span className="text-muted-foreground/40">/</span>
               <span className="text-foreground/80 font-medium">{searchResults !== null ? 'Search' : NAV.find((n) => n.id === section)?.label}</span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex min-w-0 items-center gap-1.5 overflow-x-auto">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
                     onClick={handleRestoreDefaults}
-                    className="flex items-center gap-1.5 rounded-lg border border-border/50 px-3 py-1.5 text-[12px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                    className="flex items-center gap-1.5 rounded-lg border border-border/50 px-2.5 py-1.5 text-[12px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                     aria-label="Restore default settings"
                   >
                     <IconRotate className="size-3.5" />
@@ -256,12 +256,12 @@ export const SettingsPanel = () => {
                 </TooltipTrigger>
                 <TooltipContent side="bottom">Restore all settings to defaults</TooltipContent>
               </Tooltip>
-              <button onClick={handleAttemptClose} className="rounded-lg border border-border/50 px-3 py-1.5 text-[12px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">Cancel</button>
+              <button onClick={handleAttemptClose} className="hidden rounded-lg border border-border/50 px-3 py-1.5 text-[12px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground sm:inline-flex">Cancel</button>
               <button
                 onClick={handleSave}
                 data-testid="settings-save-button"
                 className={cn(
-                  'relative rounded-lg px-4 py-1.5 text-[12px] font-medium transition-colors',
+                  'relative rounded-lg px-3 py-1.5 text-[12px] font-medium transition-colors sm:px-4',
                   hasDirtyState
                     ? 'bg-primary text-primary-foreground hover:bg-primary/90'
                     : 'bg-primary/60 text-primary-foreground/70 cursor-default',
@@ -283,7 +283,7 @@ export const SettingsPanel = () => {
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-8 py-6">
+          <div className="flex-1 overflow-y-auto px-3 py-4 sm:px-8 sm:py-6">
             <div className="mx-auto max-w-4xl space-y-5">
               {searchResults !== null ? (
                 searchResults.length === 0 ? (
@@ -329,12 +329,12 @@ export const SettingsPanel = () => {
 
           {/* Sticky save bar */}
           {hasDirtyState && (
-            <div className="shrink-0 border-t border-border/60 bg-card/95 backdrop-blur-sm px-6 py-3 flex items-center justify-between animate-in slide-in-from-bottom-2 duration-200">
+            <div className="flex shrink-0 flex-col gap-2 border-t border-border/60 bg-card/95 px-3 py-3 backdrop-blur-sm animate-in slide-in-from-bottom-2 duration-200 sm:flex-row sm:items-center sm:justify-between sm:px-6">
               <p className="flex items-center gap-2 text-[12px] text-muted-foreground">
                 <IconCircleFilled className="size-2 text-amber-400" />
                 You have unsaved changes
               </p>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-end gap-2">
                 <button
                   onClick={() => setDraft(settings)}
                   className="rounded-lg border border-border/50 px-3 py-1.5 text-[12px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"

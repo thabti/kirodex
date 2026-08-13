@@ -94,6 +94,7 @@ export interface TaskMessage {
 // ── Task ──────────────────────────────────────────────────────────
 
 export type CompactionStatus = 'idle' | 'compacting' | 'completed' | 'failed'
+export type ReasoningEffort = 'low' | 'medium' | 'high' | 'xhigh' | 'max'
 
 export interface AgentTask {
   id: string
@@ -123,6 +124,8 @@ export interface AgentTask {
   userPaused?: boolean
   /** Task ID of the parent thread this was forked from */
   parentTaskId?: string
+  /** Reasoning effort used when starting this thread's Kiro CLI ACP session */
+  reasoningEffort?: ReasoningEffort
   /** True for threads restored from persisted history. The thread renders
    *  immediately but its kiro-cli ACP connection has been torn down — the
    *  next send spawns a fresh subprocess (stateless resumption)

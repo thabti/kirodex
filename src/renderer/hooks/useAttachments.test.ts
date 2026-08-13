@@ -26,8 +26,18 @@ vi.mock('@/components/chat/attachment-utils', () => ({
   processNativePath: vi.fn(),
 }))
 
+const waitForDragDropListener = async () => {
+  await vi.waitFor(() => {
+    expect(dragDropCallback).not.toBeNull()
+  })
+}
+
 describe('useAttachments in-app drag via Tauri handler', () => {
   beforeEach(() => {
+    Object.defineProperty(window, '__TAURI_INTERNALS__', {
+      value: {},
+      configurable: true,
+    })
     vi.useFakeTimers()
     dragDropCallback = null
     setInAppDragData(null)
@@ -51,6 +61,7 @@ describe('useAttachments in-app drag via Tauri handler', () => {
     }
 
     const { result } = renderHook(() => useAttachments(undefined, undefined, true, containerRef))
+    await waitForDragDropListener()
 
     setInAppDragActive(true)
     setInAppDragData({ type: 'file', data: file })
@@ -67,6 +78,7 @@ describe('useAttachments in-app drag via Tauri handler', () => {
     const containerRef = { current: document.createElement('div') }
 
     const { result } = renderHook(() => useAttachments(undefined, undefined, true, containerRef))
+    await waitForDragDropListener()
 
     setInAppDragActive(true)
     setInAppDragData({ type: 'folder', path: '/tmp/my-folder' })
@@ -90,6 +102,7 @@ describe('useAttachments in-app drag via Tauri handler', () => {
     }
 
     const { result } = renderHook(() => useAttachments(undefined, undefined, true, containerRef))
+    await waitForDragDropListener()
 
     setInAppDragActive(true)
     setInAppDragData({ type: 'file', data: file })
@@ -119,6 +132,7 @@ describe('useAttachments in-app drag via Tauri handler', () => {
     }
 
     const { result } = renderHook(() => useAttachments(undefined, undefined, true, containerRef))
+    await waitForDragDropListener()
 
     setInAppDragActive(true)
     setInAppDragData({ type: 'file', data: file })

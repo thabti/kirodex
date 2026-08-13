@@ -1,4 +1,4 @@
-import type { AgentTask, ActivityEntry, ToolCall, ToolCallSplit, PlanStep, SoftDeletedThread, CompactionStatus, Attachment, ProjectFile, IpcAttachment } from '@/types'
+import type { AgentTask, ActivityEntry, ToolCall, ToolCallSplit, PlanStep, SoftDeletedThread, CompactionStatus, Attachment, ProjectFile, IpcAttachment, ReasoningEffort } from '@/types'
 import type { PastedChunk } from '@/hooks/useChatInput'
 import type { ArchivedThreadMeta } from '@/lib/history-store'
 import type { LocalDispatchSnapshot } from '@/lib/dispatch-snapshot'
@@ -96,6 +96,8 @@ export interface TaskStore {
   taskModes: Record<string, string>
   /** Per-thread model ID so switching model in one thread doesn't affect others */
   taskModels: Record<string, string>
+  /** Per-thread reasoning effort applied to the Kiro CLI ACP session */
+  taskEfforts: Record<string, ReasoningEffort>
   /** Per-thread kiro CLI session ID (from ACP new_session) for debugging */
   sessionIds: Record<string, string>
   /** Whether a fork operation is in progress */
@@ -189,6 +191,7 @@ export interface TaskStore {
   consumeTerminalRequest: (taskId: string, requestId: number) => void
   setTaskMode: (taskId: string, modeId: string) => void
   setTaskModel: (taskId: string, modelId: string) => void
+  setTaskEffort: (taskId: string, effort: ReasoningEffort) => void
   loadTasks: () => Promise<void>
   /** Inflate an archived thread from disk into `tasks` so its messages can be
    *  rendered. No-op if already hydrated. Returns true on success. */

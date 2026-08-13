@@ -304,7 +304,7 @@ export const MessageList = memo(function MessageList({
                   virtualRow.index === timelineRows.length - 1 && 'pb-6 sm:pb-8',
                 )}
               >
-                <div className="mx-auto w-full min-w-0 max-w-3xl px-5 sm:px-8 lg:max-w-4xl xl:max-w-5xl">
+                <div className="mx-auto w-full min-w-0 max-w-3xl px-3 sm:px-8 lg:max-w-4xl xl:max-w-5xl">
                   <TimelineRowRenderer row={row} />
                 </div>
               </div>
@@ -318,7 +318,7 @@ export const MessageList = memo(function MessageList({
           type="button"
           onClick={scrollToBottom}
           data-testid="scroll-to-bottom-button"
-          className="absolute bottom-6 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-2 text-[13px] text-muted-foreground shadow-lg transition-colors opacity-50 hover:opacity-100 hover:border-primary hover:text-foreground focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring/60"
+          className="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-[12px] text-muted-foreground opacity-80 shadow-lg transition-colors hover:border-primary hover:text-foreground hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring/60 sm:bottom-6 sm:px-3.5 sm:py-2 sm:text-[13px]"
         >
           <IconArrowDown className="size-3" />
           Scroll to bottom

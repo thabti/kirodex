@@ -21,12 +21,43 @@ export interface SidebarTask {
   /** Timestamp of the last user message (for "Last interaction" sort) */
   readonly lastUserMessageAt: string
   readonly status: string
+  readonly preview: string
   readonly isArchived?: boolean
   readonly isDraft?: boolean
   readonly worktreePath?: string
   readonly originalWorkspace?: string
   /** True when the last assistant message has unanswered questions */
   readonly hasPendingQuestion?: boolean
+}
+
+const MAX_PREVIEW_LENGTH = 120
+const APP_MARKUP_PATTERN = /<\/?(?:image|kirodex_[a-z_-]+|task-report)\b[^>]*>/gi
+
+const toPreviewText = (content: string): string => {
+  const plainText = content
+    .replace(APP_MARKUP_PATTERN, ' ')
+    .replace(/```(?:\w+)?/g, ' ')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+    .replace(/^\s*(?:#{1,6}|>|[-*+]|\d+\.)\s+/gm, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  if (plainText.length <= MAX_PREVIEW_LENGTH) return plainText
+  return `${plainText.slice(0, MAX_PREVIEW_LENGTH - 1).trimEnd()}…`
+}
+
+const getTaskPreview = (messages: readonly { role: string; content: string }[], status: string): string => {
+  for (let index = messages.length - 1; index >= 0; index--) {
+    const message = messages[index]
+    if (message.role === 'system' || !message.content.trim()) continue
+    const preview = toPreviewText(message.content)
+    if (preview) return preview
+  }
+  if (status === 'running') return 'Kiro is working…'
+  if (status === 'error') return 'Needs attention'
+  return 'No messages yet'
 }
 
 export type SortKey = 'created' | 'recent' | 'oldest' | 'name-asc' | 'name-desc' | 'custom' | 'interaction'
@@ -108,12 +139,13 @@ export function useSidebarTasks(sort: SortKey): SidebarData {
       }
       const pid = t.projectId ?? t.originalWorkspace ?? t.workspace
       const hasPendingQuestion = computeHasPendingQuestion(msgs)
+      const preview = getTaskPreview(msgs, t.status)
       const p = prev.get(t.id)
-      if (p && p.name === t.name && p.status === t.status && p.createdAt === t.createdAt && p.workspace === t.workspace && p.isArchived === t.isArchived && p.worktreePath === t.worktreePath && p.originalWorkspace === t.originalWorkspace && p.projectId === pid && p.lastActivityAt === lastActivityAt && p.lastUserMessageAt === lastUserMessageAt && p.hasPendingQuestion === hasPendingQuestion && !p.isDraft) {
+      if (p && p.name === t.name && p.status === t.status && p.createdAt === t.createdAt && p.workspace === t.workspace && p.isArchived === t.isArchived && p.worktreePath === t.worktreePath && p.originalWorkspace === t.originalWorkspace && p.projectId === pid && p.lastActivityAt === lastActivityAt && p.lastUserMessageAt === lastUserMessageAt && p.hasPendingQuestion === hasPendingQuestion && p.preview === preview && !p.isDraft) {
         next.set(t.id, p)
       } else {
         changed = true
-        next.set(t.id, { id: t.id, name: t.name, workspace: t.workspace, projectId: pid, createdAt: t.createdAt, lastActivityAt, lastUserMessageAt, status: t.status, isArchived: t.isArchived, worktreePath: t.worktreePath, originalWorkspace: t.originalWorkspace, hasPendingQuestion })
+        next.set(t.id, { id: t.id, name: t.name, workspace: t.workspace, projectId: pid, createdAt: t.createdAt, lastActivityAt, lastUserMessageAt, status: t.status, preview, isArchived: t.isArchived, worktreePath: t.worktreePath, originalWorkspace: t.originalWorkspace, hasPendingQuestion })
       }
     }
     // 2. Archived metadata — read-only, never have pending questions, never inflated
@@ -135,6 +167,7 @@ export function useSidebarTasks(sort: SortKey): SidebarData {
           lastActivityAt: m.lastActivityAt,
           lastUserMessageAt: m.lastActivityAt, // Best approximation for archived threads
           status: 'completed',
+          preview: 'Completed conversation',
           isArchived: true,
           worktreePath: m.worktreePath,
           originalWorkspace: m.originalWorkspace,
@@ -196,6 +229,7 @@ export function useSidebarTasks(sort: SortKey): SidebarData {
         lastActivityAt: new Date(0).toISOString(),
         lastUserMessageAt: new Date(0).toISOString(),
         status: 'draft',
+        preview: 'Draft in progress',
         isDraft: true,
       }
       const existing = grouped.get(pid) ?? []

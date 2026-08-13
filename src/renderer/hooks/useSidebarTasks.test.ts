@@ -180,6 +180,60 @@ describe('useSidebarTasks projectId grouping', () => {
     expect(result.current.projects[0].tasks[0].projectId).toBe('/project')
   })
 
+  it('derives a compact preview from the latest non-system message', () => {
+    useTaskStore.setState({
+      tasks: {
+        't1': makeTask({
+          id: 't1',
+          workspace: '/project',
+          projectId: '/project',
+          messages: [
+            { role: 'system', content: 'Internal setup', timestamp: '2026-01-01T00:00:00Z' },
+            { role: 'assistant', content: 'Finished   the first pass.\nReady to review.', timestamp: '2026-01-01T00:01:00Z' },
+          ],
+        }),
+      },
+      projects: ['/project'],
+    })
+    const { result } = renderHook(() => useSidebarTasks('recent'))
+    expect(result.current.projects[0].tasks[0].preview).toBe('Finished the first pass. Ready to review.')
+  })
+
+  it('preserves code comparisons while removing app markup from previews', () => {
+    useTaskStore.setState({
+      tasks: {
+        't1': makeTask({
+          id: 't1',
+          projectId: '/project',
+          messages: [{
+            role: 'user',
+            content: '<kirodex_tangent>Keep `a < b && c > d` intact</kirodex_tangent>',
+            timestamp: '2026-01-01T00:01:00Z',
+          }],
+        }),
+      },
+      projects: ['/project'],
+    })
+    const { result } = renderHook(() => useSidebarTasks('recent'))
+    expect(result.current.projects[0].tasks[0].preview).toBe('Keep a < b && c > d intact')
+  })
+
+  it('adds an ellipsis when a preview exceeds the limit', () => {
+    useTaskStore.setState({
+      tasks: {
+        't1': makeTask({
+          id: 't1',
+          projectId: '/project',
+          messages: [{ role: 'assistant', content: 'a'.repeat(140), timestamp: '2026-01-01T00:01:00Z' }],
+        }),
+      },
+      projects: ['/project'],
+    })
+    const { result } = renderHook(() => useSidebarTasks('recent'))
+    expect(result.current.projects[0].tasks[0].preview).toHaveLength(120)
+    expect(result.current.projects[0].tasks[0].preview.endsWith('…')).toBe(true)
+  })
+
   it('groups by UUID projectId and resolves workspace for display', () => {
     const uuid = crypto.randomUUID()
     useTaskStore.setState({

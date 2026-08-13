@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, type CSSProperties } from 'react'
 import { IconX, IconFileCode, IconMaximize, IconMinimize, IconGitCommit, IconLoader2, IconSparkles } from '@tabler/icons-react'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useTaskStore } from '@/stores/taskStore'
@@ -90,13 +90,15 @@ export function CodePanel({ onClose, workspace: workspaceProp }: CodePanelProps)
 
   return (
     <div
-      className="ml-3 flex h-full min-h-0 min-w-0 border-l"
-      style={isExpanded ? { flex: '1 0 100%' } : { width }}
+      className="flex h-full min-h-0 min-w-0 w-full border-l bg-background sm:ml-3 sm:w-[var(--panel-width)]"
+      style={isExpanded
+        ? ({ flex: '1 0 100%', '--panel-width': `${width}px` } as CSSProperties)
+        : ({ '--panel-width': `${width}px` } as CSSProperties)}
     >
       {!isExpanded && (
         <div
           onMouseDown={handleResizeStart}
-          className="w-1 cursor-col-resize hover:bg-primary/20 active:bg-primary/30 shrink-0 transition-colors"
+          className="hidden w-1 shrink-0 cursor-col-resize transition-colors hover:bg-primary/20 active:bg-primary/30 sm:block"
         />
       )}
 

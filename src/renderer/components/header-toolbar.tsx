@@ -182,15 +182,17 @@ export const HeaderToolbar = memo(function HeaderToolbar({
   const hasStats = diffStats.additions > 0 || diffStats.deletions > 0
 
   return (
-    <div className="flex shrink-0 items-center gap-2">
+    <div className="flex min-w-0 shrink-0 items-center gap-1 sm:gap-2">
       <div className="flex items-center rounded-lg bg-muted/40" data-no-drag>
-        <ErrorBoundary fallback={null}>
-          <OpenInEditorGroup workspace={workspace} />
-        </ErrorBoundary>
+        <div className="hidden sm:block">
+          <ErrorBoundary fallback={null}>
+            <OpenInEditorGroup workspace={workspace} />
+          </ErrorBoundary>
+        </div>
 
         {selectedTaskId && (
           <>
-            <div className="h-5 w-px self-center bg-border" />
+            <div className="hidden h-5 w-px self-center bg-border sm:block" />
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
@@ -217,8 +219,10 @@ export const HeaderToolbar = memo(function HeaderToolbar({
         <div className="h-5 w-px self-center bg-border" />
         <FileTreeToggleButton />
 
-        <div className="h-5 w-px self-center bg-border" />
-        <SplitToggleButton />
+        <div className="hidden h-5 w-px self-center bg-border sm:block" />
+        <div className="hidden sm:block">
+          <SplitToggleButton />
+        </div>
       </div>
 
       {/* Git section — far right with accent */}
@@ -232,13 +236,13 @@ export const HeaderToolbar = memo(function HeaderToolbar({
               disabled={isInitializing}
               onClick={handleInitGit}
               className={cn(
-                "inline-flex h-7 items-center gap-1.5 rounded-lg px-2.5 text-xs transition-colors",
+                "inline-flex h-7 max-w-[112px] items-center gap-1.5 truncate rounded-lg px-2 text-[11px] transition-colors sm:max-w-none sm:px-2.5 sm:text-xs",
                 "bg-emerald-500/[0.06] hover:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
                 isInitializing && "opacity-50 cursor-not-allowed",
               )}
             >
               <IconGitBranch className="size-3" aria-hidden />
-              {isInitializing ? "Initializing…" : "Initialize Git"}
+              <span className="truncate">{isInitializing ? "Initializing…" : "Initialize Git"}</span>
             </button>
           </TooltipTrigger>
           <TooltipContent side="bottom">Initialize a git repository</TooltipContent>
@@ -246,7 +250,7 @@ export const HeaderToolbar = memo(function HeaderToolbar({
       )}
 
       {isGitRepo && (
-        <div className="flex items-center rounded-lg bg-emerald-500/[0.06]">
+        <div className="flex min-w-0 items-center rounded-lg bg-emerald-500/[0.06]">
           {hasStats && (
             <Tooltip>
               <TooltipTrigger asChild>
@@ -306,9 +310,11 @@ export const HeaderToolbar = memo(function HeaderToolbar({
             </TooltipTrigger>
             <TooltipContent side="bottom">Files changed</TooltipContent>
           </Tooltip>
-          <ErrorBoundary fallback={null}>
-            <GitActionsGroup workspace={workspace} />
-          </ErrorBoundary>
+          <div className="hidden sm:block">
+            <ErrorBoundary fallback={null}>
+              <GitActionsGroup workspace={workspace} />
+            </ErrorBoundary>
+          </div>
         </div>
       )}
     </div>

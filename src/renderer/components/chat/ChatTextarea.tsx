@@ -23,7 +23,6 @@ interface ChatTextareaProps {
   commands: SlashCommand[]
   slashIndex: number
   onSelectCommand: (cmd: SlashCommand) => void
-  onDismissSlash: () => void
   // Inline /model and /agent quick-swap picker
   showInlinePicker: boolean
   inlineCommand: { kind: InlineCommandKind; query: string } | null
@@ -64,7 +63,7 @@ export const ChatTextarea = memo(function ChatTextarea({
   placeholderText,
   textareaRef,
   hasContextRing,
-  showPicker, slashQuery, commands, slashIndex, onSelectCommand, onDismissSlash,
+  showPicker, slashQuery, commands, slashIndex, onSelectCommand,
   showInlinePicker, inlineCommand, inlineIndex, onInlineItemsChange, onInlineCommit, onInlineDismiss,
   showFilePicker, mentionTrigger, mentionIndex, mentionedFiles, workspace, onSelectFile, onDismissMention,
   panel, onDismissPanel,
@@ -90,13 +89,12 @@ export const ChatTextarea = memo(function ChatTextarea({
   }, [value, textareaRef])
 
   return (
-    <div className="relative px-3 pb-2 pt-3.5 sm:px-4 sm:pt-4" style={{ isolation: 'isolate' }}>
+    <div className="relative px-2.5 pb-2 pt-3 sm:px-4 sm:pt-4" style={{ isolation: 'isolate' }}>
       {showPicker && (
         <SlashCommandPicker
           query={slashQuery}
           commands={commands}
           onSelect={onSelectCommand}
-          onDismiss={onDismissSlash}
           activeIndex={slashIndex}
         />
       )}
@@ -169,6 +167,7 @@ export const ChatTextarea = memo(function ChatTextarea({
         ref={textareaRef}
         data-testid="chat-textarea"
         data-chat-input
+        aria-label="Message"
         value={value}
         onChange={onChange}
         onKeyDown={onKeyDown}
@@ -179,7 +178,7 @@ export const ChatTextarea = memo(function ChatTextarea({
         disabled={disabled}
         rows={1}
         className={cn(
-          'block max-h-[200px] min-h-[70px] w-full resize-none rounded-lg bg-transparent leading-[1.6] text-foreground outline-none placeholder:text-muted-foreground',
+          'block max-h-[36dvh] min-h-[56px] w-full resize-none rounded-lg bg-transparent leading-[1.55] text-foreground outline-none placeholder:text-muted-foreground sm:max-h-[200px] sm:min-h-[70px] sm:leading-[1.6]',
           hasContextRing && 'pr-8',
           disabled && 'cursor-not-allowed opacity-50',
         )}

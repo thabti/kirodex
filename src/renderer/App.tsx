@@ -7,10 +7,11 @@ import { preloadHighlighterIdle } from "@/lib/chatHighlighter";
 import { warmTerminalRuntime } from "@/components/chat/TerminalDrawer";
 import { startConnectionHealthMonitor } from "@/lib/connection-health";
 import { getReceiptBus } from "@/lib/typed-receipts";
+import { isReasoningEffort } from "@/lib/reasoning-effort";
 import { AppHeader } from "@/components/AppHeader";
 import { TaskSidebar } from "@/components/sidebar/TaskSidebar";
+import { AgentHandoffLoader } from "@/components/chat/AgentHandoffLoader";
 
-const IS_MAC = typeof navigator !== 'undefined' && navigator.userAgent.toLowerCase().includes('mac')
 const ChatPanel = lazy(() =>
   import("@/components/chat/ChatPanel").then((m) => ({ default: m.ChatPanel })),
 );
@@ -48,7 +49,7 @@ import { useSettingsStore } from "@/stores/settingsStore";
 import { useDebugStore } from "@/stores/debugStore";
 import { useDiffStore } from "@/stores/diffStore";
 import { useFileTreeStore } from "@/stores/fileTreeStore";
-import { useKiroStore, initKiroListeners } from "@/stores/kiroStore";
+import { initKiroListeners } from "@/stores/kiroStore";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useSessionTracker } from "@/hooks/useSessionTracker";
 import { useZoomLimit } from "@/hooks/useZoomLimit";
@@ -61,7 +62,7 @@ import { startAutoFlush, stopAutoFlush } from "@/lib/analytics-collector";
 import { WorktreeCleanupDialog } from "@/components/sidebar/WorktreeCleanupDialog";
 import { CloneRepoDialog } from "@/components/CloneRepoDialog";
 import { GlobalFilePreviewModal } from "@/components/GlobalFilePreviewModal";
-import { getVersion } from "@tauri-apps/api/app";
+import { getRuntimeVersion, isTauriRuntime } from "@/lib/web-rpc";
 import {
   initAnalytics,
   resetAnalytics,
@@ -338,6 +339,8 @@ export function App() {
   const [sidePanelOpen, setSidePanelOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(240);
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isCloneDialogOpen, setIsCloneDialogOpen] = useState(false);
   const [whatsNewEntry, setWhatsNewEntry] = useState<ChangelogEntry | null>(null);
 
@@ -361,6 +364,17 @@ export function App() {
   useEffect(() => {
     if (fileTreeIsOpen && !sidePanelOpen) setSidePanelOpen(true);
   }, [fileTreeIsOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    const query = window.matchMedia('(max-width: 767px)')
+    const sync = () => {
+      setIsMobileViewport(query.matches)
+      if (!query.matches) setIsMobileSidebarOpen(false)
+    }
+    sync()
+    query.addEventListener('change', sync)
+    return () => query.removeEventListener('change', sync)
+  }, [])
 
   useEffect(() => {
     useTaskStore.getState().loadTasks().then(() => {
@@ -427,6 +441,17 @@ export function App() {
               useTaskStore.setState({ taskModes: validModes })
             }
           }
+          if (ui.taskEfforts) {
+            const validEfforts: NonNullable<typeof ui.taskEfforts> = {}
+            for (const [tid, effort] of Object.entries(ui.taskEfforts)) {
+              if ((tasks[tid] || archivedMeta[tid]) && isReasoningEffort(effort)) {
+                validEfforts[tid] = effort
+              }
+            }
+            if (Object.keys(validEfforts).length > 0) {
+              useTaskStore.setState({ taskEfforts: validEfforts })
+            }
+          }
         }).catch(() => {})
       })
     });
@@ -451,16 +476,18 @@ export function App() {
       useTaskStore.getState().persistUiState()
     }, 30_000);
     // Request notification permission so end_turn alerts work
-    import("@tauri-apps/plugin-notification").then(({ isPermissionGranted, requestPermission, onAction }) => {
-      isPermissionGranted().then((granted) => {
-        if (!granted) requestPermission();
-      });
-      // Navigate to the task when user clicks a notification
-      onAction((notification) => {
-        const tid = (notification as { extra?: Record<string, unknown> }).extra?.taskId as string | undefined;
-        if (tid) navigateToNotifiedTask(tid);
+    if (isTauriRuntime()) {
+      import("@tauri-apps/plugin-notification").then(({ isPermissionGranted, requestPermission, onAction }) => {
+        isPermissionGranted().then((granted) => {
+          if (!granted) requestPermission();
+        });
+        // Navigate to the task when user clicks a notification
+        onAction((notification) => {
+          const tid = (notification as { extra?: Record<string, unknown> }).extra?.taskId as string | undefined;
+          if (tid) navigateToNotifiedTask(tid);
+        }).catch(() => {});
       }).catch(() => {});
-    }).catch(() => {});
+    }
     // Clear notification badges when the user returns to the app — if they
     // can see the window, they don't need attention indicators anymore.
     const handleWindowFocus = () => {
@@ -491,12 +518,12 @@ export function App() {
     let unlistenRecentProject: (() => void) | null = null
     let unlistenFlushBeforeQuit: (() => void) | null = null
     let unlistenCloneFromGithub: (() => void) | null = null
-    import('@tauri-apps/api/event').then(({ listen }) => {
+    if (isTauriRuntime()) import('@tauri-apps/api/event').then(({ listen }) => {
       // Rust emits this right before app.exit(0) — flush all state to disk
       listen('app://flush-before-quit', () => {
         useTaskStore.getState().persistHistory()
         import('@/lib/history-store').then((hs) => {
-          const { selectedTaskId, view, splitViews, activeSplitId, pinnedThreadIds, taskModels, taskModes } = useTaskStore.getState()
+          const { selectedTaskId, view, splitViews, activeSplitId, pinnedThreadIds, taskModels, taskModes, taskEfforts } = useTaskStore.getState()
           hs.saveUiState({
             selectedTaskId,
             view,
@@ -507,6 +534,7 @@ export function App() {
             pinnedThreadIds,
             taskModels,
             taskModes,
+            taskEfforts,
           }).catch(() => {})
           hs.flush().then(() => {
             // Ack the flush so Rust can proceed with shutdown
@@ -628,7 +656,7 @@ export function App() {
       previousVersion,
     }).then((ok) => {
       if (ok) {
-        getVersion().then((v) => writeLastVersion(v)).catch(() => {});
+        getRuntimeVersion().then((v) => writeLastVersion(v)).catch(() => {});
       }
     });
   }, [settingsLoaded, analyticsEnabled, analyticsAnonId]);
@@ -636,7 +664,7 @@ export function App() {
   // Show "What's New" dialog once after a version upgrade.
   useEffect(() => {
     if (!settingsLoaded) return;
-    getVersion().then((currentVersion) => {
+    getRuntimeVersion().then((currentVersion) => {
       const { settings, saveSettings } = useSettingsStore.getState();
       const lastSeen = settings.lastSeenChangelogVersion;
       // Fresh install — seed the version silently, don't show dialog
@@ -663,12 +691,16 @@ export function App() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "b") {
         e.preventDefault();
-        setIsSidebarCollapsed((v) => !v);
+        if (isMobileViewport) {
+          setIsMobileSidebarOpen((v) => !v);
+        } else {
+          setIsSidebarCollapsed((v) => !v);
+        }
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [isMobileViewport]);
 
   const toggleSidePanel = useCallback(() => {
     setSidePanelOpen((prev) => {
@@ -684,15 +716,30 @@ export function App() {
     useDiffStore.getState().setOpen(false)
     useFileTreeStore.getState().setOpen(false)
   }, [])
-  const toggleSidebar = useCallback(() => setIsSidebarCollapsed((v) => !v), []);
+  const toggleSidebar = useCallback(() => {
+    if (isMobileViewport) {
+      setIsMobileSidebarOpen((v) => !v)
+      return
+    }
+    setIsSidebarCollapsed((v) => !v)
+  }, [isMobileViewport]);
+  const closeMobileSidebar = useCallback(() => setIsMobileSidebarOpen(false), [])
 
   const handleWhatsNewDismiss = useCallback(() => {
     setWhatsNewEntry(null);
-    getVersion().then((v) => {
+    getRuntimeVersion().then((v) => {
       const { settings, saveSettings } = useSettingsStore.getState();
       saveSettings({ ...settings, lastSeenChangelogVersion: v }).catch(() => {});
     }).catch(() => {});
   }, []);
+
+  const mainLoadingLabel = view === 'analytics'
+    ? 'Opening analytics…'
+    : selectedTaskId
+      ? 'Opening the thread…'
+      : pendingWorkspace
+        ? 'Starting a new thread…'
+        : 'Loading Kirodex…'
 
   if (settingsLoaded && !hasOnboardedV2)
     return (
@@ -703,20 +750,52 @@ export function App() {
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div data-testid="app-container" className="flex h-full gap-3 p-3 bg-background text-foreground">
-        {/* Sidebar — full height, bleeds into top */}
+      <div data-testid="app-container" className="flex h-full bg-sidebar text-foreground">
+        {/* Sidebar — desktop column, mobile drawer */}
         <ErrorBoundary>
-          {!isSidebarCollapsed && <TaskSidebar width={sidebarWidth} onResize={setSidebarWidth} position={sidebarPosition} onCollapse={toggleSidebar} onCloneFromGitHub={() => setIsCloneDialogOpen(true)} />}
+          {!isMobileViewport && !isSidebarCollapsed && (
+            <TaskSidebar
+              width={sidebarWidth}
+              onResize={setSidebarWidth}
+              position={sidebarPosition}
+              onCollapse={toggleSidebar}
+              onCloneFromGitHub={() => setIsCloneDialogOpen(true)}
+            />
+          )}
+          {isMobileViewport && isMobileSidebarOpen && (
+            <div className="fixed inset-0 z-[180] sm:hidden">
+              <button
+                type="button"
+                aria-label="Close navigation"
+                className="absolute inset-0 bg-background/70 backdrop-blur-sm"
+                onClick={closeMobileSidebar}
+              />
+              <div className="absolute inset-y-0 left-0 w-[min(88vw,360px)] p-2">
+                <TaskSidebar
+                  width={Math.min(window.innerWidth * 0.88, 360)}
+                  onResize={setSidebarWidth}
+                  position="left"
+                  onCollapse={closeMobileSidebar}
+                  onNavigate={closeMobileSidebar}
+                  onCloneFromGitHub={() => {
+                    closeMobileSidebar()
+                    setIsCloneDialogOpen(true)
+                  }}
+                  isMobileOverlay
+                />
+              </div>
+            </div>
+          )}
         </ErrorBoundary>
 
         {/* Right column: header + content */}
-        <div className={cn("flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden", isRightSidebar && "order-first")}>
+        <div className={cn("flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-background", isRightSidebar && "order-first")}>
           {/* Top-level breadcrumb header */}
           <ErrorBoundary>
             <AppHeader
               sidePanelOpen={sidePanelOpen}
               onToggleSidePanel={toggleSidePanel}
-              isSidebarCollapsed={isSidebarCollapsed}
+              isSidebarCollapsed={isMobileViewport || isSidebarCollapsed}
               onToggleSidebar={toggleSidebar}
               sidebarPosition={sidebarPosition}
             />
@@ -730,7 +809,7 @@ export function App() {
                 className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
                 style={{ fontSize: 'var(--app-font-size, 13px)' }}
               >
-                <Suspense>
+                <Suspense fallback={<AgentHandoffLoader label={mainLoadingLabel} className="min-h-0 flex-1" />}>
                   {view === 'analytics' ? (
                     <AnalyticsDashboard />
                   ) : selectedTaskId && activeSplitId ? (
@@ -748,11 +827,13 @@ export function App() {
             {sidePanelOpen && !activeSplitId && (selectedTaskId || pendingWorkspace) && (
               <ErrorBoundary>
                 <Suspense>
-                  {fileTreeIsOpen ? (
-                    <FileTreePanel onClose={closeSidePanel} workspace={pendingWorkspace ?? undefined} />
-                  ) : (
-                    <CodePanel onClose={closeSidePanel} workspace={pendingWorkspace ?? undefined} />
-                  )}
+                  <div className={cn(isMobileViewport ? 'fixed inset-x-0 bottom-0 top-[44px] z-[160] bg-background' : 'contents')}>
+                    {fileTreeIsOpen ? (
+                      <FileTreePanel onClose={closeSidePanel} workspace={pendingWorkspace ?? undefined} />
+                    ) : (
+                      <CodePanel onClose={closeSidePanel} workspace={pendingWorkspace ?? undefined} />
+                    )}
+                  </div>
                 </Suspense>
               </ErrorBoundary>
             )}

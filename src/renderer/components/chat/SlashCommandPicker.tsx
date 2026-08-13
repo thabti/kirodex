@@ -1,4 +1,5 @@
 import { memo, useEffect, useRef } from 'react'
+import { IconBrain } from '@tabler/icons-react'
 import { cn } from '@/lib/utils'
 import { fuzzyScore } from '@/lib/fuzzy-search'
 import type { SlashCommand } from '@/stores/settingsStore'
@@ -17,6 +18,7 @@ const COMMAND_DESCRIPTIONS: Record<string, string> = {
   compact: 'Summarize conversation to free up context',
   context: 'Manage context files or view token usage',
   data: 'Open the analytics dashboard with usage stats and charts',
+  effort: 'Set reasoning effort for this conversation',
   feedback: 'Submit feedback, request features, or report issues',
   fork: 'Fork current thread into a new conversation branch',
   help: 'Get help with Kiro CLI features and commands',
@@ -76,6 +78,7 @@ const COMMAND_ICONS: Record<string, () => React.ReactNode> = {
       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" />
     </svg>
   ),
+  effort: () => <IconBrain className="size-3.5" aria-hidden />,
   feedback: () => (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
       <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
@@ -150,12 +153,11 @@ interface SlashCommandPickerProps {
   query: string
   commands: SlashCommand[]
   onSelect: (cmd: SlashCommand) => void
-  onDismiss: () => void
   activeIndex: number
 }
 
 export const SlashCommandPicker = memo(function SlashCommandPicker({
-  query, commands, onSelect, onDismiss, activeIndex,
+  query, commands, onSelect, activeIndex,
 }: SlashCommandPickerProps) {
   const listRef = useRef<HTMLUListElement>(null)
   const filtered = query

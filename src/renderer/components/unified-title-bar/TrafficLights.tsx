@@ -1,7 +1,14 @@
 import { useEffect, useState } from 'react'
-import { getCurrentWindow } from '@tauri-apps/api/window'
 import { IconX, IconMinus, IconArrowsDiagonal } from '@tabler/icons-react'
+import { isTauriRuntime } from '@/lib/web-rpc'
 import { cn } from '@/lib/utils'
+
+const withWindow = (fn: (win: ReturnType<typeof import('@tauri-apps/api/window')['getCurrentWindow']>) => void): void => {
+  if (!isTauriRuntime()) return
+  import('@tauri-apps/api/window').then(({ getCurrentWindow }) => {
+    fn(getCurrentWindow())
+  }).catch(() => {})
+}
 
 export const TrafficLights = () => {
   const [isWindowFocused, setIsWindowFocused] = useState(true)
@@ -22,7 +29,7 @@ export const TrafficLights = () => {
       <button
         type="button"
         aria-label="Close"
-        onClick={() => void getCurrentWindow().close()}
+        onClick={() => withWindow((win) => { void win.close() })}
         className="traffic-light traffic-light-close"
       >
         <span className="symbol"><IconX size={7} strokeWidth={3} color="rgba(0,0,0,0.5)" /></span>
@@ -30,7 +37,7 @@ export const TrafficLights = () => {
       <button
         type="button"
         aria-label="Minimize"
-        onClick={() => void getCurrentWindow().minimize()}
+        onClick={() => withWindow((win) => { void win.minimize() })}
         className="traffic-light traffic-light-minimize"
       >
         <span className="symbol"><IconMinus size={7} strokeWidth={3} color="rgba(0,0,0,0.5)" /></span>
@@ -38,7 +45,7 @@ export const TrafficLights = () => {
       <button
         type="button"
         aria-label="Maximize"
-        onClick={() => void getCurrentWindow().isFullscreen().then(f => getCurrentWindow().setFullscreen(!f))}
+        onClick={() => withWindow((win) => { void win.isFullscreen().then(f => win.setFullscreen(!f)) })}
         className="traffic-light traffic-light-maximize"
       >
         <span className="symbol"><IconArrowsDiagonal size={7} strokeWidth={2.5} color="rgba(0,0,0,0.5)" /></span>

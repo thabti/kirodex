@@ -49,6 +49,7 @@ export const ChatInput = memo(function ChatInput({ disabled, disabledReason, con
     value, setValue, textareaRef, containerRef, canSend,
     slashIndex, slashQuery, commands, filteredCmds, showPicker,
     panel, dismissPanel, handleSelectCommand,
+    isEffortPickerOpen, setIsEffortPickerOpen,
     inlineCommand, inlineIndex, showInlinePicker,
     handleInlineItemsChange, commitInlineCommand, dismissInlineCommand,
     showFilePicker, mentionTrigger, mentionIndex, mentionedFiles,
@@ -178,7 +179,7 @@ export const ChatInput = memo(function ChatInput({ disabled, disabledReason, con
 
   if (isCollapsed) {
     return (
-      <div data-testid="chat-input-collapsed" className="px-4 pb-2 sm:px-6 sm:pb-2.5">
+      <div data-testid="chat-input-collapsed" className="px-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] sm:px-6 sm:pb-2.5">
         <div className="mx-auto w-full min-w-0 max-w-3xl lg:max-w-4xl xl:max-w-5xl">
           <button
             type="button"
@@ -199,10 +200,10 @@ export const ChatInput = memo(function ChatInput({ disabled, disabledReason, con
   }
 
   return (
-    <div ref={containerRef} data-testid="chat-input" className="min-w-0 px-4 pt-1.5 pb-0 sm:px-6 sm:pt-2">
+    <div ref={containerRef} data-testid="chat-input" className="min-w-0 px-2 pb-[env(safe-area-inset-bottom)] pt-1.5 sm:px-6 sm:pb-0 sm:pt-2">
       <div className="mx-auto w-full min-w-0 max-w-3xl lg:max-w-4xl xl:max-w-5xl">
         <div className={cn(
-          'relative min-w-0 rounded-[20px] border-2 bg-card transition-colors duration-200',
+          'relative min-w-0 rounded-2xl border bg-card transition-colors duration-200 sm:rounded-[20px] sm:border-2',
           borderIdle, borderFocus,
           isDragOver && 'border-primary/50',
         )}>
@@ -223,7 +224,6 @@ export const ChatInput = memo(function ChatInput({ disabled, disabledReason, con
             commands={commands}
             slashIndex={slashIndex}
             onSelectCommand={handleSelectCommand}
-            onDismissSlash={() => setValue('')}
             showInlinePicker={showInlinePicker}
             inlineCommand={inlineCommand}
             inlineIndex={inlineIndex}
@@ -260,6 +260,8 @@ export const ChatInput = memo(function ChatInput({ disabled, disabledReason, con
             workspace={workspace ?? null}
             isWorktree={isWorktree}
             isMetaHeld={isMetaHeld}
+            isEffortPickerOpen={isEffortPickerOpen}
+            onEffortPickerOpenChange={setIsEffortPickerOpen}
             fileInputRef={fileInputRef}
             onFilePickerClick={handleFilePickerClick}
             onFileInputChange={handleFileInputChange}

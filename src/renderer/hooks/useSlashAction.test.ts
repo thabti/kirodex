@@ -1,9 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { renderHook, act } from '@testing-library/react'
+import { renderHook, act, waitFor } from '@testing-library/react'
 
 vi.mock('@/lib/ipc', () => ({
   ipc: {
     setMode: vi.fn().mockResolvedValue(undefined),
+    setEffort: vi.fn().mockResolvedValue(undefined),
+    webStoreSet: vi.fn().mockResolvedValue(undefined),
     sendMessage: vi.fn().mockResolvedValue(undefined),
     createTask: vi.fn().mockResolvedValue({ id: 'task-1', name: 'Test', workspace: '/ws', status: 'running', createdAt: '', messages: [] }),
   },
@@ -53,6 +55,9 @@ beforeEach(() => {
     connected: true,
     terminalOpenTasks: new Set(),
     projectNames: {},
+    taskEfforts: {},
+    taskModes: {},
+    taskModels: {},
     btwCheckpoint: null,
   })
 })
@@ -246,6 +251,76 @@ describe('useSlashAction /worktree', () => {
     let handled: boolean
     act(() => { handled = result.current.execute('/worktree') })
     expect(handled!).toBe(true)
+  })
+})
+
+describe('useSlashAction /effort', () => {
+  it('opens the effort picker for the bare command', () => {
+    const handleOpenEffortPicker = vi.fn()
+    const { result } = renderHook(() => useSlashAction(undefined, handleOpenEffortPicker))
+    let handled: boolean
+    act(() => { handled = result.current.execute('/effort') })
+    expect(handled!).toBe(true)
+    expect(result.current.panel).toBeNull()
+    expect(handleOpenEffortPicker).toHaveBeenCalledOnce()
+  })
+
+  it('opens the toolbar picker when the bare command is submitted', () => {
+    const handleOpenEffortPicker = vi.fn()
+    const { result } = renderHook(() => useSlashAction('task-1', handleOpenEffortPicker))
+    let handled: boolean
+    act(() => { handled = result.current.executeFullInput('/effort') })
+    expect(handled!).toBe(true)
+    expect(handleOpenEffortPicker).toHaveBeenCalledOnce()
+    expect(ipc.setEffort).not.toHaveBeenCalled()
+  })
+
+  it.each(['low', 'medium', 'high', 'xhigh', 'max'] as const)(
+    'applies %s without sending prompt text',
+    async (effort) => {
+      const { result } = renderHook(() => useSlashAction())
+      let handled: boolean
+      act(() => { handled = result.current.executeFullInput(`/effort ${effort}`) })
+
+      expect(handled!).toBe(true)
+      await waitFor(() => {
+        expect(useTaskStore.getState().taskEfforts['task-1']).toBe(effort)
+      })
+      expect(ipc.setEffort).toHaveBeenCalledWith(
+        'task-1',
+        effort,
+        undefined,
+        undefined,
+        [],
+      )
+      expect(ipc.sendMessage).not.toHaveBeenCalled()
+      expect(useTaskStore.getState().tasks['task-1'].messages.at(-1)?.content)
+        .toContain('Reasoning effort set to')
+    },
+  )
+
+  it('rejects an unsupported level locally', () => {
+    const { result } = renderHook(() => useSlashAction())
+    let handled: boolean
+    act(() => { handled = result.current.executeFullInput('/effort ultra') })
+
+    expect(handled!).toBe(true)
+    expect(ipc.setEffort).not.toHaveBeenCalled()
+    expect(ipc.sendMessage).not.toHaveBeenCalled()
+    expect(useTaskStore.getState().tasks['task-1'].messages.at(-1)?.content)
+      .toContain('low, medium, high, xhigh, max')
+  })
+
+  it('reports backend failures as local system messages', async () => {
+    vi.mocked(ipc.setEffort).mockRejectedValueOnce(new Error('CLI rejected effort'))
+    const { result } = renderHook(() => useSlashAction())
+    act(() => { result.current.executeFullInput('/effort high') })
+
+    await waitFor(() => {
+      expect(useTaskStore.getState().tasks['task-1'].messages.at(-1)?.content)
+        .toContain('CLI rejected effort')
+    })
+    expect(useTaskStore.getState().taskEfforts['task-1']).toBeUndefined()
   })
 })
 

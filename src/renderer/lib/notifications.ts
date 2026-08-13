@@ -1,5 +1,6 @@
 import type { AgentTask } from '@/types'
 import { playNotificationSound } from '@/lib/sounds'
+import { isTauriRuntime } from '@/lib/web-rpc'
 
 /** Debounce window per task (ms). Prevents notification stacking from rapid turn ends. */
 const DEBOUNCE_MS = 3000
@@ -94,6 +95,7 @@ export const sendTaskNotification = ({
   const body = buildNotificationBody(task, status)
   onNotified(task.id)
   if (isSoundEnabled) playNotificationSound()
+  if (!isTauriRuntime()) return
   import('@tauri-apps/plugin-notification').then(({ isPermissionGranted, sendNotification }) => {
     isPermissionGranted().then((ok) => {
       if (ok) sendNotification({ title, body, extra: { taskId: task.id } })

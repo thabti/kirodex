@@ -216,6 +216,28 @@ fn resolve_theme(hint: &str) -> &'static str {
     "base16-ocean.dark"
 }
 
+pub(crate) fn highlight_code_uncached(
+    text: String,
+    lang: String,
+    theme: Option<String>,
+) -> Result<HighlightResult, AppError> {
+    let theme_hint = theme.unwrap_or_else(|| "dark".to_string());
+    let theme_name = resolve_theme(&theme_hint);
+    if text.is_empty() {
+        return Ok(HighlightResult {
+            spans: Vec::new(),
+            language: lang,
+            cached: false,
+        });
+    }
+    let (spans, resolved_lang) = compute_spans(&text, &lang, theme_name)?;
+    Ok(HighlightResult {
+        spans,
+        language: resolved_lang,
+        cached: false,
+    })
+}
+
 // ── Core highlighting ────────────────────────────────────────────────────────
 
 fn style_to_span(style: &Style, start: usize, end: usize) -> HighlightSpan {
@@ -294,7 +316,7 @@ pub fn highlight_code(
     theme: Option<String>,
 ) -> Result<HighlightResult, AppError> {
     // Skip caching empty / huge inputs.
-    let theme_hint = theme.unwrap_or_else(|| "dark".to_string());
+    let theme_hint = theme.clone().unwrap_or_else(|| "dark".to_string());
     let theme_name = resolve_theme(&theme_hint);
 
     if text.is_empty() {
@@ -315,14 +337,10 @@ pub fn highlight_code(
         }
     }
 
-    let (spans, resolved_lang) = compute_spans(&text, &lang, theme_name)?;
-    let result = HighlightResult {
-        spans,
-        language: resolved_lang,
-        cached: false,
-    };
+    let should_cache = text.len() <= MAX_CACHE_ENTRY_BYTES;
+    let result = highlight_code_uncached(text, lang, theme)?;
 
-    if text.len() <= MAX_CACHE_ENTRY_BYTES {
+    if should_cache {
         if let Ok(bytes) = serde_json::to_vec(&result) {
             let _ = state.cache.put(&app, &key, &bytes);
         }

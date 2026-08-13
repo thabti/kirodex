@@ -79,8 +79,9 @@ beforeEach(() => {
 describe('ProjectItem — project name visibility', () => {
   it('shows name when icon is null', () => {
     mockIcon = null
-    render(wrap(<ProjectItem {...defaultProps} />))
+    const { container } = render(wrap(<ProjectItem {...defaultProps} />))
     expect(screen.getByText('my-project')).toBeInTheDocument()
+    expect(container.querySelector('[data-slot="sidebar-project"] > div > button')).toHaveClass('hover:bg-accent/20')
   })
 
   it('shows name when icon is emoji', () => {
@@ -118,11 +119,12 @@ describe('ProjectItem — thread list', () => {
 
   it('renders thread items when tasks present', () => {
     const tasks = [
-      { id: 't1', name: 'Thread 1', isDraft: false, status: 'idle', createdAt: '0', lastActivityAt: '0', lastUserMessageAt: '0', workspace: '/tmp', projectId: 'p1' },
-      { id: 't2', name: 'Thread 2', isDraft: false, status: 'idle', createdAt: '1', lastActivityAt: '1', lastUserMessageAt: '1', workspace: '/tmp', projectId: 'p1' },
+      { id: 't1', name: 'Thread 1', preview: 'First preview', isDraft: false, status: 'idle', createdAt: '0', lastActivityAt: '0', lastUserMessageAt: '0', workspace: '/tmp', projectId: 'p1' },
+      { id: 't2', name: 'Thread 2', preview: 'Second preview', isDraft: false, status: 'idle', createdAt: '1', lastActivityAt: '1', lastUserMessageAt: '1', workspace: '/tmp', projectId: 'p1' },
     ]
-    render(wrap(<ProjectItem {...defaultProps} tasks={tasks} />))
+    const { container } = render(wrap(<ProjectItem {...defaultProps} tasks={tasks} />))
     expect(screen.getByTestId('thread-t1')).toBeInTheDocument()
     expect(screen.getByTestId('thread-t2')).toBeInTheDocument()
+    expect(container.querySelector('[data-slot="sidebar-project-threads"]')).toHaveClass('ml-2')
   })
 })

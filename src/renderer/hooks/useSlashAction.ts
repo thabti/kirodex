@@ -4,6 +4,7 @@ import { useTaskStore } from '@/stores/taskStore'
 import { ipc } from '@/lib/ipc'
 import { track } from '@/lib/analytics'
 import { record } from '@/lib/analytics-collector'
+import { applyReasoningEffort, isReasoningEffort, REASONING_EFFORTS } from '@/lib/reasoning-effort'
 
 export type SlashPanel = 'model' | 'agent' | 'branch' | 'worktree' | null
 
@@ -18,10 +19,11 @@ export interface SlashActionResult {
 const bare = (name: string): string => name.replace(/^\/+/, '')
 
 /** Add a system message to the current task's chat */
-const addSystemMessage = (text: string): void => {
+const addSystemMessage = (text: string, taskId?: string | null): void => {
   const { selectedTaskId, tasks, upsertTask } = useTaskStore.getState()
-  if (!selectedTaskId || !tasks[selectedTaskId]) return
-  const task = tasks[selectedTaskId]
+  const resolvedTaskId = taskId ?? selectedTaskId
+  if (!resolvedTaskId || !tasks[resolvedTaskId]) return
+  const task = tasks[resolvedTaskId]
   upsertTask({
     ...task,
     messages: [...task.messages, { role: 'system', content: text, timestamp: new Date().toISOString() }],
@@ -45,7 +47,10 @@ const switchMode = (modeId: string, label: string): void => {
   }
 }
 
-export const useSlashAction = (): SlashActionResult => {
+export const useSlashAction = (
+  targetTaskId?: string | null,
+  onOpenEffortPicker?: () => void,
+): SlashActionResult => {
   const [panel, setPanel] = useState<SlashPanel>(null)
 
   const execute = useCallback((commandName: string): boolean => {
@@ -53,7 +58,7 @@ export const useSlashAction = (): SlashActionResult => {
     // Track every recognized slash command. The switch below rejects unknown
     // names by returning false, so we gate the track call on that path via
     // the `default` case.
-    const KNOWN = new Set(['clear', 'model', 'agent', 'settings', 'upload', 'plan', 'usage', 'data', 'close', 'exit', 'branch', 'worktree', 'btw', 'tangent', 'fork'])
+    const KNOWN = new Set(['clear', 'model', 'agent', 'effort', 'settings', 'upload', 'plan', 'usage', 'data', 'close', 'exit', 'branch', 'worktree', 'btw', 'tangent', 'fork'])
     if (KNOWN.has(name)) {
       const mode = useSettingsStore.getState().currentModeId === 'kiro_planner' ? 'plan' : 'command'
       track('feature_used', { feature: 'slash_command', detail: name })
@@ -81,6 +86,10 @@ export const useSlashAction = (): SlashActionResult => {
         // (see InlineCommandPicker) then renders for fuzzy filtering.
         setPanel(null)
         return false
+      case 'effort':
+        setPanel(null)
+        onOpenEffortPicker?.()
+        return true
       case 'settings':
         useTaskStore.getState().setSettingsOpen(true)
         setPanel(null)
@@ -149,6 +158,38 @@ export const useSlashAction = (): SlashActionResult => {
 
   const executeFullInput = useCallback((input: string): boolean => {
     const trimmed = input.trim()
+    const effortMatch = trimmed.match(/^\/effort\b(.*)$/i)
+    if (effortMatch) {
+      const effort = effortMatch[1].trim().toLowerCase()
+      const taskId = targetTaskId ?? useTaskStore.getState().selectedTaskId
+      track('feature_used', { feature: 'slash_command', detail: 'effort' })
+      record('slash_cmd', { detail: 'effort:command' })
+      if (!effort) {
+        onOpenEffortPicker?.()
+        return true
+      }
+      if (!isReasoningEffort(effort)) {
+        if (taskId) {
+          addSystemMessage(
+            `⚠️ Choose an effort level: ${REASONING_EFFORTS.join(', ')}`,
+            taskId,
+          )
+        } else {
+          onOpenEffortPicker?.()
+        }
+        return true
+      }
+      if (!taskId) {
+        onOpenEffortPicker?.()
+        return true
+      }
+      void applyReasoningEffort(taskId, effort).catch((error: unknown) => {
+        const message = error instanceof Error ? error.message : 'Failed to set reasoning effort'
+        addSystemMessage(`⚠️ ${message}`, taskId)
+      })
+      setPanel(null)
+      return true
+    }
     // Match /btw or /tangent at the start
     const match = trimmed.match(/^\/(?:btw|tangent)\b(.*)$/i)
     if (!match) return false
@@ -166,7 +207,7 @@ export const useSlashAction = (): SlashActionResult => {
     if (selectedTaskId) enterBtwMode(selectedTaskId, arg)
     // Return false so the caller sends the question as a message (PendingChat handles btw entry after task creation)
     return false
-  }, [])
+  }, [targetTaskId, onOpenEffortPicker])
 
   const dismissPanel = useCallback(() => setPanel(null), [])
 

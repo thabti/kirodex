@@ -78,6 +78,7 @@ beforeEach(() => {
     btwCheckpoint: null,
     splitViews: [], activeSplitId: null, focusedPanel: 'left' as const, scrollPositions: {},
     pinnedThreadIds: [],
+    taskModes: {}, taskModels: {}, taskEfforts: {},
   })
 })
 
@@ -539,6 +540,28 @@ describe('taskModes', () => {
     useTaskStore.getState().removeTask('task-1')
     expect(useTaskStore.getState().taskModes['task-1']).toBeUndefined()
     expect(useTaskStore.getState().taskModes['task-2']).toBe('kiro_default')
+  })
+})
+
+describe('taskEfforts', () => {
+  it('stores an effort level for a task', () => {
+    useTaskStore.getState().setTaskEffort('task-1', 'high')
+    expect(useTaskStore.getState().taskEfforts['task-1']).toBe('high')
+  })
+
+  it('does not replace the map when effort is unchanged', () => {
+    useTaskStore.setState({ taskEfforts: { 'task-1': 'xhigh' } })
+    const before = useTaskStore.getState().taskEfforts
+    useTaskStore.getState().setTaskEffort('task-1', 'xhigh')
+    expect(useTaskStore.getState().taskEfforts).toBe(before)
+  })
+
+  it('removes effort state when a task is removed', () => {
+    useTaskStore.setState({ taskEfforts: { 'task-1': 'max', 'task-2': 'low' } })
+    useTaskStore.getState().upsertTask(makeTask())
+    useTaskStore.getState().removeTask('task-1')
+    expect(useTaskStore.getState().taskEfforts['task-1']).toBeUndefined()
+    expect(useTaskStore.getState().taskEfforts['task-2']).toBe('low')
   })
 })
 

@@ -7,62 +7,63 @@ import { useMenuPosition } from '@/hooks/useMenuPosition'
 import { cn } from '@/lib/utils'
 import type { SidebarTask } from '@/hooks/useSidebarTasks'
 
-type StatusShape = 'spin' | 'solid' | 'half' | 'ring' | 'x'
+type StatusShape = 'spin' | 'half' | 'ring' | 'x'
+type StatusTone = 'success' | 'warning' | 'info' | 'danger' | 'muted'
 
-const STATUS_DOT: Record<string, { color: string; shape: StatusShape; label: string }> = {
-  running: { color: '#34d399', shape: 'spin', label: 'Agent is working' },
-  pending_permission: { color: '#fbbf24', shape: 'half', label: 'Waiting for permission' },
-  pending_question: { color: '#60a5fa', shape: 'half', label: 'Question needs your answer' },
-  error: { color: '#f87171', shape: 'x', label: 'Error occurred' },
-  cancelled: { color: '#9a9a9a', shape: 'ring', label: 'Cancelled' },
+const STATUS_DOT: Record<string, { tone: StatusTone; shape: StatusShape; label: string }> = {
+  running: { tone: 'success', shape: 'spin', label: 'Agent is working' },
+  pending_permission: { tone: 'warning', shape: 'half', label: 'Waiting for permission' },
+  pending_question: { tone: 'info', shape: 'half', label: 'Question needs your answer' },
+  error: { tone: 'danger', shape: 'x', label: 'Error occurred' },
+  cancelled: { tone: 'muted', shape: 'ring', label: 'Cancelled' },
 }
 
-function StatusIndicator({ shape, color }: { shape: StatusShape; color: string }) {
+const STATUS_TONE_CLASSES: Record<StatusTone, { border: string; fill: string; soft: string; text: string }> = {
+  success: { border: 'border-success', fill: 'bg-success', soft: 'border-success/25', text: 'text-success' },
+  warning: { border: 'border-warning', fill: 'bg-warning', soft: 'border-warning/25', text: 'text-warning' },
+  info: { border: 'border-primary', fill: 'bg-primary', soft: 'border-primary/25', text: 'text-primary' },
+  danger: { border: 'border-destructive', fill: 'bg-destructive', soft: 'border-destructive/25', text: 'text-destructive' },
+  muted: { border: 'border-muted-foreground/70', fill: 'bg-muted-foreground', soft: 'border-muted-foreground/20', text: 'text-muted-foreground' },
+}
+
+function StatusIndicator({ shape, tone }: { shape: StatusShape; tone: StatusTone }) {
+  const colors = STATUS_TONE_CLASSES[tone]
   if (shape === 'spin') {
     return (
       <span
-        className="size-2.5 animate-spin rounded-full border-[1.5px]"
-        style={{ borderColor: `${color}33`, borderTopColor: color }}
+        className={cn('size-2.5 animate-spin rounded-full border-[1.5px] motion-reduce:animate-none', colors.soft, colors.text, 'border-t-current')}
       />
     )
   }
-  if (shape === 'solid') {
-    return <span className="size-2 rounded-full" style={{ background: color }} />
-  }
   if (shape === 'half') {
     return (
-      <span className="relative size-2.5 rounded-full border-[1.5px]" style={{ borderColor: color }}>
-        <span
-          className="absolute inset-0 rounded-full"
-          style={{ background: color, clipPath: 'inset(0 0 50% 0)' }}
-        />
+      <span className={cn('relative size-2.5 rounded-full border-[1.5px]', colors.border)}>
+        <span className={cn('absolute inset-0 rounded-full [clip-path:inset(0_0_50%_0)]', colors.fill)} />
       </span>
     )
   }
   if (shape === 'ring') {
-    return <span className="size-2.5 rounded-full border-[1.5px]" style={{ borderColor: color }} />
+    return <span className={cn('size-2.5 rounded-full border-[1.5px]', colors.border)} />
   }
   if (shape === 'x') {
     return (
-      <span
-        className="inline-flex size-2.5 items-center justify-center rounded-full"
-        style={{ background: `${color}33` }}
-      >
-        <IconX className="size-2" strokeWidth={3} style={{ color }} />
+      <span className={cn('inline-flex size-2.5 items-center justify-center rounded-full', colors.soft, colors.text)}>
+        <IconX className="size-2" strokeWidth={3} aria-hidden />
       </span>
     )
   }
   return null
 }
 
-function relativeTime(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime()
-  const mins = Math.floor(diff / 60000)
-  if (mins < 1) return 'now'
-  if (mins < 60) return `${mins}m`
-  const hrs = Math.floor(mins / 60)
-  if (hrs < 24) return `${hrs}h`
-  return `${Math.floor(hrs / 24)}d`
+function formatActivityTime(iso: string): string {
+  const timestamp = new Date(iso).getTime()
+  if (Number.isNaN(timestamp)) return ''
+  const minutes = Math.max(0, Math.floor((Date.now() - timestamp) / 60_000))
+  if (minutes < 1) return 'now'
+  if (minutes < 60) return `${minutes}m`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `${hours}h`
+  return `${Math.floor(hours / 24)}d`
 }
 
 interface ThreadItemProps {
@@ -86,6 +87,11 @@ export const ThreadItem = memo(function ThreadItem({ task, isActive, jumpLabel, 
   const inputRef = useRef<HTMLInputElement>(null)
   const ctxRef = useRef<HTMLDivElement>(null)
   const dot = STATUS_DOT[task.hasPendingQuestion ? 'pending_question' : task.status]
+  const preview = task.hasPendingQuestion
+    ? 'Waiting for your answer'
+    : task.status === 'running'
+      ? 'Kiro is working…'
+      : task.preview
 
   useEffect(() => {
     if (editing) inputRef.current?.select()
@@ -145,6 +151,15 @@ export const ThreadItem = memo(function ThreadItem({ task, isActive, jumpLabel, 
   const isInSplit = useTaskStore((s) => s.splitViews.some((sv) => sv.left === task.id || sv.right === task.id))
   const isPinned = useTaskStore((s) => s.pinnedThreadIds.includes(task.id))
   const isNotified = useTaskStore((s) => s.notifiedTaskIds.includes(task.id))
+  const accessibleDetails = [
+    preview,
+    dot?.label,
+    task.isArchived ? 'Resumed from history' : null,
+    task.worktreePath && !task.isArchived ? 'Worktree thread' : null,
+    isInSplit ? 'Open side-by-side' : null,
+    isPinned && !isInSplit ? 'Pinned' : null,
+    isNotified ? 'New activity' : null,
+  ].filter(Boolean).join('. ')
 
   const handleNewSplitView = useCallback(() => {
     setCtxMenu(null)
@@ -185,117 +200,79 @@ export const ThreadItem = memo(function ThreadItem({ task, isActive, jumpLabel, 
   }, [task.id])
 
   return (
-    <li className="group/thread relative min-w-0">
-      <div
-        role="button"
-        tabIndex={0}
-        aria-label={task.isDraft ? `${task.name}, draft` : undefined}
-        onClick={onSelect}
+    <li data-slot="sidebar-thread" className="group/thread relative min-w-0">
+      <button
+        type="button"
+        tabIndex={editing ? -1 : 0}
+        aria-current={isActive ? 'page' : undefined}
+        aria-hidden={editing || undefined}
+        aria-label={`${task.name}. ${accessibleDetails}`}
+        onClick={editing ? undefined : onSelect}
         onContextMenu={handleContextMenu}
-        onKeyDown={(e) => e.key === 'Enter' && onSelect()}
         className={cn(
-          'relative flex min-w-0 h-8 w-full cursor-pointer items-center gap-1.5 overflow-hidden rounded-lg px-2 pr-2 text-[13px] select-none',
+          'relative flex h-8 min-w-0 w-full cursor-pointer items-center gap-1.5 overflow-hidden rounded-md px-1.5 text-left text-[13px] select-none',
           'outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring transition-colors',
-          'text-foreground/80 hover:bg-accent/30 hover:text-foreground',
-          isActive && 'bg-accent/60 text-foreground',
+          isActive
+            ? 'bg-accent/30 text-foreground/90 hover:bg-accent/35'
+            : 'text-foreground/75 hover:bg-accent/20 hover:text-foreground/90',
+          editing && 'pointer-events-none',
         )}
       >
-        <span className="flex size-3 shrink-0 items-center justify-center" aria-hidden={!dot && !task.isDraft}>
+        <span className="relative flex size-3.5 shrink-0 items-center justify-center text-muted-foreground/70" aria-hidden>
           {!task.isDraft && dot && (
             <Tooltip>
               <TooltipTrigger asChild>
-                <span className="flex size-3 items-center justify-center">
-                  <StatusIndicator shape={dot.shape} color={dot.color} />
+                <span className="flex size-3.5 items-center justify-center">
+                  <StatusIndicator shape={dot.shape} tone={dot.tone} />
                 </span>
               </TooltipTrigger>
               <TooltipContent side="right">{dot.label}</TooltipContent>
             </Tooltip>
           )}
+          {!task.isDraft && !dot ? <IconHistory className="size-3.5" aria-hidden /> : null}
+          {isNotified && (
+            <span className="absolute -right-0.5 -top-0.5 size-1.5 rounded-full bg-warning" />
+          )}
         </span>
-        {task.isArchived && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className="inline-flex shrink-0">
-                <IconHistory className="size-3 text-muted-foreground/70" aria-label="Resumed from history" />
-              </span>
-            </TooltipTrigger>
-            <TooltipContent side="right">From history — agent reconnects on next send</TooltipContent>
-          </Tooltip>
-        )}
-        {task.worktreePath && !task.isArchived && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <IconGitBranch className="size-3 shrink-0 text-muted-foreground/70" aria-label="Worktree thread" />
-            </TooltipTrigger>
-            <TooltipContent side="top">Worktree</TooltipContent>
-          </Tooltip>
-        )}
-        {isInSplit && (
-          <IconLayoutColumns className="size-3 shrink-0 text-muted-foreground/70" aria-label="In side-by-side" />
-        )}
-        {isPinned && !isInSplit && (
-          <IconPin className="size-3 shrink-0 text-muted-foreground/60" aria-label="Pinned" />
-        )}
-        {editing ? (
-          <input
-            ref={inputRef}
-            value={editValue}
-            onChange={(e) => setEditValue(e.target.value)}
-            onBlur={commitRename}
-            onKeyDown={(e) => { if (e.key === 'Enter') commitRename(); if (e.key === 'Escape') setEditing(false) }}
-            onClick={(e) => e.stopPropagation()}
-            className="min-w-0 flex-1 truncate bg-transparent text-[13px] outline-none"
-          />
-        ) : (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className="min-w-0 flex-1 truncate text-[13px]">{task.name}</span>
-            </TooltipTrigger>
-            <TooltipContent side="top" align="start">{task.name}</TooltipContent>
-          </Tooltip>
-        )}
+        {task.worktreePath && !task.isArchived ? <IconGitBranch className="size-3 shrink-0 text-muted-foreground/60" aria-hidden /> : null}
+        {isInSplit ? <IconLayoutColumns className="size-3 shrink-0 text-muted-foreground/60" aria-hidden /> : null}
+        {isPinned && !isInSplit ? <IconPin className="size-3 shrink-0 text-muted-foreground/60" aria-hidden /> : null}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className={cn('min-w-0 flex-1 truncate text-[13px]', isActive && 'font-medium', editing && 'opacity-0')}>{task.name}</span>
+          </TooltipTrigger>
+          <TooltipContent side="top" align="start">{task.name}</TooltipContent>
+        </Tooltip>
         {jumpLabel ? (
-          <kbd className="pointer-events-none shrink-0 rounded-sm bg-muted px-1 font-mono text-[10px] font-medium text-muted-foreground select-none">
-            {jumpLabel}
-          </kbd>
+          <kbd className="pointer-events-none inline-flex h-4 min-w-4 shrink-0 items-center justify-center rounded-md bg-muted px-1 font-mono text-[9px] font-medium text-muted-foreground select-none">{jumpLabel}</kbd>
         ) : task.isDraft ? (
-          <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground group-hover/thread:hidden" aria-hidden="true">
-            Draft
-          </span>
+          <span className="shrink-0 rounded-md bg-muted px-1 py-0.5 text-[9px] font-medium text-muted-foreground">Draft</span>
         ) : (
-          <>
-            {isNotified && (
-              <span
-                className="size-1.5 shrink-0 rounded-full bg-orange-400"
-                aria-label="New activity"
-              />
-            )}
-            <span className="shrink-0 text-[11px] leading-none tabular-nums text-muted-foreground">
-              {relativeTime(task.lastActivityAt)}
-            </span>
-          </>
+          <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground/60">{formatActivityTime(task.lastActivityAt)}</span>
         )}
-        {!editing && !jumpLabel && (
-          <span
-            className="pointer-events-none absolute inset-y-0 right-1 z-10 flex items-center pl-4 opacity-0 transition-opacity group-hover/thread:pointer-events-auto group-hover/thread:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100"
-            style={{ background: 'linear-gradient(to right, transparent 0%, var(--sidebar) 40%)' }}
-          >
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  aria-label="Delete thread"
-                  onClick={(e) => { e.stopPropagation(); onDelete() }}
-                  className="flex size-5 items-center justify-center rounded-md text-muted-foreground hover:bg-destructive/15 hover:text-destructive focus-visible:ring-1 focus-visible:ring-ring outline-none"
-                >
-                  <IconTrash className="size-3" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="top">Delete thread</TooltipContent>
-            </Tooltip>
-          </span>
-        )}
-      </div>
+      </button>
+
+      {editing && (
+        <input
+          ref={inputRef}
+          type="text"
+          name={`thread-name-${task.id}`}
+          autoComplete="off"
+          spellCheck={false}
+          aria-label={`Rename ${task.name}`}
+          value={editValue}
+          onChange={(event) => setEditValue(event.target.value)}
+          onBlur={commitRename}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') commitRename()
+            if (event.key === 'Escape') {
+              setEditValue(task.name)
+              setEditing(false)
+            }
+          }}
+          className="absolute left-7 right-1.5 top-1.5 z-20 h-5 min-w-0 rounded-md bg-background px-1 text-[13px] font-medium text-foreground outline-none ring-1 ring-ring"
+        />
+      )}
 
       {ctxMenu && (
         <div
