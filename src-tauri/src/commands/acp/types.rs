@@ -75,6 +75,8 @@ pub enum ReasoningEffort {
 }
 
 impl ReasoningEffort {
+    pub const ALL: [Self; 5] = [Self::Low, Self::Medium, Self::High, Self::Xhigh, Self::Max];
+
     pub fn as_str(self) -> &'static str {
         match self {
             Self::Low => "low",
@@ -82,6 +84,17 @@ impl ReasoningEffort {
             Self::High => "high",
             Self::Xhigh => "xhigh",
             Self::Max => "max",
+        }
+    }
+
+    pub fn from_str(value: &str) -> Option<Self> {
+        match value {
+            "low" => Some(Self::Low),
+            "medium" => Some(Self::Medium),
+            "high" => Some(Self::High),
+            "xhigh" => Some(Self::Xhigh),
+            "max" => Some(Self::Max),
+            _ => None,
         }
     }
 }
@@ -135,6 +148,8 @@ pub enum AcpCommand {
     Cancel,
     SetMode(String),
     SetModel(String),
+    SetEffort(ReasoningEffort, oneshot::Sender<Result<(), String>>),
+    ListEffortOptions(oneshot::Sender<Result<Vec<ReasoningEffort>, String>>),
     Kill,
 }
 

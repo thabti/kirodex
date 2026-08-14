@@ -66,6 +66,93 @@ pub(crate) fn build_content_blocks(text: String, attachments: &[AttachmentData])
     blocks
 }
 
+/// Build Kiro CLI's live effort-change extension request. ACP automatically
+/// prefixes extension method names with `_` on the wire.
+pub(crate) fn build_effort_command_request(
+    session_id: &acp::SessionId,
+    effort: ReasoningEffort,
+) -> Result<acp::ExtRequest, String> {
+    let params = serde_json::value::to_raw_value(&serde_json::json!({
+        "sessionId": session_id,
+        "command": {
+            "command": "effort",
+            "args": { "value": effort.as_str() },
+        },
+    }))
+    .map(Arc::from)
+    .map_err(|error| format!("Failed to encode reasoning effort request: {error}"))?;
+
+    Ok(acp::ExtRequest::new("kiro.dev/commands/execute", params))
+}
+
+pub(crate) fn parse_effort_command_result(result: &Value) -> Result<(), String> {
+    if result.get("success").and_then(Value::as_bool) == Some(true) {
+        return Ok(());
+    }
+
+    Err(result
+        .get("message")
+        .and_then(Value::as_str)
+        .unwrap_or("Kiro CLI could not change reasoning effort for the selected model")
+        .to_string())
+}
+
+pub(crate) fn build_effort_options_request(
+    session_id: &acp::SessionId,
+) -> Result<acp::ExtRequest, String> {
+    let params = serde_json::value::to_raw_value(&serde_json::json!({
+        "sessionId": session_id,
+        "command": "effort",
+        "partial": "",
+    }))
+    .map(Arc::from)
+    .map_err(|error| format!("Failed to encode reasoning effort options request: {error}"))?;
+
+    Ok(acp::ExtRequest::new("kiro.dev/commands/options", params))
+}
+
+pub(crate) fn parse_effort_options_result(result: &Value) -> Result<Vec<ReasoningEffort>, String> {
+    let options = result
+        .get("options")
+        .and_then(Value::as_array)
+        .ok_or_else(|| "Kiro CLI returned an invalid effort options response".to_string())?;
+
+    Ok(options
+        .iter()
+        .filter_map(|option| option.get("value").and_then(Value::as_str))
+        .filter_map(ReasoningEffort::from_str)
+        .collect())
+}
+
+pub(crate) async fn execute_effort_command<A: acp::Agent + ?Sized>(
+    conn: &A,
+    session_id: &acp::SessionId,
+    effort: ReasoningEffort,
+) -> Result<(), String> {
+    let request = build_effort_command_request(session_id, effort)?;
+    let response = conn
+        .ext_method(request)
+        .await
+        .map_err(|error| format!("Kiro CLI rejected the reasoning effort change: {error}"))?;
+    let result = serde_json::to_value(response)
+        .map_err(|error| format!("Failed to read Kiro CLI's effort response: {error}"))?;
+    parse_effort_command_result(&result)
+}
+
+pub(crate) async fn fetch_effort_options<A: acp::Agent + ?Sized>(
+    conn: &A,
+    session_id: &acp::SessionId,
+) -> Result<Vec<ReasoningEffort>, String> {
+    let request = build_effort_options_request(session_id)?;
+    let response = conn
+        .ext_method(request)
+        .await
+        .map_err(|error| format!("Kiro CLI could not list reasoning effort levels: {error}"))?;
+    let result = serde_json::to_value(response)
+        .map_err(|error| format!("Failed to read Kiro CLI's effort options: {error}"))?;
+    parse_effort_options_result(&result)
+}
+
 // ── Spawn a kiro-cli ACP connection on a dedicated thread ──────────────
 
 /// Configuration for spawning a new ACP connection. Groups the many
@@ -290,12 +377,8 @@ pub(crate) async fn run_acp_connection(
     mut pending_preamble: Option<String>,
     ready: Arc<std::sync::atomic::AtomicBool>,
 ) -> Result<(), String> {
-    // Kiro CLI currently applies effort through its ACP startup flag.
     let mut command = tokio::process::Command::new(&kiro_bin);
     command.arg("acp");
-    if let Some(effort) = initial_effort {
-        command.arg("--effort").arg(effort.as_str());
-    }
     let mut child = command
         .current_dir(&workspace)
         .stdin(std::process::Stdio::piped())
@@ -421,6 +504,17 @@ pub(crate) async fn run_acp_connection(
         }
     }
 
+    // Effort is model-specific, so apply it only after the selected model is
+    // active. Kiro exposes this through its commands/execute ACP extension.
+    if let Some(effort) = initial_effort {
+        if let Err(error) = execute_effort_command(&conn, &session_id, effort).await {
+            log::warn!(
+                "[ACP] Initial effort {} failed for task={task_id}: {error}",
+                effort.as_str()
+            );
+        }
+    }
+
     ready.store(true, std::sync::atomic::Ordering::Release);
 
     // Process commands from the main thread.
@@ -543,6 +637,14 @@ pub(crate) async fn run_acp_connection(
                                 log::warn!("[ACP] deferred set_session_model({model_id}) failed: {e}");
                             }
                         }
+                        AcpCommand::SetEffort(effort, reply_tx) => {
+                            let result = execute_effort_command(&conn, &session_id, effort).await;
+                            let _ = reply_tx.send(result);
+                        }
+                        AcpCommand::ListEffortOptions(reply_tx) => {
+                            let result = fetch_effort_options(&conn, &session_id).await;
+                            let _ = reply_tx.send(result);
+                        }
                         AcpCommand::Cancel => {
                             let _ = conn.cancel(acp::CancelNotification::new(session_id.clone())).await;
                         }
@@ -566,6 +668,14 @@ pub(crate) async fn run_acp_connection(
                 ).await {
                     log::warn!("[ACP] set_session_model({model_id}) failed: {e}");
                 }
+            }
+            AcpCommand::SetEffort(effort, reply_tx) => {
+                let result = execute_effort_command(&conn, &session_id, effort).await;
+                let _ = reply_tx.send(result);
+            }
+            AcpCommand::ListEffortOptions(reply_tx) => {
+                let result = fetch_effort_options(&conn, &session_id).await;
+                let _ = reply_tx.send(result);
             }
             AcpCommand::Kill => break,
         }

@@ -11,7 +11,7 @@ Unknown commands return `handled: false` and are forwarded to ACP as regular mes
 | /tangent | Alias for /btw | — |
 | /clear | Clear all messages in the current thread | Yes |
 | /model | Open model picker panel | Yes |
-| /effort [low\|medium\|high\|xhigh\|max] | Set reasoning depth for subsequent messages in this thread | No (restarts the thread's ACP session) |
+| /effort [low\|medium\|high\|xhigh\|max] | Set reasoning depth for subsequent messages in this thread | No (updates the live ACP session) |
 | /agent | Open agent picker panel | Yes |
 | /settings | Open settings panel | Yes |
 | /upload | Trigger file upload dialog | Yes |
@@ -42,7 +42,7 @@ Unknown commands return `handled: false` and are forwarded to ACP as regular mes
 - `xhigh`: extended analysis for difficult problems
 - `max`: deepest analysis for the hardest tasks
 
-Higher levels can take longer. Kiro CLI 2.9 does not expose ACP session configuration options, so Kirodex recreates the idle thread's ACP process with `kiro-cli acp --effort <level>` and replays conversation context on the next prompt. Pause or finish the current turn before changing effort.
+Higher levels can take longer, and the levels available depend on the selected model. When the toolbar picker opens, Kirodex queries Kiro CLI's `_kiro.dev/commands/options` ACP extension and shows only supported levels. It sends the selection through `_kiro.dev/commands/execute`, so the active session is updated without reconnecting or replaying conversation context. Pause or finish the current turn before changing effort; if Kiro rejects a level, Kirodex displays its explanation.
 
 `/close` and `/exit` archive the thread instead of deleting it. The conversation is preserved and accessible in a read-only view.
 

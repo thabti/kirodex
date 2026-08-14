@@ -38,15 +38,7 @@ export const applyReasoningEffort = async (
 
   const hasNoLiveSession = task.isArchived === true || task.needsNewConnection === true
   if (!hasNoLiveSession) {
-    const modeId = state.taskModes[taskId]
-    const modelId = state.taskModels[taskId]
-    const messages = task.messages.map((message) => ({
-      role: message.role,
-      content: message.content,
-      timestamp: message.timestamp,
-      ...(message.thinking ? { thinking: message.thinking } : {}),
-    }))
-    await ipc.setEffort(taskId, effort, modeId, modelId, messages)
+    await ipc.setEffort(taskId, effort)
   }
 
   const latestState = useTaskStore.getState()

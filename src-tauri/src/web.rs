@@ -587,15 +587,13 @@ async fn dispatch(runtime: Arc<WebRuntime>, method: &str, params: Value) -> Resu
         "set_effort" => {
             let task_id: String = get_param(&params, "taskId")?;
             let effort: app_acp::ReasoningEffort = get_param(&params, "effort")?;
-            let mode_id = opt_param::<String>(&params, "modeId")?;
-            let model_id = opt_param::<String>(&params, "modelId")?;
-            let messages = opt_param::<Vec<app_acp::TaskMessage>>(&params, "messages")?;
-            tokio::task::spawn_blocking(move || {
-                web_set_effort(runtime, task_id, effort, mode_id, model_id, messages)
-            })
-            .await
-            .map_err(|error| format!("Effort update task failed: {error}"))??;
+            web_set_effort(runtime, task_id, effort).await?;
             Ok(Value::Null)
+        }
+        "list_effort_options" => {
+            let task_id: String = get_param(&params, "taskId")?;
+            Ok(serde_json::to_value(web_list_effort_options(runtime, task_id).await?)
+                .map_err(|error| format!("Failed to encode effort levels: {error}"))?)
         }
         "list_models" => {
             let kiro_bin = opt_param::<String>(&params, "kiroBin")?;
@@ -1167,89 +1165,73 @@ fn web_task_send_message(
         .ok_or_else(|| "Task not found".to_string())
 }
 
-fn web_set_effort(
+async fn web_set_effort(
     runtime: Arc<WebRuntime>,
     task_id: String,
     effort: app_acp::ReasoningEffort,
-    mode_id: Option<String>,
-    model_id: Option<String>,
-    messages: Option<Vec<app_acp::TaskMessage>>,
 ) -> Result<(), String> {
-    let (workspace, auto_approve) = {
+    {
         let tasks = runtime.acp.tasks.lock();
         let task = tasks.get(&task_id).ok_or("Task not found")?;
         if task.status == "running" || task.status == "pending_permission" {
             return Err("Wait for the current turn to finish before changing effort".to_string());
         }
-        (task.workspace.clone(), task.auto_approve)
-    };
+    }
+    let cmd_tx = runtime
+        .acp
+        .connections
+        .lock()
+        .get(&task_id)
+        .map(|handle| handle.cmd_tx.clone());
 
-    let settings = runtime.settings.0.lock();
-    let kiro_bin = settings.settings.kiro_bin.clone();
-    let resolved_auto_approve = auto_approve.unwrap_or(settings.settings.auto_approve);
-    let tight_sandbox = settings.settings.project_prefs.as_ref()
-        .and_then(|prefs| prefs.get(&workspace))
-        .and_then(|prefs| prefs.tight_sandbox)
-        .unwrap_or(true);
-    let initial_model_id =
-        app_acp::resolve_initial_model(model_id, &workspace, &settings.settings);
-    drop(settings);
-
-    let mut connections = runtime.acp.connections.lock();
-    let transcript = {
-        let tasks = runtime.acp.tasks.lock();
-        let task = tasks.get(&task_id).ok_or("Task not found")?;
-        if task.status == "running" || task.status == "pending_permission" {
-            return Err("Wait for the current turn to finish before changing effort".to_string());
-        }
-        messages.unwrap_or_else(|| task.messages.clone())
-    };
-
-    if !connections.contains_key(&task_id) {
-        drop(connections);
+    let Some(cmd_tx) = cmd_tx else {
         if let Some(task) = runtime.acp.tasks.lock().get_mut(&task_id) {
             task.reasoning_effort = Some(effort);
         }
         return Ok(());
-    }
+    };
 
-    let pending_preamble = app_acp::build_resumption_preamble(
-        &transcript,
-        "Resumed conversation after effort change",
-        "The reasoning effort changed, so this conversation is continuing in a fresh agent session. The transcript below is context only. Do not repeat completed work or tool calls. The user's next message follows after the transcript.",
-    );
-    let handle = spawn_web_connection(
-        runtime.clone(),
-        task_id.clone(),
-        workspace,
-        kiro_bin,
-        resolved_auto_approve,
-        mode_id,
-        initial_model_id,
-        Some(effort),
-        tight_sandbox,
-        (!pending_preamble.is_empty()).then_some(pending_preamble),
-    )?;
-    if let Err(error) = handle.wait_until_ready(std::time::Duration::from_secs(15)) {
-        let _ = handle.cmd_tx.send(app_acp::AcpCommand::Kill);
-        return Err(error);
-    }
-    if let Some(old_connection) = connections.remove(&task_id) {
-        let _ = old_connection.cmd_tx.send(app_acp::AcpCommand::Kill);
-    }
-    connections.insert(task_id.clone(), handle);
-    drop(connections);
+    let (reply_tx, reply_rx) = oneshot::channel();
+    cmd_tx
+        .send(app_acp::AcpCommand::SetEffort(effort, reply_tx))
+        .map_err(|_| "The Kiro session ended before effort could be changed".to_string())?;
+    tokio::time::timeout(std::time::Duration::from_secs(10), reply_rx)
+        .await
+        .map_err(|_| "Timed out while changing reasoning effort".to_string())?
+        .map_err(|_| "The Kiro session ended before confirming the effort change".to_string())??;
 
     let mut tasks = runtime.acp.tasks.lock();
-    let Some(task) = tasks.get_mut(&task_id) else {
-        drop(tasks);
-        if let Some(handle) = runtime.acp.connections.lock().remove(&task_id) {
-            let _ = handle.cmd_tx.send(app_acp::AcpCommand::Kill);
-        }
-        return Err("Task not found".to_string());
-    };
+    let task = tasks.get_mut(&task_id).ok_or("Task not found")?;
     task.reasoning_effort = Some(effort);
     Ok(())
+}
+
+async fn web_list_effort_options(
+    runtime: Arc<WebRuntime>,
+    task_id: String,
+) -> Result<Vec<app_acp::ReasoningEffort>, String> {
+    if !runtime.acp.tasks.lock().contains_key(&task_id) {
+        return Err("Task not found".to_string());
+    }
+    let cmd_tx = runtime
+        .acp
+        .connections
+        .lock()
+        .get(&task_id)
+        .map(|handle| handle.cmd_tx.clone());
+
+    let Some(cmd_tx) = cmd_tx else {
+        return Ok(app_acp::ReasoningEffort::ALL.to_vec());
+    };
+
+    let (reply_tx, reply_rx) = oneshot::channel();
+    cmd_tx
+        .send(app_acp::AcpCommand::ListEffortOptions(reply_tx))
+        .map_err(|_| "The Kiro session ended before effort levels could be loaded".to_string())?;
+    tokio::time::timeout(std::time::Duration::from_secs(10), reply_rx)
+        .await
+        .map_err(|_| "Timed out while loading reasoning effort levels".to_string())?
+        .map_err(|_| "The Kiro session ended before returning effort levels".to_string())?
 }
 
 fn web_task_pause(runtime: Arc<WebRuntime>, task_id: String) -> Result<app_acp::Task, String> {
@@ -2094,9 +2076,6 @@ async fn run_web_acp_connection(
 ) -> Result<(), String> {
     let mut command = tokio::process::Command::new(&kiro_bin);
     command.arg("acp");
-    if let Some(effort) = initial_effort {
-        command.arg("--effort").arg(effort.as_str());
-    }
     command
         .current_dir(&workspace)
         .stdin(std::process::Stdio::piped())
@@ -2195,6 +2174,14 @@ async fn run_web_acp_connection(
         let _ = conn
             .set_session_model(acp_proto::SetSessionModelRequest::new(session_id.clone(), model_id))
             .await;
+    }
+    if let Some(effort) = initial_effort {
+        if let Err(error) = app_acp::execute_effort_command(&conn, &session_id, effort).await {
+            log::warn!(
+                "[ACP:web] Initial effort {} failed for task={task_id}: {error}",
+                effort.as_str()
+            );
+        }
     }
 
     ready.store(true, std::sync::atomic::Ordering::Release);
@@ -2295,6 +2282,15 @@ async fn run_web_acp_connection(
                                 .set_session_model(acp_proto::SetSessionModelRequest::new(session_id.clone(), model_id))
                                 .await;
                         }
+                        app_acp::AcpCommand::SetEffort(effort, reply_tx) => {
+                            let result =
+                                app_acp::execute_effort_command(&conn, &session_id, effort).await;
+                            let _ = reply_tx.send(result);
+                        }
+                        app_acp::AcpCommand::ListEffortOptions(reply_tx) => {
+                            let result = app_acp::fetch_effort_options(&conn, &session_id).await;
+                            let _ = reply_tx.send(result);
+                        }
                         app_acp::AcpCommand::Cancel => {
                             let _ = conn.cancel(acp_proto::CancelNotification::new(session_id.clone())).await;
                         }
@@ -2318,6 +2314,14 @@ async fn run_web_acp_connection(
                 let _ = conn
                     .set_session_model(acp_proto::SetSessionModelRequest::new(session_id.clone(), model_id))
                     .await;
+            }
+            app_acp::AcpCommand::SetEffort(effort, reply_tx) => {
+                let result = app_acp::execute_effort_command(&conn, &session_id, effort).await;
+                let _ = reply_tx.send(result);
+            }
+            app_acp::AcpCommand::ListEffortOptions(reply_tx) => {
+                let result = app_acp::fetch_effort_options(&conn, &session_id).await;
+                let _ = reply_tx.send(result);
             }
             app_acp::AcpCommand::Kill => break,
         }

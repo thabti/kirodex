@@ -1,8 +1,9 @@
 import { memo, useEffect, useId, useRef, useState, type KeyboardEvent } from 'react'
-import { IconBrain, IconCheck, IconChevronDown, IconLoader2 } from '@tabler/icons-react'
+import { IconBrain, IconCheck, IconChevronDown, IconInfoCircle, IconLoader2 } from '@tabler/icons-react'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { usePanelResolvedTaskId } from './PanelContext'
 import { useTaskStore } from '@/stores/taskStore'
+import { ipc } from '@/lib/ipc'
 import { cn } from '@/lib/utils'
 import {
   applyReasoningEffort,
@@ -11,6 +12,14 @@ import {
   REASONING_EFFORTS,
 } from '@/lib/reasoning-effort'
 import type { ReasoningEffort } from '@/types'
+
+const EFFORT_HINTS: Record<ReasoningEffort, string> = {
+  low: 'Fast',
+  medium: 'Balanced',
+  high: 'Thorough',
+  xhigh: 'Extended',
+  max: 'Deepest',
+}
 
 export const ReasoningEffortPicker = memo(function ReasoningEffortPicker({
   isOpen,
@@ -28,6 +37,9 @@ export const ReasoningEffortPicker = memo(function ReasoningEffortPicker({
   ))
   const [pendingEffort, setPendingEffort] = useState<ReasoningEffort | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [optionsNotice, setOptionsNotice] = useState<string | null>(null)
+  const [availableEfforts, setAvailableEfforts] = useState<ReasoningEffort[] | null>(null)
+  const [isLoadingOptions, setIsLoadingOptions] = useState(false)
   const pickerRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const optionRefs = useRef<Array<HTMLButtonElement | null>>([])
@@ -48,6 +60,29 @@ export const ReasoningEffortPicker = memo(function ReasoningEffortPicker({
       : 'Choose how deeply Kiro reasons for this thread'
 
   useEffect(() => {
+    if (!isOpen || !taskId) return
+    let isCancelled = false
+    setIsLoadingOptions(true)
+    setAvailableEfforts(null)
+    setOptionsNotice(null)
+
+    void ipc.listEffortOptions(taskId)
+      .then((efforts) => {
+        if (!isCancelled) setAvailableEfforts(efforts)
+      })
+      .catch(() => {
+        if (isCancelled) return
+        setAvailableEfforts([...REASONING_EFFORTS])
+        setOptionsNotice('Could not verify this model. Kiro will validate your choice.')
+      })
+      .finally(() => {
+        if (!isCancelled) setIsLoadingOptions(false)
+      })
+
+    return () => { isCancelled = true }
+  }, [isOpen, taskId])
+
+  useEffect(() => {
     if (!isOpen) return
     const handlePointerDown = (event: MouseEvent): void => {
       if (!pickerRef.current?.contains(event.target as Node)) onOpenChange(false)
@@ -57,17 +92,24 @@ export const ReasoningEffortPicker = memo(function ReasoningEffortPicker({
   }, [isOpen, onOpenChange])
 
   useEffect(() => {
-    if (!isOpen) return
-    const selectedIndex = currentEffort
-      ? REASONING_EFFORTS.indexOf(currentEffort)
-      : 0
+    if (isOpen && isBusy) onOpenChange(false)
+  }, [isBusy, isOpen, onOpenChange])
+
+  useEffect(() => {
+    if (!isOpen || isLoadingOptions || !availableEfforts?.length) return
+    const currentIndex = currentEffort ? availableEfforts.indexOf(currentEffort) : -1
+    const selectedIndex = currentIndex >= 0 ? currentIndex : 0
     const frameId = requestAnimationFrame(() => optionRefs.current[selectedIndex]?.focus())
     return () => cancelAnimationFrame(frameId)
-  }, [currentEffort, isOpen])
+  }, [availableEfforts, currentEffort, isLoadingOptions, isOpen])
 
   const handleToggle = (): void => {
     if (isDisabled) return
     setError(null)
+    if (!isOpen) {
+      setAvailableEfforts(null)
+      setOptionsNotice(null)
+    }
     onOpenChange(!isOpen)
   }
 
@@ -77,12 +119,20 @@ export const ReasoningEffortPicker = memo(function ReasoningEffortPicker({
   }
 
   const handleListKeyDown = (event: KeyboardEvent<HTMLDivElement>): void => {
+    const effortOptions = availableEfforts ?? []
+    if (effortOptions.length === 0) {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        handleClose()
+      }
+      return
+    }
     const currentIndex = optionRefs.current.findIndex((option) => option === document.activeElement)
     let nextIndex: number | null = null
-    if (event.key === 'ArrowDown') nextIndex = (currentIndex + 1) % REASONING_EFFORTS.length
-    if (event.key === 'ArrowUp') nextIndex = (currentIndex - 1 + REASONING_EFFORTS.length) % REASONING_EFFORTS.length
+    if (event.key === 'ArrowDown') nextIndex = (currentIndex + 1) % effortOptions.length
+    if (event.key === 'ArrowUp') nextIndex = ((currentIndex < 0 ? 0 : currentIndex) - 1 + effortOptions.length) % effortOptions.length
     if (event.key === 'Home') nextIndex = 0
-    if (event.key === 'End') nextIndex = REASONING_EFFORTS.length - 1
+    if (event.key === 'End') nextIndex = effortOptions.length - 1
     if (event.key === 'Escape') {
       event.preventDefault()
       handleClose()
@@ -122,6 +172,7 @@ export const ReasoningEffortPicker = memo(function ReasoningEffortPicker({
           <button
             ref={triggerRef}
             type="button"
+            data-slot="reasoning-effort-trigger"
             onClick={handleToggle}
             aria-label={isDisabled ? disabledReason : `Reasoning effort: ${label}`}
             aria-haspopup="listbox"
@@ -155,17 +206,34 @@ export const ReasoningEffortPicker = memo(function ReasoningEffortPicker({
           id={listboxId}
           role="listbox"
           aria-label="Reasoning effort"
-          aria-busy={pendingEffort !== null}
+          aria-busy={pendingEffort !== null || isLoadingOptions}
           onKeyDown={handleListKeyDown}
-          className="absolute bottom-full left-0 z-[200] mb-2 w-72 max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-border bg-popover py-1.5 shadow-xl"
+          data-slot="reasoning-effort-listbox"
+          className="absolute bottom-full left-0 z-[200] mb-2 w-56 max-w-[calc(100vw-2rem)] overflow-hidden rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-xl motion-safe:animate-in motion-safe:fade-in-0 motion-safe:zoom-in-95 motion-safe:slide-in-from-bottom-1 motion-safe:duration-150"
         >
-          <div className="flex flex-col gap-0.5 border-b border-border/60 px-3 pb-2 pt-1">
-            <p className="text-xs font-medium text-foreground">Reasoning effort</p>
-            <p className="text-[11px] leading-4 text-muted-foreground">
-              Changes apply to your next message. Higher levels can take longer.
-            </p>
+          <div data-slot="reasoning-effort-header" className="flex h-8 items-center justify-between gap-2 px-2">
+            <p className="text-[11px] font-semibold text-foreground">Reasoning effort</p>
+            <span className="text-[10px] text-muted-foreground">Next reply</span>
           </div>
-          {REASONING_EFFORTS.map((effort, index) => {
+          <div data-slot="reasoning-effort-separator" className="h-px bg-border/60" aria-hidden />
+
+          {isLoadingOptions && (
+            <div data-slot="reasoning-effort-loading" className="flex h-20 items-center justify-center gap-2 text-[11px] text-muted-foreground" role="status">
+              <IconLoader2 className="size-3.5 animate-spin motion-reduce:animate-none" aria-hidden />
+              Checking model…
+            </div>
+          )}
+
+          {!isLoadingOptions && availableEfforts?.length === 0 && (
+            <div data-slot="reasoning-effort-empty" className="flex items-center gap-2 px-2 py-3 text-muted-foreground" role="status">
+              <IconInfoCircle className="size-3.5 shrink-0" aria-hidden />
+              <span className="text-[11px] leading-4">
+                This model does not support effort. Choose another model first.
+              </span>
+            </div>
+          )}
+
+          {!isLoadingOptions && availableEfforts?.map((effort, index) => {
             const isCurrent = currentEffort === effort
             const isPending = pendingEffort === effort
             return (
@@ -173,24 +241,25 @@ export const ReasoningEffortPicker = memo(function ReasoningEffortPicker({
                 ref={(element) => { optionRefs.current[index] = element }}
                 key={effort}
                 type="button"
+                data-slot="reasoning-effort-option"
                 role="option"
                 aria-selected={isCurrent}
                 aria-label={`${REASONING_EFFORT_LABELS[effort]}. ${REASONING_EFFORT_DESCRIPTIONS[effort]}${isCurrent ? '. Current' : ''}`}
                 disabled={isDisabled}
                 onClick={() => { void handleSelect(effort) }}
                 className={cn(
-                  'flex min-h-11 w-full items-center justify-between gap-3 px-3 py-2 text-left transition-colors',
+                  'flex min-h-9 w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left transition-colors',
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring',
                   isCurrent
-                    ? 'bg-accent/60 text-foreground'
-                    : 'text-muted-foreground hover:bg-accent/40 hover:text-foreground',
+                    ? 'bg-accent text-accent-foreground'
+                    : 'text-foreground hover:bg-accent/60 hover:text-accent-foreground',
                   'disabled:cursor-wait disabled:opacity-60',
                 )}
               >
-                <span className="flex min-w-0 flex-col gap-0.5">
-                  <span className="block text-xs font-medium">{REASONING_EFFORT_LABELS[effort]}</span>
-                  <span className="block truncate text-[11px] font-normal text-muted-foreground">
-                    {REASONING_EFFORT_DESCRIPTIONS[effort]}
+                <span className="flex min-w-0 items-baseline gap-2">
+                  <span className="text-xs font-medium">{REASONING_EFFORT_LABELS[effort]}</span>
+                  <span className="truncate text-[10px] text-muted-foreground">
+                    {EFFORT_HINTS[effort]}
                   </span>
                 </span>
                 {isPending
@@ -203,8 +272,13 @@ export const ReasoningEffortPicker = memo(function ReasoningEffortPicker({
             {pendingEffort ? `Applying ${REASONING_EFFORT_LABELS[pendingEffort]} effort` : ''}
           </div>
           {error && (
-            <p className="border-t border-border px-3 py-2 text-[11px] text-destructive" role="alert">
+            <p data-slot="reasoning-effort-error" className="mt-1 border-t border-border px-2 py-2 text-[10px] leading-4 text-destructive" role="alert">
               {error}
+            </p>
+          )}
+          {!error && optionsNotice && (
+            <p data-slot="reasoning-effort-notice" className="mt-1 border-t border-border px-2 py-2 text-[10px] leading-4 text-muted-foreground" role="status">
+              {optionsNotice}
             </p>
           )}
         </div>

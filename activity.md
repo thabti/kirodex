@@ -1,3 +1,27 @@
+## 2026-08-14 10:57 GST (Dubai)
+
+### Chat input effort picker: Added model-aware compact controls
+
+Made the chat-toolbar effort popover smaller and easier to scan, with compact hints, clearer loading and unsupported-model states, keyboard focus handling, and model-specific options loaded live from Kiro CLI. Added end-to-end component coverage from toolbar selection through the effort IPC call, protocol tests for the options extension, and completed a shadcn-style accessibility and token audit.
+
+**Modified:** `src/renderer/components/chat/ReasoningEffortPicker.tsx`, `src/renderer/components/chat/ReasoningEffortPicker.test.tsx`, `src/renderer/lib/ipc.ts`, `src-tauri/src/commands/acp/commands.rs`, `src-tauri/src/commands/acp/connection.rs`, `src-tauri/src/commands/acp/mod.rs`, `src-tauri/src/commands/acp/tests.rs`, `src-tauri/src/commands/acp/types.rs`, `src-tauri/src/lib.rs`, `src-tauri/src/web.rs`, `README.md`, `docs/slash-commands.md`, `activity.md`
+
+## 2026-08-14 10:48 GST (Dubai)
+
+### Reasoning effort: Switched to Kiro CLI's live ACP command
+
+Replaced the session-restart effort flow with Kiro CLI 2.9's live `_kiro.dev/commands/execute` extension, applied restored effort only after the selected model is active, and surfaced model-specific CLI rejection messages. Added protocol-shape and response tests, updated the web transport and slash-command documentation, and verified the implementation against the installed CLI plus the complete frontend and Rust test suites.
+
+**Modified:** `src-tauri/src/commands/acp/commands.rs`, `src-tauri/src/commands/acp/connection.rs`, `src-tauri/src/commands/acp/mod.rs`, `src-tauri/src/commands/acp/tests.rs`, `src-tauri/src/commands/acp/types.rs`, `src-tauri/src/web.rs`, `src/renderer/hooks/useSlashAction.test.ts`, `src/renderer/lib/ipc.ts`, `src/renderer/lib/reasoning-effort.ts`, `docs/slash-commands.md`, `activity.md`
+
+## 2026-08-14 10:31 GST (Dubai)
+
+### App shell and chat input: Balanced bottom spacing and title alignment
+
+Added a consistent safe-area-aware bottom gutter to the expanded and collapsed chat composer, and aligned the desktop breadcrumb row with the macOS traffic-light center by using the shared 44px title-bar height. Verified the rendered geometry in the live app, reviewed the component spacing, and passed TypeScript, focused UI tests, lint with no errors, and the production renderer build.
+
+**Modified:** `src/renderer/components/AppHeader.tsx`, `src/renderer/components/chat/ChatInput.tsx`, `activity.md`
+
 ## 2026-08-13 15:38 GST (Dubai)
 
 ### Release: Prepared v0.66.0 across every package surface

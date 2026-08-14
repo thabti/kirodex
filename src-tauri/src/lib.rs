@@ -609,6 +609,7 @@ pub fn run() {
             acp::set_mode,
             acp::set_model,
             acp::set_effort,
+            acp::list_effort_options,
             acp::list_models,
             acp::probe_capabilities,
             // PTY

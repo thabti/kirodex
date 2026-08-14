@@ -12,7 +12,11 @@ pub use commands::*;
 pub use types::*;
 
 // Re-export connection helpers for testing
-pub(crate) use connection::{strip_image_tags, build_content_blocks};
+pub(crate) use connection::{
+    build_content_blocks, build_effort_command_request, build_effort_options_request,
+    execute_effort_command, fetch_effort_options, parse_effort_command_result,
+    parse_effort_options_result, strip_image_tags,
+};
 
 // Re-export sandbox functions for crate-internal use
 pub(crate) use sandbox::{
@@ -160,4 +164,3 @@ pub(crate) fn sanitize_forked_messages(messages: &mut [types::TaskMessage]) {
         }
     }
 }
-

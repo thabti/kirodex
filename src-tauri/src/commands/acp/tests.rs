@@ -1276,6 +1276,76 @@ fn create_task_params_rejects_unknown_effort() {
 }
 
 #[test]
+fn effort_command_request_matches_kiro_cli_extension_schema() {
+    let request = build_effort_command_request(
+        &acp::SessionId::new("session-123"),
+        ReasoningEffort::High,
+    )
+    .unwrap();
+    let params: serde_json::Value = serde_json::from_str(request.params.get()).unwrap();
+
+    assert_eq!(request.method.as_ref(), "kiro.dev/commands/execute");
+    assert_eq!(
+        params,
+        serde_json::json!({
+            "sessionId": "session-123",
+            "command": {
+                "command": "effort",
+                "args": { "value": "high" },
+            },
+        })
+    );
+}
+
+#[test]
+fn effort_command_result_preserves_kiro_cli_rejection_message() {
+    let result = serde_json::json!({
+        "success": false,
+        "message": "Effort configuration is currently not available on auto."
+    });
+
+    assert_eq!(
+        parse_effort_command_result(&result).unwrap_err(),
+        "Effort configuration is currently not available on auto."
+    );
+    assert!(parse_effort_command_result(&serde_json::json!({ "success": true })).is_ok());
+}
+
+#[test]
+fn effort_options_request_matches_kiro_cli_extension_schema() {
+    let request = build_effort_options_request(&acp::SessionId::new("session-123")).unwrap();
+    let params: serde_json::Value = serde_json::from_str(request.params.get()).unwrap();
+
+    assert_eq!(request.method.as_ref(), "kiro.dev/commands/options");
+    assert_eq!(
+        params,
+        serde_json::json!({
+            "sessionId": "session-123",
+            "command": "effort",
+            "partial": "",
+        })
+    );
+}
+
+#[test]
+fn effort_options_result_uses_only_supported_known_levels() {
+    let result = serde_json::json!({
+        "options": [
+            { "value": "low", "label": "Low" },
+            { "value": "xhigh", "label": "xHigh" },
+            { "value": "future", "label": "Future" }
+        ],
+        "hasMore": false
+    });
+
+    assert_eq!(
+        parse_effort_options_result(&result).unwrap(),
+        vec![ReasoningEffort::Low, ReasoningEffort::Xhigh]
+    );
+    assert!(parse_effort_options_result(&serde_json::json!({})).is_err());
+}
+
+#[test]
 fn connection_handle_waits_for_session_readiness() {
     use std::sync::atomic::{AtomicBool, Ordering};
     use std::sync::Arc;

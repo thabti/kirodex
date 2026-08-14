@@ -289,9 +289,6 @@ describe('useSlashAction /effort', () => {
       expect(ipc.setEffort).toHaveBeenCalledWith(
         'task-1',
         effort,
-        undefined,
-        undefined,
-        [],
       )
       expect(ipc.sendMessage).not.toHaveBeenCalled()
       expect(useTaskStore.getState().tasks['task-1'].messages.at(-1)?.content)

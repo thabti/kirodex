@@ -422,11 +422,10 @@ export const ipc = {
   setEffort: (
     taskId: string,
     effort: ReasoningEffort,
-    modeId?: string,
-    modelId?: string,
-    messages?: Array<{ role: string; content: string; timestamp: string; thinking?: string }>,
   ): Promise<void> =>
-    invokeCommand('set_effort', { taskId, effort, modeId, modelId, messages }),
+    invokeCommand('set_effort', { taskId, effort }),
+  listEffortOptions: (taskId: string): Promise<ReasoningEffort[]> =>
+    invokeCommand('list_effort_options', { taskId }),
 
   // ── Checkpoints (per-turn snapshots) ────────────────────────────────────
   checkpointCreate: (taskId: string, turn: number): Promise<{ turn: number; refName: string; oid: string; message: string; timestamp: number }> =>

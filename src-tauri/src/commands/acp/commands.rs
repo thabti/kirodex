@@ -603,96 +603,78 @@ pub fn set_model(
     Ok(())
 }
 
-/// Apply reasoning effort to an idle task. The CLI exposes effort as an ACP
-/// startup flag, so the live session is replaced and its transcript is
-/// replayed once with the user's next prompt.
+/// Apply reasoning effort to an idle task through Kiro CLI's live ACP command
+/// extension. The connection confirms the change before task state is updated.
 #[tauri::command]
-pub fn set_effort(
-    app: tauri::AppHandle,
+pub async fn set_effort(
     state: tauri::State<'_, AcpState>,
-    settings_state: tauri::State<'_, crate::commands::settings::SettingsState>,
     task_id: String,
     effort: ReasoningEffort,
-    mode_id: Option<String>,
-    model_id: Option<String>,
-    messages: Option<Vec<TaskMessage>>,
 ) -> Result<(), String> {
-    let (workspace, auto_approve) = {
+    {
         let tasks = state.tasks.lock();
         let task = tasks.get(&task_id).ok_or("Task not found")?;
         if task.status == "running" || task.status == "pending_permission" {
             return Err("Wait for the current turn to finish before changing effort".to_string());
         }
-        (task.workspace.clone(), task.auto_approve)
-    };
+    }
+    let cmd_tx = state
+        .connections
+        .lock()
+        .get(&task_id)
+        .map(|handle| handle.cmd_tx.clone());
 
-    let settings = settings_state.0.lock();
-    let kiro_bin = settings.settings.kiro_bin.clone();
-    let resolved_auto_approve = auto_approve.unwrap_or(settings.settings.auto_approve);
-    let tight_sandbox = settings.settings.project_prefs.as_ref()
-        .and_then(|prefs| prefs.get(&workspace))
-        .and_then(|prefs| prefs.tight_sandbox)
-        .unwrap_or(true);
-    let initial_model_id = resolve_initial_model(model_id, &workspace, &settings.settings);
-    drop(settings);
-
-    // Serialize replacement against send/cancel/delete. Do not tear down the
-    // old session until the new CLI process has initialized successfully.
-    let mut connections = state.connections.lock();
-    let transcript = {
-        let tasks = state.tasks.lock();
-        let task = tasks.get(&task_id).ok_or("Task not found")?;
-        if task.status == "running" || task.status == "pending_permission" {
-            return Err("Wait for the current turn to finish before changing effort".to_string());
-        }
-        messages.unwrap_or_else(|| task.messages.clone())
-    };
-
-    if !connections.contains_key(&task_id) {
-        drop(connections);
+    let Some(cmd_tx) = cmd_tx else {
         if let Some(task) = state.tasks.lock().get_mut(&task_id) {
             task.reasoning_effort = Some(effort);
         }
         return Ok(());
-    }
+    };
 
-    let pending_preamble = super::build_resumption_preamble(
-        &transcript,
-        "Resumed conversation after effort change",
-        "The reasoning effort changed, so this conversation is continuing in a fresh agent session. The transcript below is context only. Do not repeat completed work or tool calls. The user's next message follows after the transcript.",
-    );
-    let handle = super::connection::spawn_connection_with_preamble(ConnectionConfig {
-        task_id: task_id.clone(),
-        workspace,
-        kiro_bin,
-        auto_approve: resolved_auto_approve,
-        app,
-        initial_mode_id: mode_id,
-        initial_model_id,
-        initial_effort: Some(effort),
-        tight_sandbox,
-        pending_preamble: (!pending_preamble.is_empty()).then_some(pending_preamble),
-    })?;
-    if let Err(error) = handle.wait_until_ready(std::time::Duration::from_secs(15)) {
-        let _ = handle.cmd_tx.send(AcpCommand::Kill);
-        return Err(error);
-    }
-    if let Some(old_connection) = connections.remove(&task_id) {
-        let _ = old_connection.cmd_tx.send(AcpCommand::Kill);
-    }
-    connections.insert(task_id.clone(), handle);
-    drop(connections);
+    let (reply_tx, reply_rx) = tokio::sync::oneshot::channel();
+    cmd_tx
+        .send(AcpCommand::SetEffort(effort, reply_tx))
+        .map_err(|_| "The Kiro session ended before effort could be changed".to_string())?;
+    tokio::time::timeout(std::time::Duration::from_secs(10), reply_rx)
+        .await
+        .map_err(|_| "Timed out while changing reasoning effort".to_string())?
+        .map_err(|_| "The Kiro session ended before confirming the effort change".to_string())??;
 
     let mut tasks = state.tasks.lock();
-    let Some(task) = tasks.get_mut(&task_id) else {
-        drop(tasks);
-        if let Some(handle) = state.connections.lock().remove(&task_id) {
-            let _ = handle.cmd_tx.send(AcpCommand::Kill);
-        }
-        return Err("Task not found".to_string());
-    };
+    let task = tasks.get_mut(&task_id).ok_or("Task not found")?;
     task.reasoning_effort = Some(effort);
     Ok(())
+}
+
+/// Return the effort levels supported by the active Kiro model. Deferred
+/// threads have no live session to query, so they expose the complete set and
+/// Kiro validates it when the connection starts.
+#[tauri::command]
+pub async fn list_effort_options(
+    state: tauri::State<'_, AcpState>,
+    task_id: String,
+) -> Result<Vec<ReasoningEffort>, String> {
+    if !state.tasks.lock().contains_key(&task_id) {
+        return Err("Task not found".to_string());
+    }
+    let cmd_tx = state
+        .connections
+        .lock()
+        .get(&task_id)
+        .map(|handle| handle.cmd_tx.clone());
+
+    let Some(cmd_tx) = cmd_tx else {
+        return Ok(ReasoningEffort::ALL.to_vec());
+    };
+
+    let (reply_tx, reply_rx) = tokio::sync::oneshot::channel();
+    cmd_tx
+        .send(AcpCommand::ListEffortOptions(reply_tx))
+        .map_err(|_| "The Kiro session ended before effort levels could be loaded".to_string())?;
+    tokio::time::timeout(std::time::Duration::from_secs(10), reply_rx)
+        .await
+        .map_err(|_| "Timed out while loading reasoning effort levels".to_string())?
+        .map_err(|_| "The Kiro session ended before returning effort levels".to_string())?
 }
 
 #[tauri::command]
