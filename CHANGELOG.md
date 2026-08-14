@@ -1,5 +1,11 @@
 # Changelog
 
+## [v0.66.1] - 2026-08-14
+
+### Bug fixes
+
+- improve chat input effort controls ([`c2d34e8`](https://github.com/thabti/kirodex/commit/c2d34e8eefb20caf002ac22ec553ee64fdb9ba3d))
+
 ## [v0.66.0] - 2026-08-13
 
 ### Features

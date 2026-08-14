@@ -1,3 +1,11 @@
+## 2026-08-14 11:00 GST (Dubai)
+
+### Release: Prepared v0.66.1
+
+Prepared the patch release for the model-aware reasoning effort controls, compact chat-input picker, and app-shell spacing refinements. Synchronized the application version across package and Tauri metadata and generated the release changelog.
+
+**Modified:** `package.json`, `src-tauri/Cargo.toml`, `src-tauri/Cargo.lock`, `src-tauri/tauri.conf.json`, `CHANGELOG.md`, `activity.md`
+
 ## 2026-08-14 10:57 GST (Dubai)
 
 ### Chat input effort picker: Added model-aware compact controls
