@@ -1,11 +1,11 @@
 {
-  "updated_at": "2026-08-28T18:51:11Z",
+  "updated_at": "2026-08-29T12:45:11Z",
   "releases": [
     {
       "tag": "v0.66.1",
       "published": "2026-08-14T07:10:10Z",
-      "total": 18,
-      "update_checks": 40,
+      "total": 19,
+      "update_checks": 44,
       "assets": [
         {
           "name": "Kirodex_0.66.1_aarch64.dmg",
@@ -29,7 +29,7 @@
         },
         {
           "name": "Kirodex_0.66.1_x64-setup.exe",
-          "downloads": 7,
+          "downloads": 8,
           "platform": "windows"
         },
         {
@@ -3603,10 +3603,10 @@
     }
   ],
   "totals": {
-    "all": 1491,
-    "update_checks": 10697,
+    "all": 1492,
+    "update_checks": 10701,
     "macos": 745,
-    "windows": 426,
+    "windows": 427,
     "linux": 320
   },
   "homebrew_tap": null
