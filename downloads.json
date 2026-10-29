@@ -1,11 +1,11 @@
 {
-  "updated_at": "2026-10-28T13:15:27Z",
+  "updated_at": "2026-10-29T13:22:27Z",
   "releases": [
     {
       "tag": "v0.66.1",
       "published": "2026-08-14T07:10:10Z",
-      "total": 97,
-      "update_checks": 435,
+      "total": 100,
+      "update_checks": 436,
       "assets": [
         {
           "name": "Kirodex_0.66.1_aarch64.dmg",
@@ -14,7 +14,7 @@
         },
         {
           "name": "Kirodex_0.66.1_amd64.AppImage",
-          "downloads": 19,
+          "downloads": 20,
           "platform": "linux"
         },
         {
@@ -29,7 +29,7 @@
         },
         {
           "name": "Kirodex_0.66.1_x64-setup.exe",
-          "downloads": 30,
+          "downloads": 32,
           "platform": "windows"
         },
         {
@@ -1901,7 +1901,7 @@
     {
       "tag": "v0.27.0",
       "published": "2026-04-22T05:14:26Z",
-      "total": 20,
+      "total": 21,
       "update_checks": 43,
       "assets": [
         {
@@ -1916,7 +1916,7 @@
         },
         {
           "name": "Kirodex_0.27.0_amd64.AppImage",
-          "downloads": 2,
+          "downloads": 3,
           "platform": "linux"
         },
         {
@@ -2655,7 +2655,7 @@
     {
       "tag": "v0.10.1",
       "published": "2026-04-15T23:01:34Z",
-      "total": 27,
+      "total": 28,
       "update_checks": 18,
       "assets": [
         {
@@ -2670,7 +2670,7 @@
         },
         {
           "name": "Kirodex_0.10.1_amd64.AppImage",
-          "downloads": 2,
+          "downloads": 3,
           "platform": "linux"
         },
         {
@@ -3061,7 +3061,7 @@
     {
       "tag": "v0.8.13",
       "published": "2026-04-14T20:57:36Z",
-      "total": 24,
+      "total": 25,
       "update_checks": 70,
       "assets": [
         {
@@ -3076,7 +3076,7 @@
         },
         {
           "name": "Kirodex_0.8.13_amd64.AppImage",
-          "downloads": 2,
+          "downloads": 3,
           "platform": "linux"
         },
         {
@@ -3603,11 +3603,11 @@
     }
   ],
   "totals": {
-    "all": 1593,
-    "update_checks": 11092,
+    "all": 1599,
+    "update_checks": 11093,
     "macos": 781,
-    "windows": 457,
-    "linux": 355
+    "windows": 459,
+    "linux": 359
   },
   "homebrew_tap": null
 }
