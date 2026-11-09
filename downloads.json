@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-08T13:40:26Z",
+  "updated_at": "2026-11-09T16:40:08Z",
   "releases": [
     {
       "tag": "v0.66.1",
@@ -2017,7 +2017,7 @@
     {
       "tag": "v0.25.0",
       "published": "2026-04-21T15:44:00Z",
-      "total": 7,
+      "total": 8,
       "update_checks": 35,
       "assets": [
         {
@@ -2032,7 +2032,7 @@
         },
         {
           "name": "Kirodex_0.25.0_amd64.AppImage",
-          "downloads": 0,
+          "downloads": 1,
           "platform": "linux"
         },
         {
@@ -3603,11 +3603,11 @@
     }
   ],
   "totals": {
-    "all": 1667,
+    "all": 1668,
     "update_checks": 11112,
     "macos": 784,
     "windows": 464,
-    "linux": 419
+    "linux": 420
   },
   "homebrew_tap": null
 }
