@@ -1,11 +1,11 @@
 {
-  "updated_at": "2026-11-12T15:26:59Z",
+  "updated_at": "2026-11-13T14:44:11Z",
   "releases": [
     {
       "tag": "v0.66.1",
       "published": "2026-08-14T07:10:10Z",
-      "total": 107,
-      "update_checks": 513,
+      "total": 108,
+      "update_checks": 515,
       "assets": [
         {
           "name": "Kirodex_0.66.1_aarch64.dmg",
@@ -14,7 +14,7 @@
         },
         {
           "name": "Kirodex_0.66.1_amd64.AppImage",
-          "downloads": 21,
+          "downloads": 22,
           "platform": "linux"
         },
         {
@@ -811,7 +811,7 @@
     {
       "tag": "v0.48.0",
       "published": "2026-05-13T07:20:45Z",
-      "total": 10,
+      "total": 11,
       "update_checks": 27,
       "assets": [
         {
@@ -821,7 +821,7 @@
         },
         {
           "name": "Kirodex_0.48.0_amd64.AppImage",
-          "downloads": 1,
+          "downloads": 2,
           "platform": "linux"
         },
         {
@@ -1901,7 +1901,7 @@
     {
       "tag": "v0.27.0",
       "published": "2026-04-22T05:14:26Z",
-      "total": 21,
+      "total": 22,
       "update_checks": 43,
       "assets": [
         {
@@ -1916,7 +1916,7 @@
         },
         {
           "name": "Kirodex_0.27.0_amd64.AppImage",
-          "downloads": 3,
+          "downloads": 4,
           "platform": "linux"
         },
         {
@@ -3523,7 +3523,7 @@
     {
       "tag": "v0.8.3",
       "published": "2026-04-11T15:03:42Z",
-      "total": 19,
+      "total": 20,
       "update_checks": 0,
       "assets": [
         {
@@ -3538,7 +3538,7 @@
         },
         {
           "name": "Kirodex_0.8.3_amd64.AppImage",
-          "downloads": 2,
+          "downloads": 3,
           "platform": "linux"
         },
         {
@@ -3603,11 +3603,11 @@
     }
   ],
   "totals": {
-    "all": 1689,
-    "update_checks": 11170,
+    "all": 1693,
+    "update_checks": 11172,
     "macos": 785,
     "windows": 467,
-    "linux": 437
+    "linux": 441
   },
   "homebrew_tap": null
 }
